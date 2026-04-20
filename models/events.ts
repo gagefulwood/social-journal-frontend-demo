@@ -1,15 +1,23 @@
 export interface Event {
-  id: string;
-  contactId: string;
-  type: string;
-  date: string;
+  id: number;
+  title: string;
+  scheduled_at: string;
   notes?: string;
-  createdAt?: string;
+  context_category?: number | null;
+  mood?: number | null;
+}
+
+
+export interface JournalEntry {
+  id: number;
+  title: string;
+  body: string;
+  is_immutable: boolean;
+  created_at: string;
 }
 
 export interface JournalEntryPreview {
-  id: string;
+  id: number;
   title: string;
-  snippet: string;
-  date: string;
+  created_at: string;
 }

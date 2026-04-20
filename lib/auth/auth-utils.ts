@@ -13,12 +13,9 @@ export function setAuth(
   user?: User,
   mfaToken?: string
 ) {
-  useAuthStore.getState().login(
-    accessToken,
-    refreshToken,
-    user,
-    mfaToken
-  );
+  const { login } = useAuthStore.getState();
+
+  login(accessToken, refreshToken, user, mfaToken);
 
   if (refreshToken) {
     Cookies.set("refreshToken", refreshToken);
@@ -26,7 +23,9 @@ export function setAuth(
 }
 
 export function clearAuth() {
-  useAuthStore.getState().logout();
+  const { logout } = useAuthStore.getState();
+
+  logout();
   Cookies.remove("refreshToken");
 }
 
@@ -44,6 +43,7 @@ export async function tokenRefresh(): Promise<string | null> {
     if (!access) return null;
 
     setAuth(access, refreshToken, user);
+
     return access;
   } catch {
     clearAuth();

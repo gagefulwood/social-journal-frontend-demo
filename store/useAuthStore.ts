@@ -1,58 +1,51 @@
 import { create } from "zustand";
-import { User } from "@/types/auth";
+import type { User } from "@/types/auth";
 
-interface AuthState {
+type AuthState = {
+  accessToken: string | null;
+  refreshToken: string | null;
   user: User | null;
-  isAuthenticated: boolean;
-  mfaPending: boolean;
   mfaToken: string | null;
+  isAuthenticated: boolean;
 
   login: (
     accessToken: string,
-    refreshToken: string,
-    user: User,
+    refreshToken?: string,
+    user?: User,
     mfaToken?: string
   ) => void;
 
   logout: () => void;
-
-  setUser: (user: User) => void;
-  setMfaPending: (pending: boolean) => void;
   setMfaToken: (token: string | null) => void;
-}
+};
 
 export const useAuthStore = create<AuthState>((set) => ({
+  accessToken: null,
+  refreshToken: null,
   user: null,
-  isAuthenticated: false,
-  mfaPending: false,
   mfaToken: null,
+  isAuthenticated: false,
 
-  login: (accessToken, refreshToken, user, mfaToken) => {
-    // store tokens in cookies/localStorage if needed
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
-
+  login: (accessToken, refreshToken, user, mfaToken) =>
     set({
-      user,
-      isAuthenticated: true,
-      mfaPending: !!mfaToken,
+      accessToken,
+      refreshToken: refreshToken ?? null,
+      user: user ?? null,
       mfaToken: mfaToken ?? null,
-    });
-  },
+      isAuthenticated: !!accessToken,
+    }),
 
-  logout: () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-
+  logout: () =>
     set({
+      accessToken: null,
+      refreshToken: null,
       user: null,
-      isAuthenticated: false,
-      mfaPending: false,
       mfaToken: null,
-    });
-  },
+      isAuthenticated: false,
+    }),
 
-  setUser: (user) => set({ user, isAuthenticated: true }),
-  setMfaPending: (pending) => set({ mfaPending: pending }),
-  setMfaToken: (token) => set({ mfaToken: token }),
+  setMfaToken: (token) =>
+    set({
+      mfaToken: token,
+    }),
 }));

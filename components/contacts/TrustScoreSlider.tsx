@@ -1,33 +1,43 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Slider } from "@/components/ui/slider";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { useEffect, useState, useRef } from "react";
 import { contactsApi } from "@/lib/api/contactsApi";
 
-export default function TrustScoreSlider({
+export function TrustScoreSlider({
   contactId,
   value,
 }: {
-  contactId: string;
+  contactId: number;
   value: number;
 }) {
-  const [score, setScore] = useState(value || 50);
-  const debounced = useDebounce(score, 500);
+  const [localValue, setLocalValue] = useState(value);
+  const debounced = useDebounce(localValue, 600);
+  const first = useRef(true);
 
   useEffect(() => {
-    contactsApi.update(contactId, { trustScore: debounced });
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+
+    contactsApi.update(contactId, { trust_score: debounced });
   }, [debounced, contactId]);
 
   return (
-    <div>
-      <label className="block mb-1">Trust Score: {score}</label>
-      <input
-        type="range"
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm">
+        <span>Trust Score</span>
+        <span>{localValue} / 100</span>
+      </div>
+
+      <Slider
         min={0}
         max={100}
-        value={score}
-        onChange={(e) => setScore(Number(e.target.value))}
-        className="w-full"
+        step={1}
+        value={[localValue]}
+        onValueChange={([v]) => setLocalValue(v)}
       />
     </div>
   );

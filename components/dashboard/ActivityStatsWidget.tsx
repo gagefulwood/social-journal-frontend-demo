@@ -1,26 +1,45 @@
-export default function ActivityStatsWidget({
-  total,
-  trend,
-}: {
-  total: number;
-  trend: number;
-}) {
-  const isPositive = trend >= 0;
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+type ActivityStats = {
+  total_events: number;
+  this_week: number;
+  this_month: number;
+  trend_percentage: number;
+};
+
+export function ActivityStatsWidget({ stats }: { stats: ActivityStats }) {
+  const trendColor =
+    stats.trend_percentage > 0
+      ? "bg-green-100 text-green-800"
+      : stats.trend_percentage < 0
+      ? "bg-red-100 text-red-800"
+      : "bg-gray-100 text-gray-800";
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <h3 className="font-semibold">Activity</h3>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium">Activity Stats</CardTitle>
+        <Badge className={trendColor}>
+          {stats.trend_percentage > 0 ? "+" : ""}
+          {stats.trend_percentage}%
+        </Badge>
+      </CardHeader>
 
-      <p className="text-2xl">{total}</p>
-
-      <span
-        className={`text-sm px-2 py-1 rounded ${
-          isPositive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-        }`}
-      >
-        {isPositive ? "+" : ""}
-        {trend}%
-      </span>
-    </div>
+      <CardContent className="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p className="text-2xl font-bold">{stats.total_events}</p>
+          <p className="text-xs text-muted-foreground">Total</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold">{stats.this_week}</p>
+          <p className="text-xs text-muted-foreground">This Week</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold">{stats.this_month}</p>
+          <p className="text-xs text-muted-foreground">This Month</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

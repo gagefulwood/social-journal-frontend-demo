@@ -41,9 +41,9 @@ export const useLookupStore = create<LookupState>((set) => ({
         occupations: data.occupations,
         isLoading: false,
       });
-    } catch (err: any) {
+    } catch (err) {
       set({
-        error: err.message || "Failed to fetch lookups",
+        error: err instanceof Error ? err.message : "Failed to fetch lookups",
         isLoading: false,
       });
     }

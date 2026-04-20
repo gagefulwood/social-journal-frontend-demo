@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { contactsApi } from "@/lib/api/contactsApi";
-import { Contact } from "@/models";
+import { Contact } from "@/lib/api/contactsApi";
 
 export function useContact(id: string) {
   const [contact, setContact] = useState<Contact | null>(null);
@@ -17,10 +17,14 @@ export function useContact(id: string) {
       setError(null);
 
       try {
-        const data = await contactsApi.get(id);
+        const data = await contactsApi.get(Number(id));
         setContact(data);
       } catch (err: unknown) {
-        setError(err.message || "Failed to fetch contact");
+        if (err instanceof Error) {
+          setError(err.message); 
+        } else {
+          setError("Failed to fetch contact");
+        }
       } finally {
         setIsLoading(false);
       }

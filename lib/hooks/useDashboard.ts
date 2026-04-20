@@ -1,73 +1,87 @@
+"use client";
+
 import { useEffect, useState } from "react";
 
-type Stats = {
-  total: number;
-  trend: number;
+export type ActivityStats = {
+  total_events: number;
+  this_week: number;
+  this_month: number;
+  trend_percentage: number;
 };
 
-type RecentEvent = {
+export type DashboardEvent = {
   id: number;
   title: string;
-  mood: string;
-  tag: string;
-};
-
-type UpcomingEvent = {
-  id: number;
-  title: string;
-  date: string;
-  people: string[];
+  scheduled_at: string;
+  context_category?: number | null;
 };
 
 export type DecayContact = {
-  id: number;
-  name: string;
-  days: number;
+  contact_id: number;
+  first_name: string;
+  last_name: string;
+  days_since_last_event: number;
 };
 
-type DashboardData = {
-  stats: Stats;
-  recentEvents: RecentEvent[];
-  upcomingEvents: UpcomingEvent[];
-  decay: DecayContact[];
+export type DashboardData = {
+  activity_stats: ActivityStats;
+  recent_events: DashboardEvent[];
+  upcoming_events: DashboardEvent[];
+  decay_radar: DecayContact[];
 };
 
 export function useDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
-        setTimeout(() => {
-          setData({
-            stats: { total: 24, trend: -12 },
-            recentEvents: [
-              { id: 1, title: "Lunch", mood: "😊", tag: "Friends" },
-            ],
-            upcomingEvents: [
-              {
-                id: 1,
-                title: "Meeting",
-                date: "Tomorrow",
-                people: ["John"],
-              },
-            ],
-            decay: [
-              { id: 1, name: "John Doe", days: 10 },
-            ],
-          });
-          setLoading(false);
-        }, 1000);
-      } catch {
+        // simulate API delay
+        await new Promise((res) => setTimeout(res, 1000));
+
+        setData({
+          activity_stats: {
+            total_events: 24,
+            this_week: 5,
+            this_month: 12,
+            trend_percentage: -12,
+          },
+          recent_events: [
+            {
+              id: 1,
+              title: "Lunch",
+              scheduled_at: new Date().toISOString(),
+              context_category: 1,
+            },
+          ],
+          upcoming_events: [
+            {
+              id: 2,
+              title: "Meeting",
+              scheduled_at: new Date().toISOString(),
+              context_category: 2,
+            },
+          ],
+          decay_radar: [
+            {
+              contact_id: 1,
+              first_name: "John",
+              last_name: "Doe",
+              days_since_last_event: 10,
+            },
+          ],
+        });
+      } catch  {
         setError("Failed to load dashboard");
-        setLoading(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     load();
   }, []);
 
-  return { data, loading, error };
+  return { data, isLoading, error };
 }

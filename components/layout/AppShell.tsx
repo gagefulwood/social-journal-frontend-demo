@@ -1,25 +1,18 @@
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
+import { Sidebar } from "./SideBar";
+import { Topbar } from "./Topbar";
 
-export default function AppShell({
-  children,
-}: {
+interface AppShellProps {
   children: React.ReactNode;
-}) {
+  title: string;
+}
+
+export function AppShell({ children, title }: AppShellProps) {
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      {/* Sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-shrink-0">
-        <Sidebar />
-      </div>
-
-      {/* Main */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar />
-
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4">
-          {children}
-        </main>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <Topbar title={title} />
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

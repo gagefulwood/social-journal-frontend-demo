@@ -16,11 +16,7 @@ export default function LoginForm() {
     setError("");
 
     try {
-      await authApi.login({
-        username,
-        password,
-      });
-
+      await authApi.login(username, password);
       router.push("/dashboard");
     } catch {
       setError("Login failed");

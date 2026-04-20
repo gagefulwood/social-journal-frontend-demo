@@ -1,40 +1,51 @@
 "use client";
 
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { DecayContact } from "@/lib/hooks/useDashboard";
-import EmptyState from "@/components/EmptyState";
+import type { DecayContact } from "@/models/dashboard";
 
-export default function DecayRadarWidget({
-  data,
-}: {
-  data: DecayContact[];
-}) {
+export function DecayRadarWidget({ contacts }: { contacts: DecayContact[] }) {
   const router = useRouter();
 
-  if (data.length === 0) {
-    return <EmptyState title="No inactive contacts" />;
-  }
-
-  const sorted = [...data].sort((a, b) => b.days - a.days);
+  const sorted = [...contacts].sort(
+    (a, b) => b.days_since_last_event - a.days_since_last_event
+  );
 
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <h3 className="font-semibold mb-2">Decay Radar</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Decay Radar</CardTitle>
+      </CardHeader>
 
-      {sorted.map((c) => (
-        <div key={c.id} className="flex justify-between mb-2 text-sm">
-          <span>
-            {c.name} ({c.days} days)
-          </span>
+      <CardContent className="space-y-3">
+        {sorted.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No contacts to display.
+          </p>
+        )}
 
-          <button
-            onClick={() => router.push(`/contacts/${c.id}`)}
-            className="text-blue-600"
-          >
-            View
-          </button>
-        </div>
-      ))}
-    </div>
+        {sorted.map((c) => (
+          <div key={c.contact_id} className="flex justify-between items-center">
+            <div>
+              <p className="font-medium">
+                {c.first_name} {c.last_name}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {c.days_since_last_event} days ago
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/contacts/${c.contact_id}`)}
+            >
+              View
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

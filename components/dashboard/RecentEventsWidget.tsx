@@ -1,27 +1,39 @@
-import { RecentEvent } from "@/lib/hooks/useDashboard";
-import EmptyState from "@/components/EmptyState";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import type { DashboardEvent } from "@/models/dashboard";
 
-export default function RecentEventsWidget({
-  events,
-}: {
-  events: RecentEvent[];
-}) {
-  if (events.length === 0) {
-    return <EmptyState title="No recent events" />;
-  }
-
+export function RecentEventsWidget({ events }: { events: DashboardEvent[] }) {
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <h3 className="font-semibold mb-2">Recent Events</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent Events</CardTitle>
+      </CardHeader>
 
-      {events.slice(0, 5).map((e) => (
-        <div key={e.id} className="flex justify-between text-sm mb-1">
-          <span>
-            {e.mood} {e.title}
-          </span>
-          <span className="bg-gray-200 px-2 rounded">{e.tag}</span>
-        </div>
-      ))}
-    </div>
+      <CardContent className="space-y-3">
+        {events.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No recent events.
+          </p>
+        )}
+
+        {events.slice(0, 5).map((event) => (
+          <div key={event.id} className="flex justify-between items-center">
+            <div>
+              <p className="text-sm font-medium">{event.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(event.scheduled_at).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+
+            {event.context_category && (
+              <Badge variant="outline">{event.context_category}</Badge>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

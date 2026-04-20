@@ -1,33 +1,29 @@
-import { UpcomingEvent } from "@/lib/hooks/useDashboard";
-import EmptyState from "@/components/EmptyState";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import type { DashboardEvent } from "@/models/dashboard";
 
-export default function UpcomingEventsWidget({
-  events,
-}: {
-  events: UpcomingEvent[];
-}) {
-  if (events.length === 0) {
-    return <EmptyState title="No upcoming events" />;
-  }
-
+export function UpcomingEventsWidget({ events }: { events: DashboardEvent[] }) {
   return (
-    <div className="bg-white p-4 rounded shadow">
-      <h3 className="font-semibold mb-2">Upcoming</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle>Upcoming Events</CardTitle>
+      </CardHeader>
 
-      {events.slice(0, 5).map((e) => (
-        <div key={e.id} className="mb-2 text-sm">
-          <p>{e.title}</p>
-          <p className="text-gray-500">{e.date}</p>
+      <CardContent className="space-y-3">
+        {events.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No upcoming events.
+          </p>
+        )}
 
-          <div className="flex gap-1 mt-1">
-            {e.people.map((p: string) => (
-              <span key={p} className="bg-gray-200 px-2 rounded">
-                {p}
-              </span>
-            ))}
+        {events.slice(0, 5).map((event) => (
+          <div key={event.id}>
+            <p className="font-medium">{event.title}</p>
+            <p className="text-sm text-muted-foreground">
+              {new Date(event.scheduled_at).toLocaleDateString()}
+            </p>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

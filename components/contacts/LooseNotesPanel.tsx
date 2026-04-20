@@ -6,20 +6,20 @@ import EmptyState from "@/components/EmptyState";
 
 type Note = {
   id: number;
-  text: string;
+  body: string;
 };
 
 export default function LooseNotesPanel({
   contactId,
 }: {
-  contactId: string;
+  contactId: number;
 }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [text, setText] = useState("");
 
   useEffect(() => {
     const loadNotes = async () => {
-      const data = await contactsApi.getNotes(contactId);
+      const data = await contactsApi.listNotes(contactId);
       setNotes(data);
     };
 
@@ -29,16 +29,15 @@ export default function LooseNotesPanel({
   const addNote = async () => {
     if (!text.trim()) return;
 
-    await contactsApi.addNote(contactId, { text });
-    setText("");
-    
-    // reload notes
-    const data = await contactsApi.getNotes(contactId);
-    setNotes(data);
-  };
+    await contactsApi.createNote({
+      contact: contactId,
+      body: text,
+    });
 
-  const grouped = {
-    General: notes,
+    setText("");
+
+    const data = await contactsApi.listNotes(contactId);
+    setNotes(data);
   };
 
   return (
@@ -48,15 +47,9 @@ export default function LooseNotesPanel({
       {notes.length === 0 ? (
         <EmptyState title="No notes yet" />
       ) : (
-        Object.entries(grouped).map(([marker, items]) => (
-          <div key={marker} className="mb-3">
-            <h4 className="font-medium mb-1">{marker}</h4>
-
-            {items.map((n) => (
-              <div key={n.id} className="p-2 bg-gray-50 rounded mb-1">
-                {n.text}
-              </div>
-            ))}
+        notes.map((n) => (
+          <div key={n.id} className="p-2 bg-gray-50 rounded mb-1">
+            {n.body}
           </div>
         ))
       )}

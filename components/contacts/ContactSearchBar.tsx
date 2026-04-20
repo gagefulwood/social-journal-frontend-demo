@@ -1,29 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { useEffect, useState } from "react";
 
-export default function ContactSearchBar({
-  onSearch,
-}: {
-  onSearch: (q: string) => void;
-}) {
+export function ContactSearchBar({ onSearch }: { onSearch: (q: string) => void }) {
   const [value, setValue] = useState("");
+  const debounced = useDebounce(value, 400);
 
-  // debounce typing
-  const debounced = useDebounce(value, 500);
-
-  // ✅ correct dependency usage
   useEffect(() => {
     onSearch(debounced);
   }, [debounced, onSearch]);
 
   return (
-    <input
+    <Input
+      placeholder="Search contacts..."
       value={value}
       onChange={(e) => setValue(e.target.value)}
-      placeholder="Search contacts..."
-      className="w-full border rounded px-3 py-2"
+      className="max-w-sm"
     />
   );
 }

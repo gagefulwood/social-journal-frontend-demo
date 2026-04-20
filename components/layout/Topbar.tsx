@@ -1,42 +1,49 @@
 "use client";
 
-import { useAuth } from "@/hooks/useAuth";
-import { authApi } from "@/lib/api/authApi";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useRouter } from "next/navigation";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { authApi } from "@/lib/auth/authApi";
 
-export default function Topbar() {
-  const { user, logout: clearAuth } = useAuth();
+interface TopbarProps {
+  title: string;
+}
+
+export function Topbar({ title }: TopbarProps) {
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
+
+  const initials = user
+    ? `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase()
+    : "?";
 
   const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      clearAuth(); // clears your store
-    }
+    await authApi.logout();
+    await logout();
+    router.push("/auth/login");
   };
 
   return (
-    <div className="flex items-center justify-between border-b bg-white px-4 py-3">
-      {/* Title */}
-      <h1 className="text-lg font-semibold">Dashboard</h1>
-
-      {/* User + Logout */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium">
-            {user?.name?.[0] || "U"}
-          </div>
-          <span className="hidden sm:inline text-sm">
-            {user?.name}
-          </span>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="rounded-md bg-red-500 px-3 py-1.5 text-sm text-white hover:bg-red-600"
-        >
-          Logout
-        </button>
-      </div>
-    </div>
+    <header className="flex items-center justify-between px-6 py-4 border-b bg-background">
+      <h1 className="text-lg font-semibold">{title}</h1>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Avatar className="cursor-pointer">
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem className="text-red-500" onSelect={handleLogout}>
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </header>
   );
 }

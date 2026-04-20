@@ -1,38 +1,40 @@
-import api from "./client";
 import axios from "axios";
-import { DashboardData, HeatmapCell } from "@/models";
-import { ApiError } from "./types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+
+export type ActivityStats = {
+  total_events: number;
+  this_week: number;
+  this_month: number;
+  trend_percentage: number;
+};
+
+export type DashboardEvent = {
+  id: number;
+  title: string;
+  scheduled_at: string;
+  context_category?: number | null;
+};
+
+export type DecayContact = {
+  contact_id: number;
+  first_name: string;
+  last_name: string;
+  days_since_last_event: number;
+};
+
+export type DashboardData = {
+  activity_stats: ActivityStats;
+  recent_events: DashboardEvent[];
+  upcoming_events: DashboardEvent[];
+  decay_radar: DecayContact[];
+};
+
 
 export const dashboardApi = {
   async get(): Promise<DashboardData> {
-    try {
-      const res = await api.get("/dashboard");
-      return res.data;
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        throw {
-          message: "Failed to fetch dashboard",
-          status: err.response?.status,
-        } as ApiError;
-      }
-      throw { message: "Unknown error" } as ApiError;
-    }
-  },
-
-  async getHeatmap(range: string): Promise<HeatmapCell[]> {
-    try {
-      const res = await api.get("/dashboard/heatmap", {
-        params: { range },
-      });
-      return res.data;
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        throw {
-          message: "Failed to fetch heatmap",
-          status: err.response?.status,
-        } as ApiError;
-      }
-      throw { message: "Unknown error" } as ApiError;
-    }
+    const res = await axios.get(`${API_URL}/dashboard/`);
+    return res.data;
   },
 };
