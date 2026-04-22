@@ -9,7 +9,7 @@ export function DecayRadarWidget({ contacts }: { contacts: DecayContact[] }) {
   const router = useRouter();
 
   const sorted = [...contacts].sort(
-    (a, b) => b.days_since_last_event - a.days_since_last_event
+    (a, b) => b.days_since_interaction - a.days_since_interaction
   );
 
   return (
@@ -26,20 +26,22 @@ export function DecayRadarWidget({ contacts }: { contacts: DecayContact[] }) {
         )}
 
         {sorted.map((c) => (
-          <div key={c.contact_id} className="flex justify-between items-center">
+          <div key={c.contact.id} className="flex justify-between items-center">
             <div>
               <p className="font-medium">
-                {c.first_name} {c.last_name}
+                {c.contact.first_name} {c.contact.last_name}
               </p>
               <p className="text-xs text-muted-foreground">
-                {c.days_since_last_event} days ago
+                {c.days_since_interaction === 9999
+                  ? "Never interacted"
+                  : `${c.days_since_interaction} days ago`}
               </p>
             </div>
 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/contacts/${c.contact_id}`)}
+              onClick={() => router.push(`/contacts/${c.contact.id}`)}
             >
               View
             </Button>

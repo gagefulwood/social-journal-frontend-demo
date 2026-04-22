@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import type { DashboardEvent } from "@/models/dashboard";
+import type { EventSummary } from "@/models/events";
 
-export function UpcomingEventsWidget({ events }: { events: DashboardEvent[] }) {
+export function UpcomingEventsWidget({ events }: { events: EventSummary[] }) {
   return (
     <Card>
       <CardHeader>
@@ -19,8 +19,13 @@ export function UpcomingEventsWidget({ events }: { events: DashboardEvent[] }) {
           <div key={event.id}>
             <p className="font-medium">{event.title}</p>
             <p className="text-sm text-muted-foreground">
-              {new Date(event.scheduled_at).toLocaleDateString()}
+              {new Date(event.event_timestamp).toLocaleDateString()}
             </p>
+            {event.context_category && (
+              <span className="text-xs text-muted-foreground">
+                {event.context_category.name}
+              </span>
+            )}
           </div>
         ))}
       </CardContent>

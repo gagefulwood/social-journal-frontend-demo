@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { Contact } from "@/lib/api/contactsApi";
+import type { ContactSummary } from "@/models/contacts";
 
 type Props = {
-  contact: Contact;
+  contact: ContactSummary;
 };
 
 export function ContactCard({ contact }: Props) {
@@ -22,12 +22,6 @@ export function ContactCard({ contact }: Props) {
             <h3 className="font-semibold">
               {contact.first_name} {contact.last_name}
             </h3>
-
-            {contact.nickname && (
-              <p className="text-sm text-gray-500">
-                {contact.nickname}
-              </p>
-            )}
 
             {contact.email && (
               <p className="text-xs text-gray-400">

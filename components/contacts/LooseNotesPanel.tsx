@@ -3,18 +3,14 @@
 import { useEffect, useState } from "react";
 import { contactsApi } from "@/lib/api/contactsApi";
 import EmptyState from "@/components/EmptyState";
-
-type Note = {
-  id: number;
-  body: string;
-};
+import type { ContactLooseNote } from "@/models/contacts";
 
 export default function LooseNotesPanel({
   contactId,
 }: {
-  contactId: number;
+  contactId: string;
 }) {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<ContactLooseNote[]>([]);
   const [text, setText] = useState("");
 
   useEffect(() => {
@@ -29,27 +25,28 @@ export default function LooseNotesPanel({
   const addNote = async () => {
     if (!text.trim()) return;
 
-    await contactsApi.createNote({
-      contact: contactId,
-      body: text,
-    });
-
+    await contactsApi.createNote(contactId, { body: text });
     setText("");
 
     const data = await contactsApi.listNotes(contactId);
     setNotes(data);
   };
 
+  const activeNotes = notes.filter((n) => n.is_active);
+
   return (
     <div className="bg-white p-4 rounded shadow">
       <h3 className="font-semibold mb-2">Notes</h3>
 
-      {notes.length === 0 ? (
+      {activeNotes.length === 0 ? (
         <EmptyState title="No notes yet" />
       ) : (
-        notes.map((n) => (
+        activeNotes.map((n) => (
           <div key={n.id} className="p-2 bg-gray-50 rounded mb-1">
-            {n.body}
+            <p className="text-sm">{n.body}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {new Date(n.created_timestamp).toLocaleDateString()}
+            </p>
           </div>
         ))
       )}

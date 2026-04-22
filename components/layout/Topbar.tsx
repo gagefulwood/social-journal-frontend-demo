@@ -10,13 +10,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authApi } from "@/lib/auth/authApi";
+import { clearAuth } from "@/lib/auth/auth-utils";
+import Cookies from "js-cookie";
 
 interface TopbarProps {
   title: string;
 }
 
 export function Topbar({ title }: TopbarProps) {
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   const initials = user
@@ -24,9 +26,17 @@ export function Topbar({ title }: TopbarProps) {
     : "?";
 
   const handleLogout = async () => {
-    await authApi.logout();
-    await logout();
-    router.push("/auth/login");
+    try {
+      const refreshToken = Cookies.get("refreshToken");
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
+    } catch {
+      // Continue with local logout even if blacklist request fails
+    } finally {
+      clearAuth();
+      router.push("/auth/login");
+    }
   };
 
   return (

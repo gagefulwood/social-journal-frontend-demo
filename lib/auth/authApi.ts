@@ -32,13 +32,14 @@ export const authApi = {
     return res.data;
   },
 
-  async verifyMFA(totp_code: string): Promise<void> {
+  async verifyMFA(totp_code: string): Promise<{ access: string; refresh: string; detail: string}> {
     /**
      * POST /api/auth/mfa/verify/
      * Verifies a TOTP code against the user's stored mfa_secret.
      * Requires IsAuthenticated (call with a valid access token in header)
      */
-    await api.post('/api/auth/mfa/verify/', { totp_code });
+    const res = await api.post('/api/auth/mfa/verify/', { totp_code });
+    return res.data;
   },
 
   async logout(refresh: string): Promise<void> {

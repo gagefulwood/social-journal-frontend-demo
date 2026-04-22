@@ -31,7 +31,7 @@ export type ContextCategory = {
 };
 
 export interface DetailCategory {
-  id: string;
+  id: number;
   name: string;
   icon_reference?: string | null;
   parent?: number | null;

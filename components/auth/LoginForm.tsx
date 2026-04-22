@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/auth/authApi";
+import { setAuth } from "@/lib/auth/auth-utils";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -16,7 +17,8 @@ export default function LoginForm() {
     setError("");
 
     try {
-      await authApi.login(identifier, password);
+      const tokens = await authApi.login(identifier, password);
+      setAuth(tokens.access, tokens.refresh);
       router.push("/dashboard");
     } catch {
       setError("Invalid email/username or password. Please try again.");

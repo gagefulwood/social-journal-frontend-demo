@@ -9,7 +9,7 @@ export function TrustScoreSlider({
   contactId,
   value,
 }: {
-  contactId: number;
+  contactId: string;
   value: number;
 }) {
   const [localValue, setLocalValue] = useState(value);

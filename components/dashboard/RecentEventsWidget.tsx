@@ -1,8 +1,8 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { DashboardEvent } from "@/models/dashboard";
+import type { EventSummary } from "@/models/events";
 
-export function RecentEventsWidget({ events }: { events: DashboardEvent[] }) {
+export function RecentEventsWidget({ events }: { events: EventSummary[] }) {
   return (
     <Card>
       <CardHeader>
@@ -21,7 +21,7 @@ export function RecentEventsWidget({ events }: { events: DashboardEvent[] }) {
             <div>
               <p className="text-sm font-medium">{event.title}</p>
               <p className="text-xs text-muted-foreground">
-                {new Date(event.scheduled_at).toLocaleDateString("en-US", {
+                {new Date(event.event_timestamp).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })}
@@ -29,7 +29,7 @@ export function RecentEventsWidget({ events }: { events: DashboardEvent[] }) {
             </div>
 
             {event.context_category && (
-              <Badge variant="outline">{event.context_category}</Badge>
+              <Badge variant="outline">{event.context_category.name}</Badge>
             )}
           </div>
         ))}

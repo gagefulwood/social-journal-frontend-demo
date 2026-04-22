@@ -1,6 +1,6 @@
 "use client";
 
-import { useContacts } from "@/lib/hooks/useContacts";
+import { useEffect } from "react";
 import { useContactsStore } from "@/store/useContactsStore";
 import { ContactCard } from "@/components/contacts/ContactCard";
 import { ContactSearchBar } from "@/components/contacts/ContactSearchBar";
@@ -9,13 +9,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
 export default function ContactsPage() {
-  const { contacts, isLoading, error } = useContacts();
-  const setFilter = useContactsStore((s) => s.setFilter);
+  const { contacts, isLoading, error, fetchContacts, setFilter } =
+    useContactsStore();
+
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <ContactSearchBar onSearch={(q) => setFilter({ search: q })} />
+        <ContactSearchBar onSearch={(q) => setFilter({ name: q })} />
         <Button asChild>
           <Link href="/contacts/new">New Contact</Link>
         </Button>
@@ -38,7 +42,7 @@ export default function ContactsPage() {
       )}
 
       {!isLoading && contacts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols:3 gap-4">
           {contacts.map((c) => (
             <ContactCard key={c.id} contact={c} />
           ))}

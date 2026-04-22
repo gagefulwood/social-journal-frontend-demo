@@ -14,16 +14,17 @@ export function setAuth(
 ) {
   const { login } = useAuthStore.getState();
 
-  // Store tokens in cookies
   Cookies.set("accessToken", accessToken, {
-    sameSite: "strict",
-    maxAge: 3600, // 1 hour
+    expires: 1/24,        // 1 hour — js-cookie uses days, so 1/24 = 1 hour
+    sameSite: "lax",      // strict blocks cookies on redirect
+    path: "/",
   });
 
   if (refreshToken) {
     Cookies.set("refreshToken", refreshToken, {
-      sameSite: "strict",
-      maxAge: 3600 * 168 // 7 days
+      expires: 7,         // 7 days
+      sameSite: "lax",
+      path: "/",
     });
   }
 
@@ -33,8 +34,8 @@ export function setAuth(
 export function clearAuth() {
   const { logout } = useAuthStore.getState();
 
-  Cookies.remove("accessToken");
-  Cookies.remove("refreshToken");
+  Cookies.remove("accessToken", { path: "/" });
+  Cookies.remove("refreshToken", { path: "/" });
   logout();
 }
 
@@ -44,7 +45,7 @@ export async function tokenRefresh(): Promise<string | null> {
     if (!refreshToken) return null;
 
     const res = await axios.post(
-      `${API_URL}/api/auth/token/refresh`,
+      `${API_URL}/api/auth/token/refresh/`,
       { refresh: refreshToken },
     );
 
@@ -52,8 +53,9 @@ export async function tokenRefresh(): Promise<string | null> {
     if (!newAccessToken) return null;
 
     Cookies.set("accessToken", newAccessToken, {
-      sameSite: "strict",
-      maxAge: 3600, // 1 hour
+      expires: 1/24,
+      sameSite: "lax",
+      path: "/",
     });
 
     return newAccessToken;

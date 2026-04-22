@@ -9,8 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-
 import { eventsApi } from "@/lib/api/eventsApi";
 
 interface Props {
@@ -19,34 +17,29 @@ interface Props {
   onSuccess: () => void;
 }
 
-export function EventCreateDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-}: Props) {
+export function EventCreateDialog({ open, onOpenChange, onSuccess }: Props) {
   const [title, setTitle] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
-  const [notes, setNotes] = useState("");
+  const [eventTimestamp, setEventTimestamp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!title || !scheduledAt) return;
+    if (!title || !eventTimestamp) return;
 
     try {
       setLoading(true);
+      setError(null);
 
       await eventsApi.create({
         title,
-        scheduled_at: scheduledAt,
-        notes,
+        event_timestamp: new Date(eventTimestamp).toISOString(),
       });
 
       onSuccess();
       setTitle("");
-      setScheduledAt("");
-      setNotes("");
+      setEventTimestamp("");
     } catch {
-      console.error("Failed to create event");
+      setError("Failed to create event. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -69,17 +62,13 @@ export function EventCreateDialog({
           <input
             type="datetime-local"
             className="border rounded px-3 py-2 w-full"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
+            value={eventTimestamp}
+            onChange={(e) => setEventTimestamp(e.target.value)}
           />
 
-          <Textarea
-            placeholder="Notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button onClick={handleSubmit} disabled={loading || !title || !eventTimestamp}>
             {loading ? "Saving..." : "Save Event"}
           </Button>
         </div>
