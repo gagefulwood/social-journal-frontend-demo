@@ -7,7 +7,7 @@ import { authApi } from "@/lib/auth/authApi";
 export default function LoginForm() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
@@ -16,10 +16,10 @@ export default function LoginForm() {
     setError("");
 
     try {
-      await authApi.login(username, password);
+      await authApi.login(identifier, password);
       router.push("/dashboard");
     } catch {
-      setError("Login failed");
+      setError("Invalid email/username or password. Please try again.");
     }
   };
 
@@ -29,10 +29,10 @@ export default function LoginForm() {
 
       <input
         type="text"
-        placeholder="Username"
+        placeholder="Email or Username"
         className="border p-2 rounded"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
       />
 
       <input
