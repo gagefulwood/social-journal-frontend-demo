@@ -1,48 +1,57 @@
-export type Occupation =
-  | "Student"
-  | "Engineer"
-  | "Designer"
-  | "Manager"
-  | "Other";
+export type Occupation = {
+  id: number;
+  name: string;
+  is_system_default: boolean;
+};
 
-export type EducationLevel =
-  | "HighSchool"
-  | "Bachelors"
-  | "Masters"
-  | "PhD"
-  | "Other";
+export type EducationLevel = {
+  id: number;
+  name: string;
+  is_system_default: boolean;
+};
 
-export type ClosenessScore = number;
 
-export type Mood =
-  | "Happy"
-  | "Neutral"
-  | "Sad"
-  | "Excited"
-  | "Stressed";
+export type ClosenessScore = {
+  id: number;
+  name: string;
+}
 
-export type ContextCategory =
-  | "Work"
-  | "Family"
-  | "Friends"
-  | "Networking"
-  | "Other";
+export type Mood ={
+  id: number;
+  name: string;
+  emoji_icon: string;
+  is_system_default: boolean;
+};
 
+export type ContextCategory = {
+  id: number;
+  name: string;
+  color: string;
+  is_system_default: boolean;
+};
 
 export interface DetailCategory {
   id: string;
   name: string;
-  children?: DetailCategory[];
-}
+  icon_reference?: string | null;
+  parent?: number | null;
+};
 
-export type NoteMarker =
-  | "Important"
-  | "FollowUp"
-  | "Idea"
-  | "Reminder";
+export type NoteMarker = {
+  id: number;
+  name: string;
+  color_hex: string;
+  icon_reference?: string | null;
+  is_system_default: boolean;
+};
 
-export type MediaType =
-  | "Image"
-  | "Video"
-  | "Audio"
-  | "Document";
+export type MediaType = {
+  id: number;
+  name: string;
+};
+
+export type JournalTag = {
+  id: number;
+  tag_name: string;
+  is_system_default: boolean;
+};

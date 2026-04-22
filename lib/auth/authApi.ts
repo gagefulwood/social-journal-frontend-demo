@@ -1,44 +1,10 @@
-import axios from "axios";
+import api from "@/lib/api/client";
+import type {
+  User,
+  RegisterPayload,
+  LoginResponse,
+} from "@/types/auth";
 
-export type AuthTokens = {
-  access: string;
-  refresh: string;
-};
-
-export type User = {
-  id: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  is_mfa_enabled: boolean;
-  auth_provider: string;
-};
-
-export type LoginPayload = {
-  identifier: string;
-  password: string;
-};
-
-export type RegisterPayload = {
-  first_name: string;
-  last_name: string;
-  username: string;
-  email: string;
-  password: string;
-  password_confirm: string;
-  phone_number?: string;
-};
-
-export type LoginResponse = {
-  access: string;
-  refresh: string;
-};
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api",
-  withCredentials: true,
-});
 
 export const authApi = {
   
@@ -49,7 +15,7 @@ export const authApi = {
     * Accepts email or username as the identifier for login
     * Returns access and refresh JWT tokens
     */
-    const res = await api.post<LoginResponse>("/auth/token/", {
+    const res = await api.post<LoginResponse>("/api/auth/token/", {
       identifier,
       password,
     });
@@ -62,7 +28,7 @@ export const authApi = {
      * Creates a new user account.
      * Returns the created user's public fields.
      */
-    const res = await api.post<User>("/auth/register/", payload);
+    const res = await api.post<User>("/api/auth/register/", payload);
     return res.data;
   },
 
@@ -72,7 +38,7 @@ export const authApi = {
      * Verifies a TOTP code against the user's stored mfa_secret.
      * Requires IsAuthenticated (call with a valid access token in header)
      */
-    await api.post('/auth/mfa/verify/', { totp_code });
+    await api.post('/api/auth/mfa/verify/', { totp_code });
   },
 
   async logout(refresh: string): Promise<void> {
@@ -81,7 +47,7 @@ export const authApi = {
      * Blacklists the refresh token.
      * Requires the refresh token in the request body.
      */
-    await api.post("/auth/logout/", { refresh });
+    await api.post("/api/auth/logout/", { refresh });
   },
 
   async getProfile(): Promise<User> {
@@ -89,7 +55,7 @@ export const authApi = {
      * GET /api/users/me/
      * Returns the authenticated user's public profile fields.
      */
-    const res = await api.get<User>("/users/me/");
+    const res = await api.get<User>("/api/users/me/");
     return res.data;
   },
 };

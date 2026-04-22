@@ -5,13 +5,21 @@ import {
   ContextCategory,
   NoteMarker,
   Occupation,
-} from "@/models";
+  EducationLevel,
+  DetailCategory,
+  MediaType,
+  JournalTag,
+} from "@/models/lookup";
 
 interface LookupState {
   moods: Mood[];
   categories: ContextCategory[];
   markers: NoteMarker[];
   occupations: Occupation[];
+  educationLevels: EducationLevel[];
+  detailCategories: DetailCategory[];
+  mediaTypes: MediaType[];
+  journalTags: JournalTag[];
 
   isLoading: boolean;
   error: string | null;
@@ -24,6 +32,10 @@ export const useLookupStore = create<LookupState>((set) => ({
   categories: [],
   markers: [],
   occupations: [],
+  educationLevels: [],
+  detailCategories: [],
+  mediaTypes: [],
+  journalTags: [],
 
   isLoading: false,
   error: null,
@@ -39,6 +51,10 @@ export const useLookupStore = create<LookupState>((set) => ({
         categories: data.contexts,
         markers: data.noteMarkers,
         occupations: data.occupations,
+        educationLevels: data.educationLevels,
+        detailCategories: data.detailCategories,
+        mediaTypes: data.mediaTypes,
+        journalTags: data.journalTags,
         isLoading: false,
       });
     } catch (err) {

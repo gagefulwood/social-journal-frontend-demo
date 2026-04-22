@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { contactsApi } from "@/lib/api/contactsApi";
-import { Contact } from "@/lib/api/contactsApi";
+import { Contact } from "@/models/contacts";
 
 export function useContact(id: string) {
   const [contact, setContact] = useState<Contact | null>(null);
@@ -17,7 +17,7 @@ export function useContact(id: string) {
       setError(null);
 
       try {
-        const data = await contactsApi.get(Number(id));
+        const data = await contactsApi.get(id);
         setContact(data);
       } catch (err: unknown) {
         if (err instanceof Error) {

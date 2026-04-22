@@ -1,23 +1,53 @@
-export interface Event {
-  id: number;
+import type { ContextCategory, Mood, JournalTag } from './lookup';
+import type { ContactSummary } from './contacts';
+
+export type EventParticipant = {
+  id: string;
+  contact: ContactSummary;
+};
+
+export type Event = {
+  id: string;
+  user: string;
   title: string;
-  scheduled_at: string;
-  notes?: string;
-  context_category?: number | null;
-  mood?: number | null;
-}
+  event_timestamp: string; // ISO datetime
+  context_category?: ContextCategory | null;
+  participants: EventParticipant[];
+};
 
+// Lightweight version returned by GET /api/events/ list view
+export type EventSummary = {
+  id: string;
+  title: string;
+  event_timestamp: string;
+  context_category?: ContextCategory | null;
+  participant_count: number;
+};
 
-export interface JournalEntry {
-  id: number;
+export type JournalEntry = {
+  id: string;
+  event?: string | null;
+  user: string;
   title: string;
   body: string;
+  mood?: Mood | null;
+  tags: JournalTag[];
+  entry_timestamp: string;
   is_immutable: boolean;
-  created_at: string;
-}
+};
 
-export interface JournalEntryPreview {
-  id: number;
+// Lightweight version returned by GET /api/journal/entries/ list view
+export type JournalEntryPreview = {
+  id: string;
   title: string;
-  created_at: string;
-}
+  entry_timestamp: string;
+  mood?: Mood | null;
+  tags: JournalTag[];
+};
+
+export type Reflection = {
+  id: string;
+  journal_entry: string;
+  body: string;
+  created_timestamp: string;
+};

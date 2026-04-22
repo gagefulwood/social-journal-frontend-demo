@@ -1,28 +1,19 @@
-export type ActivityStats = {
-  total_events: number;
-  this_week: number;
-  this_month: number;
-  trend_percentage: number;
-};
+import type { EventSummary } from './events';
+import type { ContactSummary } from './contacts';
 
-export type DashboardEvent = {
-  id: number;
-  title: string;
-  scheduled_at: string;
-  context_category?: number | null;
-  mood?: string | null;
+export type ActivityStats = {
+  total_this_month: number;
+  trend_percent: number;
 };
 
 export type DecayContact = {
-  contact_id: number;
-  first_name: string;
-  last_name: string;
-  days_since_last_event: number;
+  contact: ContactSummary;
+  days_since_interaction: number;
 };
 
 export type DashboardData = {
   activity_stats: ActivityStats;
-  recent_events: DashboardEvent[];
-  upcoming_events: DashboardEvent[];
+  recent_events: EventSummary[];
+  upcoming_events: EventSummary[];
   decay_radar: DecayContact[];
 };

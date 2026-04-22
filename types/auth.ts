@@ -1,7 +1,7 @@
 // types/auth.ts
 
 export type User = {
-  id: number;
+  id: string;
   username: string;
   email: string;
   first_name: string;
@@ -18,12 +18,21 @@ export type AuthTokens = {
 };
 
 export type LoginPayload = {
-  username: string;
+  identifier: string;
   password: string;
 };
 
 export type RegisterPayload = {
+  first_name: string;
+  last_name: string;
   username: string;
   email: string;
   password: string;
+  password_confirm: string;
+  phone_number?: string;
+};
+
+export type LoginResponse = {
+  access: string;
+  refresh: string;
 };

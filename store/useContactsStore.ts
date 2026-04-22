@@ -1,14 +1,16 @@
 import { create } from "zustand";
-import { contactsApi, Contact } from "@/lib/api/contactsApi";
+import { contactsApi } from "@/lib/api/contactsApi";
+import type { ContactSummary } from "@/models/contacts";
 
 type Filters = {
-  search?: string;
+  name?: string;
+  occupation_id?: number;
+  closeness_score_id?: number;
 };
 
 interface ContactsState {
-  contacts: Contact[];
+  contacts: ContactSummary[];
   filters: Filters;
-
   isLoading: boolean;
   error: string | null;
 
@@ -19,7 +21,6 @@ interface ContactsState {
 export const useContactsStore = create<ContactsState>((set, get) => ({
   contacts: [],
   filters: {},
-
   isLoading: false,
   error: null,
 
@@ -28,16 +29,10 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
 
     try {
       const data = await contactsApi.list(get().filters);
-      set({ contacts: data, isLoading: false });
+      set({ contacts: data.results, isLoading: false });
     } catch (err: unknown) {
-      let message = "Failed to fetch contacts";
-
-      if (err instanceof Error) {
-        message = err.message;
-      }
-
       set({
-        error: message,
+        error: err instanceof Error ? err.message : "Failed to fetch contacts",
         isLoading: false,
       });
     }
@@ -46,7 +41,6 @@ export const useContactsStore = create<ContactsState>((set, get) => ({
   setFilter: (newFilters) => {
     const updated = { ...get().filters, ...newFilters };
     set({ filters: updated });
-
     get().fetchContacts();
   },
 }));

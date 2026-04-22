@@ -1,5 +1,5 @@
 import api from "./client";
-import {
+import type {
   Occupation,
   EducationLevel,
   Mood,
@@ -7,7 +7,8 @@ import {
   DetailCategory,
   NoteMarker,
   MediaType,
-} from "@/models";
+  JournalTag,
+} from "@/models/lookup";
 import { ApiError } from "./types";
 
 export const lookupsApi = {
@@ -23,7 +24,7 @@ export const lookupsApi = {
     detailCategories: DetailCategory[];
     noteMarkers: NoteMarker[];
     mediaTypes: MediaType[];
-    journalTags: { id: number; tag_name: string }[];
+    journalTags: JournalTag[];
   }> {
     try {
       const [

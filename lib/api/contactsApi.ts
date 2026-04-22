@@ -1,58 +1,5 @@
 import api from "@/lib/api/client";
-import type { ContactDetail } from "@/models/contactDetails";
-
-// Types
-
-export type Contact = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  middle_name?: string | null;
-  email?: string | null;
-  phone_number?: string | null;
-  address?: string | null;
-  birthday?: string | null;
-  first_met_date?: string | null;
-  occupation?: number | null;
-  custom_occupation?: string | null;
-  company?: string | null;
-  education_level?: number | null;
-  custom_education_level?: string | null;
-  school?: string | null;
-  trust_score: number;
-  closeness_score?: {
-    id: number;
-    name: string;
-  } | null;
-};
-
-export type ContactListItem = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email?: string | null;
-  phone_number?: string | null;
-  trust_score: number;
-  closeness_score?: {
-    id: number;
-    name: string;
-  } | null;
-};
-
-export type Note = {
-  id: string;
-  body: string;
-  marker?: string | null;
-  created_timestamp: string;
-  is_active: boolean;
-};
-
-export type Event = {
-  id: number;
-  title: string;
-  scheduled_at: string;
-  mood?: string | null;
-};
+import type { Contact, ContactSummary, ContactLooseNote, ContactPersonalDetail } from "@/models/contacts";
 
 // Contacts API
 
@@ -66,7 +13,7 @@ export const contactsApi = {
     name?: string;
     occupation_id?: number;
     closeness_score_id?: number;
-  }): Promise<{ count: number; results: ContactListItem[] }> {
+  }): Promise<{ count: number; results: ContactSummary[] }> {
     const res = await api.get('/api/contacts/', { params: filters });
     return res.data;
   },
@@ -108,7 +55,7 @@ export const contactsApi = {
    * GET /api/contacts/{contactId}/details/
    * Returns all personal detail rows for a contact.
    */
-  async listDetails(contactId: string): Promise<ContactDetail[]> {
+  async listDetails(contactId: string): Promise<ContactPersonalDetail[]> {
     const res = await api.get(`/api/contacts/${contactId}/details/`);
     return res.data;
   },
@@ -120,7 +67,7 @@ export const contactsApi = {
   async createDetail(
     contactId: string,
     data: { category: number; detail_value: string }
-  ): Promise<ContactDetail> {
+  ): Promise<ContactPersonalDetail> {
     const res = await api.post(`/api/contacts/${contactId}/details/`, data);
     return res.data;
   },
@@ -133,7 +80,7 @@ export const contactsApi = {
     contactId: string,
     detailId: string,
     data: { detail_value: string }
-  ): Promise<ContactDetail> {
+  ): Promise<ContactPersonalDetail> {
     const res = await api.patch(
       `/api/contacts/${contactId}/details/${detailId}/`,
       data
@@ -154,7 +101,7 @@ export const contactsApi = {
    * GET /api/contacts/{contactId}/notes/
    * Returns all loose notes for a contact.
    */
-  async listNotes(contactId: string): Promise<Note[]> {
+  async listNotes(contactId: string): Promise<ContactLooseNote[]> {
     const res = await api.get(`/api/contacts/${contactId}/notes/`);
     return res.data;
   },
@@ -166,7 +113,7 @@ export const contactsApi = {
   async createNote(
     contactId: string,
     data: { marker?: number; body: string }
-  ): Promise<Note> {
+  ): Promise<ContactLooseNote> {
     const res = await api.post(`/api/contacts/${contactId}/notes/`, data);
     return res.data;
   },
@@ -179,7 +126,7 @@ export const contactsApi = {
     contactId: string,
     noteId: string,
     data: { body?: string; is_active?: boolean }
-  ): Promise<Note> {
+  ): Promise<ContactLooseNote> {
     const res = await api.patch(
       `/api/contacts/${contactId}/notes/${noteId}/`,
       data
@@ -194,11 +141,3 @@ export const contactsApi = {
     await api.delete(`/api/contacts/${contactId}/notes/${noteId}/`);
   },
 };
-  /** temporarily took out until api is updated to accomodate
-   async listEvents(contactId: number): Promise<Event[]> {
-    const res = await axios.get(`${API_URL}/events`, {
-      params: { contact: contactId, limit: 5 },
-    });
-    return res.data;
-  },
-   */
