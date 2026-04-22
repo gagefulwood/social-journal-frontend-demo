@@ -1,5 +1,4 @@
 import api from "./client";
-import axios from "axios";
 import {
   Occupation,
   EducationLevel,
@@ -12,6 +11,10 @@ import {
 import { ApiError } from "./types";
 
 export const lookupsApi = {
+  /**
+   * Fetches all lookup tables in parallel.
+   * Called once when the app loads and is stored in useLookupStore.
+   */
   async getAll(): Promise<{
     occupations: Occupation[];
     educationLevels: EducationLevel[];
@@ -20,6 +23,7 @@ export const lookupsApi = {
     detailCategories: DetailCategory[];
     noteMarkers: NoteMarker[];
     mediaTypes: MediaType[];
+    journalTags: { id: number; tag_name: string }[];
   }> {
     try {
       const [
@@ -30,14 +34,16 @@ export const lookupsApi = {
         detailCategories,
         noteMarkers,
         mediaTypes,
+        journalTags,
       ] = await Promise.all([
-        api.get("/lookups/occupations"),
-        api.get("/lookups/education-levels"),
-        api.get("/lookups/moods"),
-        api.get("/lookups/context-categories"),
-        api.get("/lookups/detail-categories"),
-        api.get("/lookups/note-markers"),
-        api.get("/lookups/media-types"),
+        api.get("/api/lookups/occupations/"),
+        api.get("/api/lookups/education-levels/"),
+        api.get("/api/lookups/moods/"),
+        api.get("/api/lookups/context-categories/"),
+        api.get("/api/lookups/detail-categories/"),
+        api.get("/api/lookups/note-markers/"),
+        api.get("/api/lookups/media-types/"),
+        api.get("/api/lookups/journal-tags/"),
       ]);
 
       return {
@@ -48,15 +54,13 @@ export const lookupsApi = {
         detailCategories: detailCategories.data,
         noteMarkers: noteMarkers.data,
         mediaTypes: mediaTypes.data,
+        journalTags: journalTags.data,
       };
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        throw {
-          message: "Failed to fetch lookups",
-          status: err.response?.status,
-        } as ApiError;
-      }
-      throw { message: "Unknown error" } as ApiError;
+      throw {
+        message: "Failed to fetch lookups",
+        status: (err as { response?: {status?: number } }).response?.status,
+      } as ApiError;
     }
   },
 };
