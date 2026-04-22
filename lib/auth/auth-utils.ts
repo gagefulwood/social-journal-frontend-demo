@@ -11,22 +11,31 @@ export function setAuth(
   accessToken: string,
   refreshToken?: string,
   user?: User,
-  mfaToken?: string
 ) {
   const { login } = useAuthStore.getState();
 
-  login(accessToken, refreshToken, user, mfaToken);
+  // Store tokens in cookies
+  Cookies.set("accessToken", accessToken, {
+    sameSite: "strict",
+    maxAge: 3600, // 1 hour
+  });
 
   if (refreshToken) {
-    Cookies.set("refreshToken", refreshToken);
+    Cookies.set("refreshToken", refreshToken, {
+      sameSite: "strict",
+      maxAge: 3600 * 168 // 7 days
+    });
   }
+
+  login(accessToken, refreshToken, user);
 }
 
 export function clearAuth() {
   const { logout } = useAuthStore.getState();
 
-  logout();
+  Cookies.remove("accessToken");
   Cookies.remove("refreshToken");
+  logout();
 }
 
 export async function tokenRefresh(): Promise<string | null> {
@@ -34,17 +43,20 @@ export async function tokenRefresh(): Promise<string | null> {
     const refreshToken = Cookies.get("refreshToken");
     if (!refreshToken) return null;
 
-    const res = await axios.post(`${API_URL}/auth/refresh`, {
-      refresh: refreshToken,
+    const res = await axios.post(
+      `${API_URL}/api/auth/token/refresh`,
+      { refresh: refreshToken },
+    );
+
+    const newAccessToken = res.data.access;
+    if (!newAccessToken) return null;
+
+    Cookies.set("accessToken", newAccessToken, {
+      sameSite: "strict",
+      maxAge: 3600, // 1 hour
     });
 
-    const { access, user } = res.data;
-
-    if (!access) return null;
-
-    setAuth(access, refreshToken, user);
-
-    return access;
+    return newAccessToken;
   } catch {
     clearAuth();
     return null;

@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -7,6 +8,16 @@ const api = axios.create({
   withCredentials: true, 
 });
 
+// Request Interceptor (attached Bearer token to every outgoing request)
+api.interceptors.request.use((config) => {
+  const token = Cookies.get("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response Interceptor (attempts silent token refresh then retry on 401)
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -20,17 +31,26 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
+        const refreshToken = Cookies.get("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token available");
 
-        await axios.post(
-          `${API_URL}/auth/refresh`,
-          {},
+        const res = await axios.post(
+           `${API_URL}/api/auth/token/refresh/`,
+          { refresh: refreshToken},
           { withCredentials: true }
         );
 
+        const newAccessToken = res.data.access;
+        Cookies.set("accessToken", newAccessToken, { sameSite: "strict"});
 
+        // Retry the origin request with the new token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (err) {
-
+        // Refresh failed (clear tokens and redirect to login)
+        Cookies.remove("accessToken");
+        Cookies.remove("refreshToken");
+        
         if (typeof window !== "undefined") {
           window.location.href = "/auth/login";
         }
