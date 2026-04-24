@@ -12,7 +12,7 @@ export const journalApi = {
     entry_timestamp_before?: string;
   }): Promise<{ count: number; results: JournalEntryPreview[] }> {
     const res = await api.get<{ count: number; results: JournalEntryPreview[] }>(
-      "/api/journal/entries/",
+      "/api/journals/",
       { params }
     );
     return res.data;
@@ -23,7 +23,7 @@ export const journalApi = {
    * Returns full detail for a single journal entry.
    */
   async get(id: string): Promise<JournalEntry> {
-    const res = await api.get<JournalEntry>(`/api/journal/entries/${id}/`);
+    const res = await api.get<JournalEntry>(`/api/journals/${id}/`);
     return res.data;
   },
 
@@ -38,7 +38,7 @@ export const journalApi = {
     mood?: number | null;
     tags?: number[];
   }): Promise<JournalEntry> {
-    const res = await api.post<JournalEntry>("/api/journal/entries/", data);
+    const res = await api.post<JournalEntry>("/api/journals/", data);
     return res.data;
   },
 
@@ -51,7 +51,7 @@ export const journalApi = {
     mood?: number | null;
     tags?: number[];
   }): Promise<JournalEntry> {
-    const res = await api.patch<JournalEntry>(`/api/journal/entries/${id}/`, data);
+    const res = await api.patch<JournalEntry>(`/api/journals/${id}/`, data);
     return res.data;
   },
 
@@ -61,7 +61,7 @@ export const journalApi = {
    */
   async listReflections(entryId: string): Promise<Reflection[]> {
     const res = await api.get<Reflection[]>(
-      `/api/journal/entries/${entryId}/reflections/`
+      `/api/journals/${entryId}/reflections/`
     );
     return res.data;
   },
@@ -72,7 +72,7 @@ export const journalApi = {
    */
   async createReflection(entryId: string, data: { body: string }): Promise<Reflection> {
     const res = await api.post<Reflection>(
-      `/api/journal/entries/${entryId}/reflections/`,
+      `/api/journals/${entryId}/reflections/`,
       data
     );
     return res.data;
