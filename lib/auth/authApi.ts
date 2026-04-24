@@ -56,7 +56,7 @@ export const authApi = {
      * GET /api/users/me/
      * Returns the authenticated user's public profile fields.
      */
-    const res = await api.get<User>("/api/users/me/");
+    const res = await api.get<User>("/api/auth/me/");
     return res.data;
   },
 };
