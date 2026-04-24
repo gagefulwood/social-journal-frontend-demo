@@ -30,11 +30,13 @@ export type ContextCategory = {
   is_system_default: boolean;
 };
 
-export interface DetailCategory {
+export type DetailCategory = {
   id: number;
   name: string;
   icon_reference?: string | null;
   parent?: number | null;
+  is_system_default: boolean;
+  children: DetailCategory[];
 };
 
 export type NoteMarker = {
