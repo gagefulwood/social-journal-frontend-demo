@@ -9,6 +9,15 @@ interface MFASetupCardProps {
 }
 
 export const MFASetupCard: React.FC<MFASetupCardProps> = ({ qrCodeUri, manualKey }) => {
+  if (!qrCodeUri || !manualKey) {
+    return (
+      <div className="p-6 border rounded-lg shadow-md bg-gray-50">
+        <h3 className="font-semibold mb-4">MFA Setup</h3>
+        <p>Loading MFA setup...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 border rounded-lg shadow-md bg-gray-50">
       <h3 className="font-semibold mb-4">MFA Setup</h3>

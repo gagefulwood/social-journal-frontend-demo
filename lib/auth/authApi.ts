@@ -59,4 +59,12 @@ export const authApi = {
     const res = await api.get<User>("/api/auth/me/");
     return res.data;
   },
+
+  async resetPassword(email: string): Promise<void> {
+    /**
+     * POST /api/auth/reset/
+     * Sends a password reset email to the provided email address.
+     */
+    await api.post('/api/auth/reset/', { email });
+  },
 };

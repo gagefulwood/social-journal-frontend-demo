@@ -19,7 +19,7 @@ export default function LoginForm() {
     try {
       const tokens = await authApi.login(identifier, password);
       setAuth(tokens.access, tokens.refresh);
-      router.push("/dashboard");
+      router.push("/dashboard/");
     } catch {
       setError("Invalid email/username or password. Please try again.");
     }
