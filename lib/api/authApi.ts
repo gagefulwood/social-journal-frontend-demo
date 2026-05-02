@@ -1,69 +1,68 @@
 import api from "@/lib/api/client";
 import type {
-  User,
+  AuthMetadata,
+  AuthMetadataResponse,
+  LoginPayload,
+  MFASetupApiResponse,
+  MFASetupResponse,
   RegisterPayload,
-  LoginResponse,
+  UpdateProfilePayload,
+  User,
 } from "@/types/auth";
 
+function mapAuthMetadata(response: AuthMetadataResponse): AuthMetadata {
+  return {
+    userId: response.user_id,
+    email: response.email,
+    username: response.username,
+    isMfaEnabled: response.is_mfa_enabled,
+    mfaPending: response.mfa_pending,
+    role: response.role,
+  };
+}
+
+function mapMFASetupResponse(response: MFASetupApiResponse): MFASetupResponse {
+  return {
+    totpUri: response.otpauth_uri ?? response.totp_uri ?? response.qr_code_uri ?? "",
+    manualKey: response.secret ?? response.manual_key ?? "",
+  };
+}
+
 export const authApi = {
-  
-  async login(identifier: string, password: string): Promise<LoginResponse> {
-    /**
-    * 
-    * POST /api/auth/token/
-    * Accepts email or username as the identifier for login
-    * Returns access and refresh JWT tokens
-    */
-    const res = await api.post<LoginResponse>("/api/auth/token/", {
-      identifier,
-      password,
-    });
-    return res.data;
+  async login(identifier: string, password: string): Promise<AuthMetadata> {
+    const payload: LoginPayload = { identifier, password };
+    const res = await api.post<AuthMetadataResponse>("/api/auth/token/", payload);
+    return mapAuthMetadata(res.data);
   },
 
   async register(payload: RegisterPayload): Promise<User> {
-    /**
-     * POST /api/auth/register/
-     * Creates a new user account.
-     * Returns the created user's public fields.
-     */
     const res = await api.post<User>("/api/auth/register/", payload);
     return res.data;
   },
 
-  async verifyMFA(totp_code: string): Promise<{ access: string; refresh: string; detail: string}> {
-    /**
-     * POST /api/auth/mfa/verify/
-     * Verifies a TOTP code against the user's stored mfa_secret.
-     * Requires IsAuthenticated (call with a valid access token in header)
-     */
-    const res = await api.post('/api/auth/mfa/verify/', { totp_code });
-    return res.data;
+  async verifyMFA(totpCode: string): Promise<AuthMetadata> {
+    const res = await api.post<AuthMetadataResponse>("/api/auth/mfa/verify/", {
+      totp_code: totpCode,
+    });
+    return mapAuthMetadata(res.data);
   },
 
-  async logout(refresh: string): Promise<void> {
-    /**
-     * POST /api/auth/logout/
-     * Blacklists the refresh token.
-     * Requires the refresh token in the request body.
-     */
-    await api.post("/api/auth/logout/", { refresh });
+  async setupMFA(): Promise<MFASetupResponse> {
+    const res = await api.get<MFASetupApiResponse>("/api/auth/mfa/setup/");
+    return mapMFASetupResponse(res.data);
+  },
+
+  async logout(): Promise<void> {
+    await api.post("/api/auth/logout/");
   },
 
   async getProfile(): Promise<User> {
-    /**
-     * GET /api/users/me/
-     * Returns the authenticated user's public profile fields.
-     */
     const res = await api.get<User>("/api/auth/me/");
     return res.data;
   },
 
-  async resetPassword(email: string): Promise<void> {
-    /**
-     * POST /api/auth/reset/
-     * Sends a password reset email to the provided email address.
-     */
-    await api.post('/api/auth/reset/', { email });
+  async patchProfile(payload: UpdateProfilePayload): Promise<User> {
+    const res = await api.patch<User>("/api/auth/me/", payload);
+    return res.data;
   },
 };

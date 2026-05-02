@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/authApi";
-import { setAuth } from "@/lib/auth/auth-utils";
+import { applyAuthMetadata } from "@/lib/auth/auth-utils";
+import type { ApiError } from "@/types/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function MFAVerifyForm() {
   const router = useRouter();
@@ -11,20 +14,19 @@ export function MFAVerifyForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await authApi.verifyMFA(code);
-      // store fresh tokens that don't have mfa_pending=true
-      if (res.access && res.refresh) {
-        setAuth(res.access, res.refresh);
-      }
+      const metadata = await authApi.verifyMFA(code);
+      applyAuthMetadata(metadata);
       router.push("/dashboard");
-    } catch {
-      setError("Invalid code. Please try again.");
+    } catch (err) {
+      const apiError = err as ApiError;
+      setCode("");
+      setError(apiError.message || "Invalid code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -32,24 +34,21 @@ export function MFAVerifyForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
-      <input
+      <Input
         type="text"
+        inputMode="numeric"
         placeholder="6-digit code"
-        className="border p-2 rounded text-center tracking-widest text-lg"
+        className="text-center text-lg tracking-widest"
         value={code}
-        onChange={(e) => setCode(e.target.value)}
+        onChange={(event) => setCode(event.target.value)}
         maxLength={6}
       />
 
-      <button
-        type="submit"
-        disabled={loading || code.length !== 6}
-        className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-      >
+      <Button type="submit" disabled={loading || code.length !== 6}>
         {loading ? "Verifying..." : "Verify"}
-      </button>
+      </Button>
     </form>
   );
 }

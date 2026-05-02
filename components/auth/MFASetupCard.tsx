@@ -1,30 +1,128 @@
-// components/auth/MFASetupCard.tsx
 "use client";
 
-import React from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
+import { authApi } from "@/lib/api/authApi";
+import { applyAuthMetadata } from "@/lib/auth/auth-utils";
+import type { ApiError, MFASetupResponse } from "@/types/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-interface MFASetupCardProps {
-  qrCodeUri: string;
-  manualKey: string;
-}
+export function MFASetupCard() {
+  const router = useRouter();
+  const [setup, setSetup] = useState<MFASetupResponse | null>(null);
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
 
-export const MFASetupCard: React.FC<MFASetupCardProps> = ({ qrCodeUri, manualKey }) => {
-  if (!qrCodeUri || !manualKey) {
-    return (
-      <div className="p-6 border rounded-lg shadow-md bg-gray-50">
-        <h3 className="font-semibold mb-4">MFA Setup</h3>
-        <p>Loading MFA setup...</p>
-      </div>
-    );
-  }
+  const loadSetup = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await authApi.setupMFA();
+      setSetup(data);
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(apiError.message || "Unable to load MFA setup.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const data = await authApi.setupMFA();
+        if (!cancelled) {
+          setSetup(data);
+        }
+      } catch (err) {
+        const apiError = err as ApiError;
+        if (!cancelled) {
+          setError(apiError.message || "Unable to load MFA setup.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleVerify = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setVerifying(true);
+
+    try {
+      const metadata = await authApi.verifyMFA(code);
+      applyAuthMetadata(metadata);
+      router.push("/dashboard");
+    } catch (err) {
+      const apiError = err as ApiError;
+      setCode("");
+      setError(apiError.message || "Invalid code. Please try again.");
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   return (
-    <div className="p-6 border rounded-lg shadow-md bg-gray-50">
-      <h3 className="font-semibold mb-4">MFA Setup</h3>
-      <div className="flex flex-col items-center">
-        <img src={qrCodeUri} alt="QR Code for MFA" className="mb-4 w-48 h-48" />
-        <p className="text-sm break-all">Manual key: <span className="font-mono">{manualKey}</span></p>
-      </div>
+    <div className="rounded-lg border bg-gray-50 p-6 shadow-md">
+      <h3 className="mb-4 font-semibold">MFA Setup</h3>
+
+      {loading && <p className="text-sm text-gray-600">Loading MFA setup...</p>}
+
+      {!loading && error && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-red-500">{error}</p>
+          {!setup && (
+            <Button type="button" variant="outline" onClick={loadSetup}>
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
+
+      {!loading && setup && (
+        <form onSubmit={handleVerify} className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-4">
+            <QRCodeSVG value={setup.totpUri} className="size-48" />
+            <p className="break-all text-sm">
+              Manual key:{" "}
+              <span className="font-mono">{setup.manualKey}</span>
+            </p>
+          </div>
+
+          <Input
+            type="text"
+            inputMode="numeric"
+            placeholder="6-digit code"
+            className="text-center text-lg tracking-widest"
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            maxLength={6}
+          />
+
+          <Button type="submit" disabled={verifying || code.length !== 6}>
+            {verifying ? "Verifying..." : "Confirm MFA"}
+          </Button>
+        </form>
+      )}
     </div>
   );
-};
+}

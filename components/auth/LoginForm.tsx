@@ -1,56 +1,62 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api/authApi";
-import { setAuth } from "@/lib/auth/auth-utils";
+import { applyAuthMetadata, getPostAuthRoute } from "@/lib/auth/auth-utils";
+import type { ApiError } from "@/types/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function LoginForm() {
   const router = useRouter();
-
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const tokens = await authApi.login(identifier, password);
-      setAuth(tokens.access, tokens.refresh);
-      router.push("/dashboard/");
-    } catch {
-      setError("Invalid email/username or password. Please try again.");
+      const metadata = await authApi.login(identifier, password);
+      applyAuthMetadata(metadata);
+      router.push(getPostAuthRoute(metadata));
+    } catch (err) {
+      const apiError = err as ApiError;
+      setError(
+        apiError.status === 401
+          ? "Invalid email/username or password. Please try again."
+          : apiError.message || "Unable to log in. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
-      <input
+      <Input
         type="text"
         placeholder="Email or Username"
-        className="border p-2 rounded"
         value={identifier}
-        onChange={(e) => setIdentifier(e.target.value)}
+        onChange={(event) => setIdentifier(event.target.value)}
       />
 
-      <input
+      <Input
         type="password"
         placeholder="Password"
-        className="border p-2 rounded"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(event) => setPassword(event.target.value)}
       />
 
-      <button
-        type="submit"
-        className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-      >
-        Login
-      </button>
+      <Button type="submit" disabled={loading}>
+        {loading ? "Logging in..." : "Login"}
+      </Button>
     </form>
   );
 }

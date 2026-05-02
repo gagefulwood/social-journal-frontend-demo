@@ -1,33 +1,28 @@
 import { create } from "zustand";
-import type { AuthState } from "@/types/auth";
+import type { AuthMetadata, AuthState } from "@/types/auth";
+
+const emptyAuthMetadata: AuthMetadata = {
+  userId: "",
+  email: "",
+  username: "",
+  isMfaEnabled: false,
+  mfaPending: false,
+  role: "",
+};
 
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  refreshToken: null,
-  user: null,
-  mfaToken: null,
+  ...emptyAuthMetadata,
   isAuthenticated: false,
 
-  login: (accessToken, refreshToken, user, mfaToken) =>
+  setAuth: (metadata) =>
     set({
-      accessToken,
-      refreshToken: refreshToken ?? null,
-      user: user ?? null,
-      mfaToken: mfaToken ?? null,
-      isAuthenticated: !!accessToken,
+      ...metadata,
+      isAuthenticated: true,
     }),
 
-  logout: () =>
+  clearAuth: () =>
     set({
-      accessToken: null,
-      refreshToken: null,
-      user: null,
-      mfaToken: null,
+      ...emptyAuthMetadata,
       isAuthenticated: false,
-    }),
-
-  setMfaToken: (token) =>
-    set({
-      mfaToken: token,
     }),
 }));

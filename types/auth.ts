@@ -1,25 +1,31 @@
-// types/auth.ts
+export type AuthMetadata = {
+  userId: string | number;
+  email: string;
+  username: string;
+  isMfaEnabled: boolean;
+  mfaPending: boolean;
+  role: string;
+};
+
+export type AuthMetadataResponse = {
+  user_id: string | number;
+  email: string;
+  username: string;
+  is_mfa_enabled: boolean;
+  mfa_pending: boolean;
+  role: string;
+};
 
 export type User = {
-  id: string;
+  id: string | number;
   username: string;
   email: string;
   first_name: string;
   last_name: string;
-  phone_number: string;
+  phone_number?: string;
   is_mfa_enabled: boolean;
-  auth_provider: string;
+  auth_provider?: string;
   role: string;
-};
-
-export type AuthTokens = {
-  access: string;
-  refresh: string;
-};
-
-export type LoginPayload = {
-  identifier: string;
-  password: string;
 };
 
 export type RegisterPayload = {
@@ -32,25 +38,38 @@ export type RegisterPayload = {
   phone_number?: string;
 };
 
-export type LoginResponse = {
-  access: string;
-  refresh: string;
+export type LoginPayload = {
+  identifier: string;
+  password: string;
 };
 
-export type AuthState = {
-  accessToken: string | null;
-  refreshToken: string | null;
-  user: User | null;
-  mfaToken: string | null;
+export type MFASetupResponse = {
+  totpUri: string;
+  manualKey: string;
+};
+
+export type MFASetupApiResponse = {
+  otpauth_uri?: string;
+  totp_uri?: string;
+  qr_code_uri?: string;
+  secret?: string;
+  manual_key?: string;
+};
+
+export type UpdateProfilePayload = Partial<
+  Pick<User, "username" | "email" | "first_name" | "last_name" | "phone_number">
+>;
+
+export type FieldErrors = Record<string, string[]>;
+
+export type ApiError = {
+  status: number | null;
+  message: string;
+  fieldErrors?: FieldErrors;
+};
+
+export type AuthState = AuthMetadata & {
   isAuthenticated: boolean;
-
-  login: (
-    accessToken: string,
-    refreshToken?: string,
-    user?: User,
-    mfaToken?: string
-  ) => void;
-
-  logout: () => void;
-  setMfaToken: (token: string | null) => void;
+  setAuth: (metadata: AuthMetadata) => void;
+  clearAuth: () => void;
 };
