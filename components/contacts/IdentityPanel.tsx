@@ -33,6 +33,10 @@ export function IdentityPanel({ contact }: IdentityPanelProps) {
     ? getEducationLevelById(contact.education_level)?.name
     : null;
   const name = contactName(contact);
+  const subtitleParts = [
+    contact.relation_name,
+    contact.custom_occupation || occupation || contact.company,
+  ].filter(Boolean);
 
   return (
     <section className="rounded-lg border border-border bg-card p-5">
@@ -55,12 +59,11 @@ export function IdentityPanel({ contact }: IdentityPanelProps) {
         </div>
 
         <h1 className="mt-4 text-2xl font-semibold">{name}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {contact.custom_occupation ||
-            occupation ||
-            contact.company ||
-            "No role set"}
-        </p>
+        {subtitleParts.length > 0 && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            {subtitleParts.join(" · ")}
+          </p>
+        )}
 
         <Button asChild variant="outline" className="mt-4 w-full">
           <Link href={`/contacts/${contact.id}/edit`}>Edit Contact</Link>

@@ -25,6 +25,7 @@ const contactSchema = z.object({
   address: z.string().optional(),
   birthday: z.string().optional(),
   first_met_date: z.string().optional(),
+  relation: z.string().optional(),
   occupation: z.string().optional(),
   custom_occupation: z.string().optional(),
   company: z.string().optional(),
@@ -53,6 +54,7 @@ const fieldNames: Array<keyof ContactFormValues> = [
   "address",
   "birthday",
   "first_met_date",
+  "relation",
   "occupation",
   "custom_occupation",
   "company",
@@ -71,7 +73,7 @@ function emptyToNull(value?: string | number | null) {
 }
 
 export function ContactForm({ contact, onSubmit, submitLabel }: ContactFormProps) {
-  const { occupations, educationLevels, isLoading } = useLookups();
+  const { occupations, relations, educationLevels, isLoading } = useLookups();
   const {
     register,
     handleSubmit,
@@ -89,6 +91,7 @@ export function ContactForm({ contact, onSubmit, submitLabel }: ContactFormProps
       address: contact?.address ?? "",
       birthday: toDateInputValue(contact?.birthday),
       first_met_date: toDateInputValue(contact?.first_met_date),
+      relation: contact?.relation == null ? "" : String(contact.relation),
       occupation: contact?.occupation == null ? "" : String(contact.occupation),
       custom_occupation: contact?.custom_occupation ?? "",
       company: contact?.company ?? "",
@@ -110,6 +113,7 @@ export function ContactForm({ contact, onSubmit, submitLabel }: ContactFormProps
       address: emptyToUndefined(values.address),
       birthday: emptyToNull(values.birthday) as string | null,
       first_met_date: emptyToNull(values.first_met_date) as string | null,
+      relation: emptyToNull(values.relation),
       occupation: emptyToNull(values.occupation),
       custom_occupation: emptyToUndefined(values.custom_occupation),
       company: emptyToUndefined(values.company),
@@ -198,6 +202,20 @@ export function ContactForm({ contact, onSubmit, submitLabel }: ContactFormProps
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="text-lg font-semibold">Work and Education</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Field label="Relation" error={errors.relation?.message}>
+            <select
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              disabled={isLoading}
+              {...register("relation")}
+            >
+              <option value="">No relation</option>
+              {relations.map((relation) => (
+                <option key={relation.id} value={String(relation.id)}>
+                  {relation.name}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Occupation" error={errors.occupation?.message}>
             <select
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"

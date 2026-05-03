@@ -16,7 +16,9 @@ type ContactCardProps = {
 
 export function ContactCard({ contact }: ContactCardProps) {
   const name = contactName(contact);
-  const subtext = contact.relation_name || contact.occupation_name;
+  const subtext = [contact.relation_name, contact.occupation_name]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Link

@@ -81,6 +81,7 @@ export type CreateContactRequest = {
   address?: string;
   birthday?: string | null;
   first_met_date?: string | null;
+  relation?: ApiId | null;
   occupation?: ApiId | null;
   custom_occupation?: string;
   company?: string;
