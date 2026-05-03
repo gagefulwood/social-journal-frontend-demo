@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContactGrid } from "@/components/contacts/ContactGrid";
+import { ContactFilterPopover } from "@/components/contacts/ContactFilterPopover";
 import { useContacts } from "@/hooks/useContacts";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLookups } from "@/hooks/useLookups";
@@ -13,16 +16,20 @@ import { useLookups } from "@/hooks/useLookups";
 const pageSize = 24;
 
 export default function ContactsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [occupation, setOccupation] = useState("");
+  const [relation, setRelation] = useState("");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 300);
-  const { occupations, isLoading: lookupsLoading } = useLookups();
+  const { occupations, relations, isLoading: lookupsLoading } = useLookups();
+  const activeFilterCount = [occupation, relation].filter(Boolean).length;
   const { contacts, data, loading, error, refetch } = useContacts({
     page,
     page_size: pageSize,
     name: debouncedSearch,
     occupation: occupation || undefined,
+    relation: relation || undefined,
   });
 
   return (
@@ -42,7 +49,20 @@ export default function ContactsPage() {
         </Button>
       </div>
 
-      <section className="grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[1fr_240px]">
+      <section className="grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[auto_1fr_auto] md:items-center">
+        <Tabs
+          value="list"
+          onValueChange={(value) => {
+            if (value === "network") {
+              router.push("/contacts/network");
+            }
+          }}
+        >
+          <TabsList className="w-full md:w-fit">
+            <TabsTrigger value="list">List</TabsTrigger>
+            <TabsTrigger value="network">Network</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Input
           value={search}
           placeholder="Search by name"
@@ -51,22 +71,27 @@ export default function ContactsPage() {
             setPage(1);
           }}
         />
-        <select
-          value={occupation}
-          disabled={lookupsLoading}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          onChange={(event) => {
-            setOccupation(event.target.value);
+        <ContactFilterPopover
+          occupation={occupation}
+          relation={relation}
+          occupations={occupations}
+          relations={relations}
+          isLoading={lookupsLoading}
+          activeFilterCount={activeFilterCount}
+          onOccupationChange={(value) => {
+            setOccupation(value);
             setPage(1);
           }}
-        >
-          <option value="">All occupations</option>
-          {occupations.map((item) => (
-            <option key={item.id} value={String(item.id)}>
-              {item.name}
-            </option>
-          ))}
-        </select>
+          onRelationChange={(value) => {
+            setRelation(value);
+            setPage(1);
+          }}
+          onClearFilters={() => {
+            setOccupation("");
+            setRelation("");
+            setPage(1);
+          }}
+        />
       </section>
 
       <ContactGrid

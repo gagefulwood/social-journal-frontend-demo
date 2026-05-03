@@ -19,8 +19,15 @@ export function useContacts(params: ContactListParams = {}) {
       page_size: params.page_size,
       name: params.name?.trim() || undefined,
       occupation: params.occupation || undefined,
+      relation: params.relation || undefined,
     }),
-    [params.name, params.occupation, params.page, params.page_size]
+    [
+      params.name,
+      params.occupation,
+      params.page,
+      params.page_size,
+      params.relation,
+    ]
   );
 
   const fetchContacts = useCallback(async () => {

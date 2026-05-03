@@ -11,6 +11,7 @@ import type {
   Mood,
   ObservationMarker,
   Occupation,
+  Relation,
 } from "@/types/lookups";
 
 export type LookupKey = keyof LookupData;
@@ -31,6 +32,7 @@ type LookupStoreState = LookupData & {
   getObservationMarkerById: (id: ApiId) => ObservationMarker | undefined;
   getEntryTagById: (id: ApiId) => EntryTag | undefined;
   getOccupationById: (id: ApiId) => Occupation | undefined;
+  getRelationById: (id: ApiId) => Relation | undefined;
   getEducationLevelById: (id: ApiId) => EducationLevel | undefined;
   getMediaTypeById: (id: ApiId) => MediaType | undefined;
 };
@@ -42,6 +44,7 @@ const emptyLookupData: LookupData = {
   observationMarkers: [],
   entryTags: [],
   occupations: [],
+  relations: [],
   educationLevels: [],
   mediaTypes: [],
 };
@@ -53,6 +56,7 @@ const emptyLoadedState: LookupLoadedState = {
   observationMarkers: false,
   entryTags: false,
   occupations: false,
+  relations: false,
   educationLevels: false,
   mediaTypes: false,
 };
@@ -64,6 +68,7 @@ const fullLoadedState: LookupLoadedState = {
   observationMarkers: true,
   entryTags: true,
   occupations: true,
+  relations: true,
   educationLevels: true,
   mediaTypes: true,
 };
@@ -168,6 +173,7 @@ export const useLookupStore = create<LookupStoreState>((set, get) => ({
   getObservationMarkerById: (id) => findById(get().observationMarkers, id),
   getEntryTagById: (id) => findById(get().entryTags, id),
   getOccupationById: (id) => findById(get().occupations, id),
+  getRelationById: (id) => findById(get().relations, id),
   getEducationLevelById: (id) => findById(get().educationLevels, id),
   getMediaTypeById: (id) => findById(get().mediaTypes, id),
 }));

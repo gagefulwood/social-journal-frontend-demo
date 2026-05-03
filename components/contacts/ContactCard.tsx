@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 import type { ContactListItem } from "@/types/contacts";
 import {
   contactInitials,
@@ -16,6 +16,7 @@ type ContactCardProps = {
 
 export function ContactCard({ contact }: ContactCardProps) {
   const name = contactName(contact);
+  const subtext = contact.relation_name || contact.occupation_name;
 
   return (
     <Link
@@ -40,19 +41,20 @@ export function ContactCard({ contact }: ContactCardProps) {
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h2 className="truncate text-base font-semibold">{name}</h2>
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-semibold">{name}</h2>
+              {subtext && (
+                <p className="mt-1 truncate text-sm text-muted-foreground">
+                  {subtext}
+                </p>
+              )}
+            </div>
             <span className="rounded-md bg-muted px-2 py-1 text-xs capitalize text-muted-foreground">
               {trendLabel(contact.relationship_trend)}
             </span>
           </div>
 
           <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-            {contact.email && (
-              <p className="flex items-center gap-2 truncate">
-                <Mail className="size-4" />
-                {contact.email}
-              </p>
-            )}
             {contact.phone_number && (
               <p className="flex items-center gap-2 truncate">
                 <Phone className="size-4" />
@@ -63,16 +65,12 @@ export function ContactCard({ contact }: ContactCardProps) {
         </div>
       </div>
 
-      <div className="mt-4">
-        <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-4 rounded-md bg-muted/50 px-3 py-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Connection</span>
-          <span>{scorePercent(contact.connection_strength)}%</span>
-        </div>
-        <div className="h-2 rounded-full bg-muted">
-          <div
-            className="h-2 rounded-full bg-primary"
-            style={{ width: `${scorePercent(contact.connection_strength)}%` }}
-          />
+          <span className="text-sm font-semibold text-foreground">
+            {scorePercent(contact.connection_strength)}%
+          </span>
         </div>
       </div>
     </Link>

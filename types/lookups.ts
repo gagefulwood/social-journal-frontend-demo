@@ -45,6 +45,12 @@ export type Occupation = {
   is_system_default: boolean;
 };
 
+export type Relation = {
+  id: ApiId;
+  name: string;
+  is_system_default: boolean;
+};
+
 export type EducationLevel = {
   id: ApiId;
   name: string;

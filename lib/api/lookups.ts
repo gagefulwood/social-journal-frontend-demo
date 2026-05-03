@@ -8,6 +8,7 @@ import type {
   Mood,
   ObservationMarker,
   Occupation,
+  Relation,
 } from "@/types/lookups";
 
 export type LookupData = {
@@ -17,6 +18,7 @@ export type LookupData = {
   observationMarkers: ObservationMarker[];
   entryTags: EntryTag[];
   occupations: Occupation[];
+  relations: Relation[];
   educationLevels: EducationLevel[];
   mediaTypes: MediaType[];
 };
@@ -58,6 +60,11 @@ export const lookupsApi = {
     return res.data;
   },
 
+  async listRelations(): Promise<Relation[]> {
+    const res = await api.get<Relation[]>("/api/lookups/relations/");
+    return res.data;
+  },
+
   async listEducationLevels(): Promise<EducationLevel[]> {
     const res = await api.get<EducationLevel[]>(
       "/api/lookups/education-levels/"
@@ -78,6 +85,7 @@ export const lookupsApi = {
       observationMarkers,
       entryTags,
       occupations,
+      relations,
       educationLevels,
       mediaTypes,
     ] = await Promise.all([
@@ -87,6 +95,7 @@ export const lookupsApi = {
       this.listObservationMarkers(),
       this.listEntryTags(),
       this.listOccupations(),
+      this.listRelations(),
       this.listEducationLevels(),
       this.listMediaTypes(),
     ]);
@@ -98,6 +107,7 @@ export const lookupsApi = {
       observationMarkers,
       entryTags,
       occupations,
+      relations,
       educationLevels,
       mediaTypes,
     };

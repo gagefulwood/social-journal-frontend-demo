@@ -32,6 +32,10 @@ export type ContactListItem = {
   last_name: string;
   email: string;
   phone_number: string;
+  relation: ApiId | null;
+  relation_name: string | null;
+  occupation: ApiId | null;
+  occupation_name: string | null;
   profile_picture: MediaAssetListItem | null;
   interaction_frequency_score: number;
   relationship_trend: RelationshipTrend;
@@ -49,7 +53,10 @@ export type Contact = {
   address: string;
   birthday: string | null;
   first_met_date: string | null;
+  relation: ApiId | null;
+  relation_name: string | null;
   occupation: ApiId | null;
+  occupation_name: string | null;
   custom_occupation: string;
   company: string;
   education_level: ApiId | null;

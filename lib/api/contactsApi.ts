@@ -20,6 +20,7 @@ export type ContactListParams = {
   page_size?: number;
   name?: string;
   occupation?: ApiId;
+  relation?: ApiId;
 };
 
 function normalizeList<TItem>(data: MaybePaginated<TItem>): TItem[] {

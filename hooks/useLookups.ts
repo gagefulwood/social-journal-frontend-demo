@@ -15,6 +15,7 @@ export function useLookups(options: UseLookupsOptions = {}) {
   const observationMarkers = useLookupStore((state) => state.observationMarkers);
   const entryTags = useLookupStore((state) => state.entryTags);
   const occupations = useLookupStore((state) => state.occupations);
+  const relations = useLookupStore((state) => state.relations);
   const educationLevels = useLookupStore((state) => state.educationLevels);
   const mediaTypes = useLookupStore((state) => state.mediaTypes);
   const loaded = useLookupStore((state) => state.loaded);
@@ -36,6 +37,7 @@ export function useLookups(options: UseLookupsOptions = {}) {
   );
   const getEntryTagById = useLookupStore((state) => state.getEntryTagById);
   const getOccupationById = useLookupStore((state) => state.getOccupationById);
+  const getRelationById = useLookupStore((state) => state.getRelationById);
   const getEducationLevelById = useLookupStore(
     (state) => state.getEducationLevelById
   );
@@ -54,6 +56,7 @@ export function useLookups(options: UseLookupsOptions = {}) {
     observationMarkers,
     entryTags,
     occupations,
+    relations,
     educationLevels,
     mediaTypes,
     loaded,
@@ -69,6 +72,7 @@ export function useLookups(options: UseLookupsOptions = {}) {
     getObservationMarkerById,
     getEntryTagById,
     getOccupationById,
+    getRelationById,
     getEducationLevelById,
     getMediaTypeById,
   };
