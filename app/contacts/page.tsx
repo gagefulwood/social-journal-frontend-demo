@@ -31,7 +31,7 @@ export default function ContactsPage() {
         <div>
           <h1 className="text-3xl font-semibold">Contacts</h1>
           <p className="text-sm text-muted-foreground">
-            Manage the people in your journal graph.
+            Manage the people in your contacts.
           </p>
         </div>
         <Button asChild>
