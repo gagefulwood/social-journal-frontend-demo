@@ -18,13 +18,23 @@ export function useEvents(params: EventListParams = {}) {
       page: params.page,
       page_size: params.page_size,
       title: params.title?.trim() || undefined,
+      event_after: params.event_after,
+      event_before: params.event_before,
+      tier: params.tier,
       context_category: params.context_category || undefined,
+      participants: params.participants?.trim() || undefined,
+      journaled: params.journaled,
     }),
     [
-      params.title,
-      params.context_category,
       params.page,
       params.page_size,
+      params.title,
+      params.event_after,
+      params.event_before,
+      params.tier,
+      params.context_category,
+      params.participants,
+      params.journaled,
     ]
   );
 

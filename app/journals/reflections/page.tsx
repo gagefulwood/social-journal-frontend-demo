@@ -28,7 +28,7 @@ export default function JournalsPage() {
     const { reflections, data, loading, error, refetch } = useRefs({
         page,
         page_size: pageSize,
-        search: debouncedSearch,
+        title: debouncedSearch,
         entry_tag: entryTag || undefined,
         mood: mood || undefined,
     });
@@ -70,7 +70,7 @@ export default function JournalsPage() {
         </Tabs>
         <Input
           value={search}
-          placeholder="Search by Title"
+          placeholder="Search by title"
           onChange={(event) => {
             setSearch(event.target.value);
             setPage(1);

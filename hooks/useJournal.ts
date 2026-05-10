@@ -9,7 +9,7 @@ import type { PaginatedResponse } from "@/types/api";
 export type LogListParams = {
   page?: number;
   page_size?: number;
-  search?: string;
+  title?: string;
   mood?: string;
   entry_tag?: string;
 };
@@ -17,7 +17,7 @@ export type LogListParams = {
 export type ReflectionListParams = {
     page?: number;
     page_size?: number;
-    search?: string;
+    title?: string;
     mood?: string;
     entry_tag?: string;
 };
@@ -25,7 +25,7 @@ export type ReflectionListParams = {
 export type ExerciseListParams = {
     page?: number;
     page_size?: number;
-    search?: string;
+    title?: string;
     mood?: string;
     entry_tag?: string;
 };
@@ -43,11 +43,11 @@ export function useLogs(params: LogListParams = {}) {
     () => ({
       page: params.page,
       page_size: params.page_size,
-      search: params.search?.trim() || undefined,
+      title: params.title?.trim() || undefined,
       mood: params.mood || undefined,
       entry_tag: params.entry_tag || undefined,
     }),
-    [params.search, params.mood, params.entry_tag, params.page, params.page_size]
+    [params.title, params.mood, params.entry_tag, params.page, params.page_size]
   );
 
   const fetchLogs = useCallback(async () => {
@@ -112,11 +112,11 @@ export function useRefs(params: ReflectionListParams = {}) {
     () => ({
       page: params.page,
       page_size: params.page_size,
-      search: params.search?.trim() || undefined,
+      title: params.title?.trim() || undefined,
       mood: params.mood || undefined,
       entry_tag: params.entry_tag || undefined,
     }),
-    [params.search, params.mood, params.entry_tag, params.page, params.page_size]
+    [params.title, params.mood, params.entry_tag, params.page, params.page_size]
   );
 
   const fetchLogs = useCallback(async () => {
@@ -181,11 +181,11 @@ export function useExercises(params: ExerciseListParams = {}) {
     () => ({
       page: params.page,
       page_size: params.page_size,
-      search: params.search?.trim() || undefined,
+      title: params.title?.trim() || undefined,
       mood: params.mood || undefined,
       entry_tag: params.entry_tag || undefined,
     }),
-    [params.search, params.mood, params.entry_tag, params.page, params.page_size]
+    [params.title, params.mood, params.entry_tag, params.page, params.page_size]
   );
 
   const fetchLogs = useCallback(async () => {
@@ -240,4 +240,3 @@ export function useExercises(params: ExerciseListParams = {}) {
     refetch: fetchLogs,
   };
 }
-

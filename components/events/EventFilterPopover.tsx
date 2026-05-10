@@ -13,23 +13,19 @@ import {
 import type { ContextCategory } from "@/types/lookups";
 
 type EventFilterPopoverProps = {
-  title: string;
   contextCategory: string;
   categories: ContextCategory[];
   isLoading: boolean;
   activeFilterCount: number;
-  onTitleChange: (value: string) => void;
   onContextCategoryChange: (value: string) => void;
   onClearFilters: () => void;
 };
 
 export function EventFilterPopover({
-  title,
   contextCategory,
   categories,
   isLoading,
   activeFilterCount,
-  onTitleChange,
   onContextCategoryChange,
   onClearFilters,
 }: EventFilterPopoverProps) {
@@ -50,16 +46,6 @@ export function EventFilterPopover({
         </PopoverHeader>
 
         <div className="space-y-4">
-          <FilterRow label="Title">
-            <input
-              value={title}
-              disabled={isLoading}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-              placeholder="Search events..."
-              onChange={(e) => onTitleChange(e.target.value)}
-            />
-          </FilterRow>
-
           <FilterRow label="Category">
             <select
               value={contextCategory}

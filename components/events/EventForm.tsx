@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { eventsApi } from "@/lib/api/eventsApi";
 import type { ApiId } from "@/types/api";
+import type {
+  CreateEventRequest,
+  EventTier,
+  UpdateEventRequest,
+} from "@/types/events";
 
 type EventFormProps = {
   submitLabel: string;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: CreateEventRequest | UpdateEventRequest) => Promise<void>;
 };
 
 type EventFormValues = {
@@ -30,7 +34,10 @@ export function EventsForm({ submitLabel, onSubmit }: EventFormProps) {
     participants: [],
   });
 
-  const update = (key: keyof EventFormValues, value: any) => {
+  const update = <TKey extends keyof EventFormValues>(
+    key: TKey,
+    value: EventFormValues[TKey]
+  ) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -64,7 +71,7 @@ export function EventsForm({ submitLabel, onSubmit }: EventFormProps) {
       <select
         className="border p-2 w-full"
         value={form.tier}
-        onChange={(e) => update("tier", e.target.value)}
+        onChange={(e) => update("tier", e.target.value as EventTier)}
       >
         <option value="routine">Routine</option>
         <option value="milestone">Milestone</option>

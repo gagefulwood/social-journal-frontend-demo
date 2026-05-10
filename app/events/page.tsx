@@ -22,7 +22,11 @@ export default function EventsPage() {
     const [page, setPage] = useState(1);
     const [context_category, setContextCategory] = useState("");
     const debouncedSearch = useDebounce(search, 300);
-    const activeFilterCount = [].filter(Boolean).length;
+    const {
+      contextCategories,
+      isLoading: lookupsLoading,
+    } = useLookups();
+    const activeFilterCount = [context_category].filter(Boolean).length;
     const { events, data, loading, error, refetch } = useEvents({
         page,
         page_size: pageSize,
@@ -49,7 +53,7 @@ export default function EventsPage() {
 
       <section className="grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[auto_1fr_auto] md:items-center">
         <Tabs
-          value="list view"
+          value="list"
           onValueChange={(value) => {
             if (value === "timeline") {
               router.push("/events/timeline");
@@ -60,7 +64,7 @@ export default function EventsPage() {
           }}
         >
           <TabsList className="w-full md:w-fit">
-            <TabsTrigger value="list view">List View</TabsTrigger>
+            <TabsTrigger value="list">List View</TabsTrigger>
             <TabsTrigger value="calendar">Calendar</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
@@ -74,21 +78,15 @@ export default function EventsPage() {
           }}
         />
         <EventFilterPopover
-          title={search}
           contextCategory={context_category}
-          categories={[]}
-          isLoading={false}
+          categories={contextCategories}
+          isLoading={lookupsLoading}
           activeFilterCount={activeFilterCount}
-          onTitleChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
           onContextCategoryChange={(value) => {
             setContextCategory(value);
             setPage(1);
           }}
           onClearFilters={() => {
-            setSearch("");
             setContextCategory("");
             setPage(1);
           }}

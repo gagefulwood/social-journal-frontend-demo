@@ -18,7 +18,7 @@ import type {
 export type LogListParams = {
   page?: number;
   page_size?: number;
-  search?: string;
+  title?: string;
   mood?: ApiId;
   entry_tag?: ApiId;
 };
@@ -26,14 +26,14 @@ export type LogListParams = {
 export type ReflectionListParams = {
   page?: number;
   page_size?: number;
-  search?: string;
+  title?: string;
   clarity_check?: string;
 };
 
 export type ExerciseListParams = {
   page?: number;
   page_size?: number;
-  search?: string;
+  title?: string;
   subtype?: string;
 };
 
@@ -133,4 +133,3 @@ export const journalApi = {
     await api.delete(`/api/journals/exercises/${id}/`);
   },
 };
-
