@@ -45,7 +45,7 @@ export default function JournalsPage() {
         <Button asChild>
           <Link href="/journals/reflections/new">
             <Plus className="size-4" />
-            New Journal
+            New Reflection
           </Link>
         </Button>
       </div>
@@ -70,7 +70,7 @@ export default function JournalsPage() {
         </Tabs>
         <Input
           value={search}
-          placeholder="Search by name"
+          placeholder="Search by Title"
           onChange={(event) => {
             setSearch(event.target.value);
             setPage(1);

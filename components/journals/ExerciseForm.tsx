@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { useLookups } from "@/hooks/useLookups";
 import type { ApiError } from "@/types/auth";
 import type {
@@ -14,6 +15,7 @@ import type {
   UpdateExerciseRequest,
 } from "@/types/journals";
 import type { Event } from "@/types/events";
+import type { SubmitHandler } from "react-hook-form";
 
 const events = [
   { id: 1, title: "Storm at Sea" },
@@ -24,11 +26,11 @@ const exerciseSchema = z.object({
   event: z.string().min(1, "Event is required"),
   exercise_type: z.string().min(1, "Exercise type is required"),
   steps: z.string().min(1, "Steps are required"),
-  pre_measurement: z.string().optional(),
-  post_measurement: z.string().optional(),
+  pre_measurement: z.number().min(0).max(10),
+  post_measurement: z.number().min(0).max(10),
 });
 
-export type ExerciseFormValues = z.infer<typeof exerciseSchema>;
+export type ExerciseFormValues = z.output<typeof exerciseSchema>;
 
 export type ExerciseFormProps = {
     exercise?: Exercise | null;
@@ -60,31 +62,38 @@ export function ExerciseForm({ exercise, onSubmit, submitLabel }: ExerciseFormPr
         handleSubmit,
         setError,
         setValue,
+        watch,
         formState: { errors, isSubmitting },
-    } = useForm<ExerciseFormValues>({
+     } = useForm<ExerciseFormValues>({
         resolver: zodResolver(exerciseSchema),
         defaultValues: {
             event: exercise?.event ? String(exercise.event) : "",
             exercise_type: exercise?.subtype ?? "",
-            steps: exercise?.steps ? String(exercise.steps) : "",
-            pre_measurement: exercise?.pre_measurement ? String(exercise.pre_measurement) : "",
-            post_measurement: exercise?.post_measurement ? String(exercise.post_measurement) : "",
+            steps: exercise?.steps?.[0]?.response ?? "",
+            pre_measurement: exercise?.pre_measurement ?? 5,
+            post_measurement: exercise?.post_measurement ?? 5,
         },
     });
 
-    async function submit(values: ExerciseFormValues) {
+    const preValue = watch("pre_measurement");
+    const postValue = watch("post_measurement");
+
+    const difference = (postValue ?? 0) - (preValue ?? 0);
+
+    const submit: SubmitHandler<ExerciseFormValues> = async (values) => {
+        
         const payload: CreateExerciseRequest = {
             event: values.event,
             subtype: values.exercise_type,
-            pre_measurement: Number(values.pre_measurement),
-            post_measurement: Number(values.post_measurement),
+            pre_measurement: values.pre_measurement,
+            post_measurement: values.post_measurement,
             steps: [
                 {
                     display_order: Number(values.steps),
                     prompt: values.steps,
                     response: values.steps,
                 },
-    ],
+            ],
         };
 
         try {
@@ -107,7 +116,7 @@ export function ExerciseForm({ exercise, onSubmit, submitLabel }: ExerciseFormPr
                 });
             }
         }
-    }
+    };
 
     return (
         <form onSubmit={handleSubmit(submit)} className="space-y-6">
@@ -147,6 +156,84 @@ export function ExerciseForm({ exercise, onSubmit, submitLabel }: ExerciseFormPr
                     ))}
                 </select>
             </Field>
+            </div>
+        </section>
+
+        <section className="rounded-lg border border-border bg-card p-6">
+            <div className="grid grid-cols-3 items-center gap-8">
+
+                {/* Distress before slider for recording successfulness of the exercise*/}
+                <div>
+                    <Label className="text-lg font-semibold">
+                        Distress Before
+                    </Label>
+
+                    <div className="mt-6">
+                        <Slider
+                            min={0}
+                            max={10}
+                            step={1}
+                            value={[preValue ?? 0]}
+                            onValueChange={(value) =>
+                                setValue("pre_measurement", value[0])
+                            }
+                        />
+                    </div>
+
+                    <div className="mt-2 flex justify-between text-muted-foreground text-sm">
+                        <span>0</span>
+                        <span>10</span>
+                    </div>
+
+                    <div className="mt-4 text-center text-5xl font-bold">
+                        {preValue}
+                    </div>
+                </div>
+
+                {/* Difference indicator*/}
+                <div className="flex flex-col items-center justify-center">
+                    <div className="text-6xl">
+                        ▲
+                    </div>
+
+                    <div
+                        className={`mt-2 text-5xl font-bold ${
+                            difference <= 0
+                                ? "text-teal-500"
+                                : "text-red-500"
+                        }`}
+                    >
+                        {difference}
+                    </div>
+                </div>
+
+                {/* Distress after slider for recording successfulness of the exercise*/}
+                <div>
+                    <Label className="text-lg font-semibold">
+                        Distress after
+                    </Label>
+
+                    <div className="mt-6">
+                        <Slider
+                            min={0}
+                            max={10}
+                            step={1}
+                            value={[postValue ?? 0]}
+                            onValueChange={(value) =>
+                                setValue("post_measurement", value[0])
+                            }
+                        />
+                    </div>
+
+                    <div className="mt-2 flex justify-between text-muted-foreground text-sm">
+                        <span>0</span>
+                        <span>10</span>
+                    </div>
+
+                    <div className="mt-4 text-center text-5xl font-bold">
+                        {postValue}
+                    </div>
+                </div>
             </div>
         </section>
 

@@ -43,7 +43,7 @@ export function JournalReflectionGrid({
   if (error) {
     return (
       <div className="rounded-lg border border-border p-6">
-        <p className="font-medium">Unable to load logs...</p>
+        <p className="font-medium">Unable to load reflections...</p>
         <p className="mt-1 text-sm text-muted-foreground">{error.message}</p>
         <Button className="mt-4" variant="outline" onClick={onRetry}>
           Retry
