@@ -1,12 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ContactCard } from "@/components/contacts/ContactCard";
+import { JournalLogCard } from "@/components/journals/JournalLogCard";
 import type { ApiError } from "@/types/auth";
-import type { ContactListItem } from "@/types/contacts";
+import type { LogListItem} from "@/types/journals";
 
-type ContactGridProps = {
-  contacts: ContactListItem[];
+const pageSize = 24;
+
+type JournalLogGridProps = {
+  logs: LogListItem[];
   loading: boolean;
   error: ApiError | null;
   page: number;
@@ -15,19 +17,16 @@ type ContactGridProps = {
   onRetry: () => void;
 };
 
-const pageSize = 24;
-
-export function ContactGrid({
-  contacts,
-  loading,
-  error,
-  page,
-  totalCount,
-  onPageChange,
-  onRetry,
-}: ContactGridProps) {
+export function JournalLogGrid({
+    logs,
+    loading,
+    error,
+    page,
+    totalCount,
+    onPageChange,
+    onRetry,
+}: JournalLogGridProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
   if (loading) {
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -44,7 +43,7 @@ export function ContactGrid({
   if (error) {
     return (
       <div className="rounded-lg border border-border p-6">
-        <p className="font-medium">Unable to load contacts...</p>
+        <p className="font-medium">Unable to load logs...</p>
         <p className="mt-1 text-sm text-muted-foreground">{error.message}</p>
         <Button className="mt-4" variant="outline" onClick={onRetry}>
           Retry
@@ -53,10 +52,10 @@ export function ContactGrid({
     );
   }
 
-  if (contacts.length === 0) {
+  if (logs.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-        No contacts found.
+        No logs found.
       </div>
     );
   }
@@ -64,8 +63,8 @@ export function ContactGrid({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {contacts.map((contact) => (
-          <ContactCard key={contact.id} contact={contact} />
+        {logs.map((log) => (
+          <JournalLogCard key={log.id} log={log} />
         ))}
       </div>
 
