@@ -43,6 +43,7 @@ export function useLookups(options: UseLookupsOptions = {}) {
   );
   const getMediaTypeById = useLookupStore((state) => state.getMediaTypeById);
 
+
   useEffect(() => {
     if (autoLoad && !isHydrated && !isLoading) {
       void hydrate();

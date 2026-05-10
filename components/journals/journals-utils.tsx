@@ -13,3 +13,19 @@ export function logDate(log: Log | LogListItem) {
 export function logSubtype(log: Log | LogListItem) {
     return log.subtype;
 }
+
+export function reflectionTitle(reflection: Reflection | ReflectionListItem) {
+    return reflection.subtype;
+}
+
+export function reflectionDate(reflection: Reflection | ReflectionListItem) {
+    return new Date(reflection.created_timestamp);
+}
+
+export function ExerciseTitle(exercise: Exercise | ExerciseListItem) {
+    return exercise.subtype;
+}
+
+export function ExerciseDate(exercise: Exercise | ExerciseListItem) {
+    return new Date(exercise.created_timestamp);
+}

@@ -61,3 +61,8 @@ export type MediaType = {
   id: ApiId;
   name: string;
 };
+
+export type Event = {
+  id: ApiId;
+  title: string;
+};
