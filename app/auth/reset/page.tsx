@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function ReflectInProgress() {
+export default function ResetInProgress() {
     return (
         <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
 

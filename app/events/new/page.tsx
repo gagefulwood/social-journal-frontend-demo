@@ -1,36 +1,38 @@
 "use client";
 
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+import {toast} from "sonner";
 import { Button } from "@/components/ui/button";
+import {EventsForm} from "@/components/events/EventForm";
+import type { CreateEventRequest, UpdateEventRequest } from "@/types/events";
+import { eventsApi } from "@/lib/api/eventsApi";
 
-export default function ReflectInProgress() {
+export default function NewEventPage() {
+    const router = useRouter();
+
     return (
-        <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
-
-            <h1 className="text-3xl font-bold mb-8">
-                New Event
-            </h1>
-
-            <p className="text-2xl text-gray-600 mb-10">
-                This page is currently under construction. Please excuse our progress!
-            </p>
-
-            <div className="flex justify-center items-center mb-8">
-                <img
-                    className="max-w-xs md:max-w-sm"
-                    src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnIxdzYzZzZ5Z2Rwd3FubWY2bmg2b3pwMGdyZW53cGswbnd4YjV1ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/vR1dPIYzQmkRzLZk2w/giphy.gif"
-                    alt="Penguin Progress"
-                />
-            </div>
-
-            <div className="flex justify-center">
-                <Button asChild variant="outline" className="px-8 py-6 text-lg">
-                    <Link href="/events">
-                        Return to Events List
-                    </Link>
+        <main className="mx-auto w-full max-w-4xl px-4 py-8">
+            <div className="mb-6 flex items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-semibold">New Event</h1>
+                    <p className="text-sm text-muted-foreground">
+                        Add details about your event.
+                    </p>
+                </div>
+                <Button asChild variant="outline">
+                    <Link href="/events">Cancel</Link>
                 </Button>
             </div>
 
+            {/*<EventsForm
+                submitLabel="Create Event"
+                onSubmit={async (data: CreateEventRequest | UpdateEventRequest) => {
+                    const event = await eventsApi.create(data as CreateEventRequest);
+                    toast.success("Event created.");
+                    router.push(`/events/${event.id}`);
+                }}
+            />*/}
         </main>
     );
 }

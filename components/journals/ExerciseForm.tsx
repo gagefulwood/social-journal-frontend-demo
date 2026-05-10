@@ -159,6 +159,8 @@ export function ExerciseForm({ exercise, onSubmit, submitLabel }: ExerciseFormPr
             </div>
         </section>
 
+        {/* This section is for the distress sliders and difference indicator */}
+
         <section className="rounded-lg border border-border bg-card p-6">
             <div className="grid grid-cols-3 items-center gap-8">
 

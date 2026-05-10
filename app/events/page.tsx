@@ -7,9 +7,11 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useLogs } from "@/hooks/useJournal";
+import { useEvents } from "@/hooks/useEvent";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLookups } from "@/hooks/useLookups";
+import { EventFilterPopover } from "@/components/events/EventFilterPopover";
+import { EventGrid } from "@/components/events/EventGrid";
 
 
 const pageSize = 24;
@@ -18,12 +20,14 @@ export default function EventsPage() {
     const router = useRouter();
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
+    const [context_category, setContextCategory] = useState("");
     const debouncedSearch = useDebounce(search, 300);
     const activeFilterCount = [].filter(Boolean).length;
-    const { logs, data, loading, error, refetch } = useLogs({
+    const { events, data, loading, error, refetch } = useEvents({
         page,
         page_size: pageSize,
-        search: debouncedSearch,
+        title: debouncedSearch,
+        context_category: context_category || undefined,
     });
 
   return (
@@ -47,11 +51,11 @@ export default function EventsPage() {
         <Tabs
           value="list view"
           onValueChange={(value) => {
-            if (value === "calendar") {
-              router.push("/events/calendar");
-            }
             if (value === "timeline") {
-                router.push("/events/timeline");
+              router.push("/events/timeline");
+            }
+            if (value === "calendar") {
+                router.push("/events/calendar");
             }
           }}
         >
@@ -69,7 +73,38 @@ export default function EventsPage() {
             setPage(1);
           }}
         />
+        <EventFilterPopover
+          title={search}
+          contextCategory={context_category}
+          categories={[]}
+          isLoading={false}
+          activeFilterCount={activeFilterCount}
+          onTitleChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          onContextCategoryChange={(value) => {
+            setContextCategory(value);
+            setPage(1);
+          }}
+          onClearFilters={() => {
+            setSearch("");
+            setContextCategory("");
+            setPage(1);
+          }}
+        />
       </section>
+
+      <EventGrid
+        events={events}
+        loading={loading}
+        error={error}
+        page={page}
+        totalCount={data?.count ?? 0}
+        onPageChange={setPage}
+        onRetry={refetch}
+      />
+
     </main>
   );
 }

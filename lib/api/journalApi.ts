@@ -2,21 +2,18 @@ import api from "@/lib/api/client";
 import type { ApiId } from "@/types/api";
 import type {
   Log,
-  LogListItem,
   Reflection,
-  ReflectionListItem,
   Exercise,
-  ExerciseListItem,
   CreateLogRequest,
   UpdateLogRequest,
   CreateReflectionRequest,
   UpdateReflectionRequest,
   CreateExerciseRequest,
   UpdateExerciseRequest,
+  LogListResponse,
+  ReflectionListResponse,
+  ExerciseListResponse,
 } from "@/types/journals";
-import type { PaginatedResponse } from "@/types/api";
-
-type MaybePaginated<TItem> = TItem[] | { results: TItem[] };
 
 export type LogListParams = {
   page?: number;
@@ -26,7 +23,28 @@ export type LogListParams = {
   entry_tag?: ApiId;
 };
 
-type LogListResponse = PaginatedResponse<LogListItem>;
+export type ReflectionListParams = {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  clarity_check?: string;
+};
+
+export type ExerciseListParams = {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  subtype?: string;
+};
+
+type MaybePaginated<TItem> = TItem[] | { results: TItem[] };
+
+export type EventListParams = {
+    page?: number;
+    page_size?: number;
+    title?: string;
+    context_category?: ApiId;
+}
 
 function normalizeList<TItem>(data: MaybePaginated<TItem>): TItem[] {
   if (Array.isArray(data)) {
@@ -63,8 +81,8 @@ export const journalApi = {
     await api.delete(`/api/journals/logs/${id}/`);
   },
 
-  async listReflections(params?: LogListParams): Promise<PaginatedResponse<ReflectionListItem>> {
-    const res = await api.get<PaginatedResponse<ReflectionListItem>>("/api/journals/reflections/", {
+  async listReflections(params?: ReflectionListParams): Promise<ReflectionListResponse> {
+    const res = await api.get<ReflectionListResponse>("/api/journals/reflections/", {
       params,
     });
     return res.data;
@@ -89,8 +107,8 @@ export const journalApi = {
     await api.delete(`/api/journals/reflections/${id}/`);
   },
 
-  async listExercises(params?: LogListParams): Promise<PaginatedResponse<ExerciseListItem>> {
-    const res = await api.get<PaginatedResponse<ExerciseListItem>>("/api/journals/exercises/", {
+  async listExercises(params?: ExerciseListParams): Promise<ExerciseListResponse> {
+    const res = await api.get<ExerciseListResponse>("/api/journals/exercises/", {
       params,
     });
     return res.data;

@@ -15,6 +15,8 @@ export type LogListItem = {
   updated_timestamp: string;
 };
 
+export type LogListResponse = PaginatedResponse<LogListItem>;
+
 export type Log = LogListItem & {
   body: string;
   data: JsonObject;
@@ -29,6 +31,8 @@ export type ReflectionListItem = {
   created_timestamp: string;
   updated_timestamp: string;
 };
+
+export type ReflectionListResponse = PaginatedResponse<ReflectionListItem>;
 
 export type Reflection = ReflectionListItem & {
   data: JsonObject;
@@ -52,6 +56,8 @@ export type ExerciseListItem = {
   created_timestamp: string;
   updated_timestamp: string;
 };
+
+export type ExerciseListResponse = PaginatedResponse<ExerciseListItem>;
 
 export type Exercise = ExerciseListItem & {
   steps: ExerciseStep[];
