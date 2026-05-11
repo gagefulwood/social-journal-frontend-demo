@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export default function InProgress() {
+export default function ReflectInProgress() {
     return (
         <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
 
             <h1 className="text-3xl font-bold mb-8">
-                Event Edit Form
+                Reflections Form
             </h1>
 
             <p className="text-2xl text-gray-600 mb-10">
@@ -27,8 +27,8 @@ export default function InProgress() {
 
             <div className="flex justify-center">
                 <Button asChild variant="outline" className="px-8 py-6 text-lg">
-                    <Link href="/events">
-                        Return to Events
+                    <Link href="/journals/reflections">
+                        Return to Journals Lists
                     </Link>
                 </Button>
             </div>

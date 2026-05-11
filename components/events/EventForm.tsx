@@ -167,51 +167,59 @@ export function EventsForm({
         <div className="space-y-5">
 
           {/* This is the part where I'm adding contacts to all of this... though I'm not sure how to make this display on the contacts' pages*/}
-          <div>
-            <p className="mb-4 text-xl font-medium">
-              Participants
-            </p>
+        <div>
+        <p className="mb-4 text-xl font-medium">Participants</p>
 
-            <div className="flex flex-wrap gap-4">
-              {form.watch("participants").map((id) => {
-                const contact = contacts.find((c) => c.id === id);
+        <div className="flex flex-wrap gap-4">
+            {form.watch("participants").map((id) => {
+            const contact = contacts.find((c) => String(c.id) === String(id));
 
-                {/* This I need help with bc i need it to display contact avatar OR initials? rn i just have the dots... */}
-                return (
+            return (
+                <div
+                key={id}
+                className="flex h-20 w-20 flex-col items-center justify-center rounded-full border bg-muted text-xs text-center p-2"
+                >
+                <span className="font-medium leading-tight">
+                    {contact
+                    ? `${contact.first_name} ${contact.last_name}`
+                    : "Unknown"}
+                </span>
+                </div>
+            );
+            })}
 
-                  <div
-                    key={id}
-                    className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-grey-300 bg-grey-100 text-xs"
-                  >
-                    <span className="font-medium">
-                      {`${contact?.first_name ?? ""} ${contact?.last_name ?? ""}`.trim()}
-                    </span>
-                  </div>
-                );
-              })}
-
-              <button
+            <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button
                 type="button"
                 className="flex h-20 w-20 items-center justify-center rounded-full border text-3xl transition hover:bg-muted"
-                onClick={() => {
-                  const current = form.getValues("participants");
-
-                  const available = contacts.filter(
-                    (c) => !current.includes(String(c.id))
-                  );
-
-                  if (!available.length) return;
-
-                  form.setValue("participants", [
-                    ...current,
-                    String(available[0].id),
-                  ]);
-                }}
-              >
+                >
                 +
-              </button>
-            </div>
-          </div>
+                </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="start" className="max-h-64 overflow-auto">
+                {contacts
+                .filter((c) => !form.watch("participants").includes(String(c.id)))
+                .map((contact) => (
+                    <DropdownMenuItem
+                    key={contact.id}
+                    onClick={() => {
+                        const current = form.getValues("participants");
+
+                        form.setValue("participants", [
+                        ...current,
+                        String(contact.id),
+                        ]);
+                    }}
+                    >
+                    {contact.first_name} {contact.last_name}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+        </div>
 
         </div>
       </div>

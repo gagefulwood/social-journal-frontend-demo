@@ -32,6 +32,7 @@ export type LogListParams = {
   title?: string;
   mood?: ApiId;
   entry_tag?: ApiId;
+  event?: ApiId;
 };
 
 export type ReflectionListParams = {
