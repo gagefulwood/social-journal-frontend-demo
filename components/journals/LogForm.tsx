@@ -10,7 +10,7 @@ import { useLookups } from "@/hooks/useLookups";
 import type { ApiError } from "@/types/auth";
 import { useEffect, useState } from "react";
 import { eventsApi } from "@/lib/api/eventsApi";
-import type { Event, EventListItem } from "@/types/events";
+import type { EventListItem } from "@/types/events";
 import type {
   Log,
   CreateLogRequest,
