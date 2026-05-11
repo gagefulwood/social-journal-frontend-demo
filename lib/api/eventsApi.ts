@@ -52,21 +52,19 @@ export const eventsApi = {
     await api.delete(`/api/events/${id}/`);
   },
 
-  async getLogSummary(id: ApiId): Promise<EventLogSummary | null> {
+  async getLogSummaries(id: ApiId): Promise<EventLogSummary[]> {
     const event = await this.get(id);
-    return event.journals.log;
+    return event.journals.logs;
   },
 
-  async getReflectionSummary(
-    id: ApiId
-  ): Promise<EventReflectionSummary | null> {
+  async getReflectionSummaries(id: ApiId): Promise<EventReflectionSummary[]> {
     const event = await this.get(id);
-    return event.journals.reflection;
+    return event.journals.reflections;
   },
 
-  async getExerciseSummary(id: ApiId): Promise<EventExerciseSummary | null> {
+  async getExerciseSummaries(id: ApiId): Promise<EventExerciseSummary[]> {
     const event = await this.get(id);
-    return event.journals.exercise;
+    return event.journals.exercises;
   },
 
   async getJournalsSummary(id: ApiId): Promise<EventJournalsSummary> {

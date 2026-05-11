@@ -13,7 +13,18 @@ import type {
   LogListResponse,
   ReflectionListResponse,
   ExerciseListResponse,
+  CombinedJournalFeedResponse,
 } from "@/types/journals";
+
+export type JournalFeedParams = {
+  page?: number;
+  page_size?: number;
+  kind?: string;
+  event?: ApiId;
+  title?: string;
+  created_after?: string;
+  created_before?: string;
+};
 
 export type LogListParams = {
   page?: number;
@@ -55,6 +66,15 @@ function normalizeList<TItem>(data: MaybePaginated<TItem>): TItem[] {
 }
 
 export const journalApi = {
+  async listFeed(
+    params?: JournalFeedParams
+  ): Promise<CombinedJournalFeedResponse> {
+    const res = await api.get<CombinedJournalFeedResponse>("/api/journals/", {
+      params,
+    });
+    return res.data;
+  },
+
   async listLogs(params?: LogListParams): Promise<LogListResponse> {
     const res = await api.get<LogListResponse>("/api/journals/logs/", {
       params,

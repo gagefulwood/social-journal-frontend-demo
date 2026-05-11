@@ -35,7 +35,7 @@ const eventFormSchema = z.object({
 });
 
 const journalTypes = [
-  { label: "Log", value: "reflection", route: "/journals/logs/new" },
+  { label: "Log", value: "reflection", route: "/journals/new" },
   { label: "Reflection", value: "incident", route: "/journals/reflections/new" },
   { label: "Exercise", value: "exercise", route: "/journals/exercises/new" },
 ];
@@ -240,7 +240,10 @@ export function EventsForm({
                   onClick={() => {
                     form.setValue("journal_type", type.value);
 
-                    router.push(type.route);
+                    const route = initialData?.id
+                      ? `${type.route}?event=${initialData.id}`
+                      : type.route;
+                    router.push(route);
                   }}
                 >
                   {type.label}

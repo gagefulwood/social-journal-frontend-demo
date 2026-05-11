@@ -20,6 +20,7 @@ export type EventLogSummary = {
 export type EventReflectionSummary = {
   id: ApiId;
   kind: "reflection";
+  title: string;
   subtype: string;
   clarity_check: string;
   created_timestamp: string;
@@ -29,6 +30,7 @@ export type EventReflectionSummary = {
 export type EventExerciseSummary = {
   id: ApiId;
   kind: "exercise";
+  title: string;
   subtype: string;
   measurement_delta: number;
   created_timestamp: string;
@@ -36,9 +38,9 @@ export type EventExerciseSummary = {
 };
 
 export type EventJournalsSummary = {
-  log: EventLogSummary | null;
-  reflection: EventReflectionSummary | null;
-  exercise: EventExerciseSummary | null;
+  logs: EventLogSummary[];
+  reflections: EventReflectionSummary[];
+  exercises: EventExerciseSummary[];
 };
 
 export type EventListItem = {

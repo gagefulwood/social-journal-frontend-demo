@@ -59,8 +59,11 @@ export default function JournalsPage() {
         <Tabs
           value="reflections"
           onValueChange={(value) => {
-            if (value === "logs") {
+            if (value === "all") {
               router.push("/journals");
+            }
+            if (value === "logs") {
+              router.push("/journals/logs");
             }
             if (value === "exercises") {
                 router.push("/journals/exercises");
@@ -68,6 +71,7 @@ export default function JournalsPage() {
           }}
         >
           <TabsList className="w-full md:w-fit">
+            <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="logs">Logs</TabsTrigger>
             <TabsTrigger value="reflections">Reflections</TabsTrigger>
             <TabsTrigger value="exercises">Exercises</TabsTrigger>
