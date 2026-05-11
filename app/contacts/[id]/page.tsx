@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ContactDetailPanel } from "@/components/contacts/ContactDetailPanel";
 import { useContact } from "@/hooks/useContact";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 export default function ContactDetailPage() {
   const params = useParams<{ id: string }>();
@@ -44,6 +46,9 @@ export default function ContactDetailPage() {
   }
 
   return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">   
+    <SidebarSJ />
     <main className="mx-auto w-full max-w-6xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between gap-4">
         <Button asChild variant="outline">
@@ -128,5 +133,7 @@ export default function ContactDetailPage() {
         />
       )}
     </main>
+    </div>
+  </SidebarProvider>
   );
 }

@@ -30,7 +30,7 @@ export default function NewLogPage() {
         onSubmit={async (data: CreateLogRequest | UpdateLogRequest) => {
           const log = await journalApi.createLog(data as CreateLogRequest);
           toast.success("Log created.");
-          router.push(`/journals/${log.id}`);
+          router.push(`/journals`);
         }}
       />
     </main>

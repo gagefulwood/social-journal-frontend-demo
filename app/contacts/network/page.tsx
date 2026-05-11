@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 export default function ContactNetworkPage() {
   const router = useRouter();
 
   return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <SidebarSJ />
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -50,5 +55,7 @@ export default function ContactNetworkPage() {
         </p>
       </section>
     </main>
+    </div>
+  </SidebarProvider>
   );
 }

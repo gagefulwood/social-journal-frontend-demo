@@ -217,6 +217,7 @@ export function EventsForm({
       </div>
 
       {/* holy crap this was hard to implement but i got it i think*/}
+      {/* ALSO README: NEED TO ADD CONNECT CURRENT JOURNALS FUNCTION */}
       <div className="mt-10">
         <p className="mb-3 text-xl font-medium">Journals</p>
 
@@ -228,7 +229,7 @@ export function EventsForm({
                 type="button"
                 className="ml-auto flex h-12 w-12 items-center justify-center rounded-full border bg-muted text-2xl transition hover:bg-accent"
               >
-                +
+                New Journal Entry
               </button>
             </DropdownMenuTrigger>
 

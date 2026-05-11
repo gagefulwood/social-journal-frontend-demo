@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 export default function ReflectInProgress() {
     return (
+        <SidebarProvider>
+        <div className="flex min-h-screen w-full">
+        <SidebarSJ />
         <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
 
             <h1 className="text-3xl font-bold mb-8">
@@ -32,5 +37,7 @@ export default function ReflectInProgress() {
             </div>
 
         </main>
+        </div>
+      </SidebarProvider>
     );
 }

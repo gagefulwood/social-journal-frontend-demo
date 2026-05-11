@@ -8,17 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLookups } from "@/hooks/useLookups";
 import type { ApiError } from "@/types/auth";
+import { useEffect, useState } from "react";
+import { eventsApi } from "@/lib/api/eventsApi";
+import type { Event, EventListItem } from "@/types/events";
 import type {
   Log,
   CreateLogRequest,
   UpdateLogRequest,
 } from "@/types/journals";
-import type { Event } from "@/types/events";
 
-const events = [
-  { id: 1, title: "Storm at Sea" },
-  { id: 2, title: "Haunting" },
-];
 
 const logSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -57,6 +55,16 @@ function emptyToNull(value?: string | number | null) {
 }
 
 export function LogForm({ log, onSubmit, submitLabel }: LogFormProps) {
+    const [events, setEvents] = useState<EventListItem[]>([]);
+
+    useEffect(() => {
+      async function load() {
+      const res = await eventsApi.list();
+      setEvents(res.results);
+      }
+
+      load();
+    }, []);
     const { moods, entryTags } = useLookups();
     const {
         register,
@@ -102,7 +110,7 @@ export function LogForm({ log, onSubmit, submitLabel }: LogFormProps) {
 
             if (!apiError.fieldErrors) {
                 setError("root", {
-                    message: apiError.message || "Unable to save contact.",
+                    message: apiError.message || "Unable to save log.",
                 });
             }
         }

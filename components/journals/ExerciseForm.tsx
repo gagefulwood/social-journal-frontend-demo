@@ -4,23 +4,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { useLookups } from "@/hooks/useLookups";
 import type { ApiError } from "@/types/auth";
+import { useEffect, useState } from "react";
+import { eventsApi } from "@/lib/api/eventsApi";
+import type { EventListItem } from "@/types/events";
 import type {
   Exercise,
   CreateExerciseRequest,
   UpdateExerciseRequest,
 } from "@/types/journals";
-import type { Event } from "@/types/events";
 import type { SubmitHandler } from "react-hook-form";
-
-const events = [
-  { id: 1, title: "Storm at Sea" },
-  { id: 2, title: "Haunting" },
-];
 
 const exerciseSchema = z.object({
   event: z.string().min(1, "Event is required"),
@@ -75,6 +70,16 @@ export function ExerciseForm({ exercise, onSubmit, submitLabel }: ExerciseFormPr
         },
     });
 
+    const [events, setEvents] = useState<EventListItem[]>([]);
+
+    useEffect(() => {
+    async function load() {
+        const res = await eventsApi.list();
+        setEvents(res.results);
+    }
+
+    load();
+    }, []);
     const preValue = watch("pre_measurement");
     const postValue = watch("post_measurement");
 
@@ -141,20 +146,23 @@ export function ExerciseForm({ exercise, onSubmit, submitLabel }: ExerciseFormPr
                     <option value="meditation">Meditation</option>
                 </select>
             </Field>
-            <Field label="Event ID" error={errors.event?.message}>
-                <select
-                    {...register("event")}
-                    className="w-full rounded-md border p-2"
-                    defaultValue=""
-                    >
-                    <option value="">No event</option>
+            <Field label="Event" error={errors.event?.message}>
+            <select
+                {...register("event")}
+                className="w-full rounded-md border p-2"
+                defaultValue=""
+            >
+                <option value="">No event</option>
 
-                    {events?.map((event) => (
-                        <option key={event.id} value={event.id}>
-                        {event.title}
-                        </option>
-                    ))}
-                </select>
+                {events.map((event) => (
+                <option
+                    key={event.id}
+                    value={String(event.id)}
+                >
+                    {event.title}
+                </option>
+                ))}
+            </select>
             </Field>
             </div>
         </section>

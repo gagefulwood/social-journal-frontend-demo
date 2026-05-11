@@ -12,6 +12,8 @@ import { ContactFilterPopover } from "@/components/contacts/ContactFilterPopover
 import { useContacts } from "@/hooks/useContacts";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLookups } from "@/hooks/useLookups";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 const pageSize = 24;
 
@@ -33,6 +35,9 @@ export default function ContactsPage() {
   });
 
   return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">   
+    <SidebarSJ />
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -104,5 +109,7 @@ export default function ContactsPage() {
         onRetry={refetch}
       />
     </main>
+    </div>
+  </SidebarProvider>
   );
 }

@@ -45,7 +45,7 @@ export default function NewEventPage() {
                 onSubmit={async (data: CreateEventRequest | UpdateEventRequest) => {
                     const event = await eventsApi.create(data as CreateEventRequest);
                     toast.success("Event created.");
-                    router.push(`/events/${event.id}`);
+                    router.push(`/events`);
                 }}
             />
         </main>
