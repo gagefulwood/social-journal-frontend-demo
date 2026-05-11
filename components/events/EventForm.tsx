@@ -229,7 +229,7 @@ export function EventsForm({
                 type="button"
                 className="ml-auto flex h-12 w-12 items-center justify-center rounded-full border bg-muted text-2xl transition hover:bg-accent"
               >
-                New Journal Entry
+                +
               </button>
             </DropdownMenuTrigger>
 
