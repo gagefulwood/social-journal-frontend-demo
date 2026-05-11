@@ -1,88 +1,266 @@
 "use client";
 
-import { useState } from "react";
-import type { ApiId } from "@/types/api";
+import { z } from "zod";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ApiError } from "@/types/auth";
+import { ContextCategory } from "@/types/lookups";
+import type { ContactListItem } from "@/types/contacts";
+import { contactsApi } from "@/lib/api/contactsApi";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type {
+  Event,
   CreateEventRequest,
-  EventTier,
   UpdateEventRequest,
 } from "@/types/events";
 
+const eventFormSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  event_timestamp: z.string().min(1, "Date is required"),
+  location_label: z.string().optional(),
+  tier: z.enum(["routine", "milestone"]),
+  context_category: z.union([z.string(), z.number()]).nullable().optional(),
+  participants: z.array(z.string()),
+  journal_type: z.string().optional(),
+});
+
+const journalTypes = [
+  { label: "Log", value: "reflection", route: "/journals/logs/new" },
+  { label: "Reflection", value: "incident", route: "/journals/reflections/new" },
+  { label: "Exercise", value: "exercise", route: "/journals/exercises/new" },
+];
+
+type EventFormValues = z.infer<typeof eventFormSchema>;
+
 type EventFormProps = {
+  initialData?: Event;
   submitLabel: string;
-  onSubmit: (data: CreateEventRequest | UpdateEventRequest) => Promise<void>;
+  categories: ContextCategory[];
+  onSubmit: (
+    data: CreateEventRequest | UpdateEventRequest
+  ) => Promise<void>;
 };
 
-type EventFormValues = {
-  title: string;
-  event_timestamp: string;
-  end_timestamp?: string | null;
-  location_label?: string;
-  tier?: "routine" | "milestone";
-  context_category?: ApiId | null;
-  participants?: ApiId[];
-};
+export function EventsForm({
+  initialData,
+  submitLabel,
+  categories,
+  onSubmit,
+}: EventFormProps) {
+  const router = useRouter();
 
-export function EventsForm({ submitLabel, onSubmit }: EventFormProps) {
-  const [form, setForm] = useState<EventFormValues>({
-    title: "",
-    event_timestamp: "",
-    end_timestamp: null,
-    location_label: "",
-    tier: "routine",
-    context_category: null,
-    participants: [],
+  const [error, setError] = useState<ApiError | null>(null);
+  const [contacts, setContacts] = useState<ContactListItem[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const res = await contactsApi.list();
+      setContacts(res.results);
+    }
+
+    load();
+  }, []);
+
+  const form = useForm<EventFormValues>({
+    resolver: zodResolver(eventFormSchema),
+    defaultValues: {
+      title: initialData?.title ?? "",
+      event_timestamp: initialData?.event_timestamp?.slice(0, 16) ?? "",
+      location_label: initialData?.location_label ?? "",
+      tier: initialData?.tier ?? "routine",
+      context_category: initialData?.context_category ?? null,
+      participants:
+      initialData?.participants?.map((p) => String(p.contact.id)) ?? [],
+      journal_type: undefined,
+    },
   });
 
-  const update = <TKey extends keyof EventFormValues>(
-    key: TKey,
-    value: EventFormValues[TKey]
-  ) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+  async function handleSubmit(values: EventFormValues) {
+    setError(null);
 
-  const handleSubmit = async () => {
-    await onSubmit(form);
-  };
+    try {
+      await onSubmit({
+        ...values,
+        context_category: values.context_category || null,
+      });
+    } catch (err) {
+      setError(err as ApiError);
+    }
+  }
 
   return (
-    <div className="space-y-4 max-w-md">
-      <input
-        className="border p-2 w-full"
-        placeholder="Title"
-        value={form.title}
-        onChange={(e) => update("title", e.target.value)}
-      />
-
-      <input
-        className="border p-2 w-full"
-        type="datetime-local"
-        value={form.event_timestamp?.slice(0, 16)}
-        onChange={(e) => update("event_timestamp", e.target.value)}
-      />
-
-      <input
-        className="border p-2 w-full"
-        placeholder="Location"
-        value={form.location_label}
-        onChange={(e) => update("location_label", e.target.value)}
-      />
-
-      <select
-        className="border p-2 w-full"
-        value={form.tier}
-        onChange={(e) => update("tier", e.target.value as EventTier)}
-      >
-        <option value="routine">Routine</option>
-        <option value="milestone">Milestone</option>
-      </select>
-
-      <button
-        className="bg-black text-white px-4 py-2"
-        onClick={handleSubmit}
-      >
+    <form
+      onSubmit={form.handleSubmit(handleSubmit)}
+      className="rounded-xl border border-border bg-card p-8"
+    >
+      <h1 className="mb-8 text-3xl font-semibold">
         {submitLabel}
-      </button>
-    </div>
+      </h1>
+
+      <div className="grid gap-10 lg:grid-cols-2">
+        <div className="space-y-5">
+
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input id="title" {...form.register("title")} />
+            <p className="text-sm text-red-500">
+              {form.formState.errors.title?.message}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="event_timestamp">Date</Label>
+            <Input
+              id="event_timestamp"
+              type="datetime-local"
+              {...form.register("event_timestamp")}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location_label">Location</Label>
+            <Input
+              id="location_label"
+              {...form.register("location_label")}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tier">Tier</Label>
+            <select
+              id="tier"
+              className="w-full rounded-md border border-input bg-background p-3"
+              {...form.register("tier")}
+            >
+              <option value="routine">Routine</option>
+              <option value="milestone">Milestone</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="context_category">Category</Label>
+            <select
+              id="context_category"
+              className="w-full rounded-md border border-input bg-background p-3"
+              {...form.register("context_category")}
+            >
+              <option value="">Select a category</option>
+
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="space-y-5">
+
+          {/* This is the part where I'm adding contacts to all of this... though I'm not sure how to make this display on the contacts' pages*/}
+          <div>
+            <p className="mb-4 text-xl font-medium">
+              Participants
+            </p>
+
+            <div className="flex flex-wrap gap-4">
+              {form.watch("participants").map((id) => {
+                const contact = contacts.find((c) => c.id === id);
+
+                {/* This I need help with bc i need it to display contact avatar OR initials? rn i just have the dots... */}
+                return (
+
+                  <div
+                    key={id}
+                    className="flex h-20 w-20 flex-col items-center justify-center rounded-full border-2 border-grey-300 bg-grey-100 text-xs"
+                  >
+                    <span className="font-medium">
+                      {`${contact?.first_name ?? ""} ${contact?.last_name ?? ""}`.trim()}
+                    </span>
+                  </div>
+                );
+              })}
+
+              <button
+                type="button"
+                className="flex h-20 w-20 items-center justify-center rounded-full border text-3xl transition hover:bg-muted"
+                onClick={() => {
+                  const current = form.getValues("participants");
+
+                  const available = contacts.filter(
+                    (c) => !current.includes(String(c.id))
+                  );
+
+                  if (!available.length) return;
+
+                  form.setValue("participants", [
+                    ...current,
+                    String(available[0].id),
+                  ]);
+                }}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* holy crap this was hard to implement but i got it i think*/}
+      <div className="mt-10">
+        <p className="mb-3 text-xl font-medium">Journals</p>
+
+        <div className="relative flex h-20 items-center rounded-md border border-input bg-background px-4">
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="ml-auto flex h-12 w-12 items-center justify-center rounded-full border bg-muted text-2xl transition hover:bg-accent"
+              >
+                +
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end">
+              {journalTypes.map((type) => (
+                <DropdownMenuItem
+                  key={type.value}
+                  onClick={() => {
+                    form.setValue("journal_type", type.value);
+
+                    router.push(type.route);
+                  }}
+                >
+                  {type.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+        </div>
+      </div>
+
+      {error && (
+        <p className="mt-4 text-sm text-red-500">
+          {error.message}
+        </p>
+      )}
+      <div className="mt-8 flex justify-end">
+        <Button type="submit">
+          {submitLabel}
+        </Button>
+      </div>
+    </form>
   );
 }
