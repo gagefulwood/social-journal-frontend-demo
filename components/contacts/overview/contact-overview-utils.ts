@@ -11,13 +11,13 @@ import type { EventListItem, EventTier } from "@/types/events";
 export type OverviewTone = "positive" | "neutral" | "watch" | "muted";
 
 export type ConnectionBand = {
-  label: "Strong" | "Steady" | "Needs attention" | "Quiet";
+  label: "Strong" | "Steady" | "Needs context" | "Quiet";
   tone: OverviewTone;
   score: number;
 };
 
 export type TrendPresentation = {
-  label: "Growing" | "Stable" | "Fading" | "Dormant" | "Unknown";
+  label: "Growing" | "Steady" | "Slowing" | "Quiet" | "Unknown";
   eyebrow: "Trend";
   tone: OverviewTone;
   value: RelationshipTrend;
@@ -25,11 +25,12 @@ export type TrendPresentation = {
 
 export type SentimentSummary = {
   label:
+    | "No mood signal"
+    | "Limited signal"
     | "Mostly positive"
-    | "Mostly neutral"
     | "Mostly difficult"
-    | "Mixed"
-    | "No sentiment data";
+    | "Mixed";
+  detail: string;
   tone: OverviewTone;
   total: number;
   dominantMood: string | null;
@@ -141,7 +142,7 @@ export function getConnectionBand(connection_strength: number): ConnectionBand {
   }
 
   if (score >= 26) {
-    return { label: "Needs attention", tone: "watch", score };
+    return { label: "Needs context", tone: "watch", score };
   }
 
   return { label: "Quiet", tone: "muted", score };
@@ -161,7 +162,7 @@ export function getTrendPresentation(
 
   if (relationship_trend === "stable") {
     return {
-      label: "Stable",
+      label: "Steady",
       eyebrow: "Trend",
       tone: "neutral",
       value: relationship_trend,
@@ -170,7 +171,7 @@ export function getTrendPresentation(
 
   if (relationship_trend === "fading") {
     return {
-      label: "Fading",
+      label: "Slowing",
       eyebrow: "Trend",
       tone: "watch",
       value: relationship_trend,
@@ -179,7 +180,7 @@ export function getTrendPresentation(
 
   if (relationship_trend === "dormant") {
     return {
-      label: "Dormant",
+      label: "Quiet",
       eyebrow: "Trend",
       tone: "muted",
       value: relationship_trend,
@@ -198,7 +199,7 @@ export function getFrequencyLabel(interaction_frequency_score: number): string {
   const score = clampScore(interaction_frequency_score);
 
   if (score === 0) {
-    return "No recent pattern";
+    return "No rhythm yet";
   }
 
   if (score >= 76) {
@@ -206,14 +207,10 @@ export function getFrequencyLabel(interaction_frequency_score: number): string {
   }
 
   if (score >= 51) {
-    return "Regular";
-  }
-
-  if (score >= 26) {
     return "Occasional";
   }
 
-  return "Quiet";
+  return "Quiet rhythm";
 }
 
 export function getDiversityLabel(interaction_diversity_score: number): string {
@@ -251,7 +248,8 @@ export function getSentimentSummary(
 
   if (total === 0) {
     return {
-      label: "No sentiment data",
+      label: "No mood signal",
+      detail: "No mood signals yet",
       tone: "muted",
       total: 0,
       dominantMood: null,
@@ -284,9 +282,21 @@ export function getSentimentSummary(
     percent: Math.round((part.count / total) * 100),
   }));
 
+  if (total <= 2) {
+    return {
+      label: "Limited signal",
+      detail: moodSignalDetail(total, dominantMood),
+      tone: "watch",
+      total,
+      dominantMood,
+      parts: summaryParts,
+    };
+  }
+
   if (positiveCount > negativeCount + neutralCount + otherCount) {
     return {
       label: "Mostly positive",
+      detail: moodSignalDetail(total, dominantMood),
       tone: "positive",
       total,
       dominantMood,
@@ -297,17 +307,8 @@ export function getSentimentSummary(
   if (negativeCount > positiveCount + neutralCount + otherCount) {
     return {
       label: "Mostly difficult",
+      detail: moodSignalDetail(total, dominantMood),
       tone: "watch",
-      total,
-      dominantMood,
-      parts: summaryParts,
-    };
-  }
-
-  if (neutralCount > positiveCount + negativeCount + otherCount) {
-    return {
-      label: "Mostly neutral",
-      tone: "neutral",
       total,
       dominantMood,
       parts: summaryParts,
@@ -316,6 +317,7 @@ export function getSentimentSummary(
 
   return {
     label: "Mixed",
+    detail: moodSignalDetail(total, dominantMood),
     tone: "neutral",
     total,
     dominantMood,
@@ -402,45 +404,42 @@ export function selectStorySoFarEvents(
 
 export function buildRelationshipSnapshot({
   contact,
-  facts,
-  observations,
   events,
 }: BuildOverviewInput): RelationshipSnapshot {
   const sortedEvents = sortRecentEvents(events);
   const latestEvent = sortedEvents[0] ?? null;
   const eventCount = events.length;
   const displayName = getContactDisplayName(contact);
+  const firstName = normalizeText(contact.first_name) || displayName;
   const details: string[] = [];
 
   if (contact.relation_name) {
     details.push(`${displayName} is saved as ${contact.relation_name}.`);
   }
 
-  if (facts.length === 0) {
-    details.push("No facts saved yet");
-  }
-
-  if (
-    observations.filter((observation) => observation.is_active).length === 0
-  ) {
-    details.push("No recent observations");
-  }
-
   if (!latestEvent) {
     return {
-      headline: "No shared moments yet",
-      details,
+      headline:
+        "Not enough shared moments yet. Add an event to start building this relationship story.",
+      details: [],
       latestEvent: null,
       eventCount: 0,
       emptyState: "Add events to build this story",
     };
   }
 
-  return {
-    headline: `You have shared ${eventCount} recorded ${pluralize(
-      "moment",
+  if (eventCount === 1) {
+    return {
+      headline: `You have one recorded moment with ${firstName} so far. Add a few facts or observations to build a fuller picture of your relationship over time.`,
+      details: [],
+      latestEvent,
       eventCount,
-    )}. The latest was ${normalizeText(latestEvent.title) || "Untitled event"}.`,
+      emptyState: null,
+    };
+  }
+
+  return {
+    headline: `You have shared ${eventCount} recorded moments with ${firstName}. The latest was ${normalizeText(latestEvent.title) || "Untitled event"}.`,
     details,
     latestEvent,
     eventCount,
@@ -497,28 +496,17 @@ function getRememberNextTimeEmptyState(
     return null;
   }
 
-  if (facts.length === 0) {
-    return "No facts saved yet";
-  }
-
-  if (
-    observations.filter((observation) => observation.is_active).length === 0
-  ) {
-    return "No recent observations";
-  }
-
-  return "No recent observations";
+  return "No facts saved yet";
 }
 
 function buildContextLine(contact: Contact): string {
   const role = normalizeText(
     contact.custom_occupation || contact.occupation_name || "",
   );
-  const organization = normalizeText(contact.company || contact.school || "");
   const relation = normalizeText(contact.relation_name || "");
-  const parts = [relation, role, organization].filter(Boolean);
+  const parts = [relation, role].filter(Boolean);
 
-  return parts.length > 0 ? parts.join(" - ") : "Saved contact";
+  return parts.length > 0 ? parts.join(" · ") : "Saved contact";
 }
 
 function clampScore(score: number): number {
@@ -561,10 +549,6 @@ function normalizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function pluralize(word: string, count: number): string {
-  return count === 1 ? word : `${word}s`;
-}
-
 function sortRecentEvents(events: EventListItem[]): EventListItem[] {
   return [...events].sort(
     (left, right) =>
@@ -581,6 +565,12 @@ function timestampValue(value: string): number {
   const timestamp = Date.parse(value);
 
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function moodSignalDetail(total: number, dominantMood: string | null): string {
+  const signalCopy = `${total} mood ${total === 1 ? "signal" : "signals"}`;
+
+  return dominantMood ? `${signalCopy} (${dominantMood})` : signalCopy;
 }
 
 function truncateText(value: string, maxLength: number): string {

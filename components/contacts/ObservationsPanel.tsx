@@ -15,22 +15,24 @@ import type {
 
 type ObservationsPanelProps = {
   observations?: Observation[];
+  initialCreateOpen?: boolean;
   onCreate: (data: CreateObservationRequest) => Promise<void>;
   onUpdate: (
     observationId: ApiId,
-    data: UpdateObservationRequest
+    data: UpdateObservationRequest,
   ) => Promise<void>;
   onDelete: (observationId: ApiId) => Promise<void>;
 };
 
 export function ObservationsPanel({
   observations = [],
+  initialCreateOpen = false,
   onCreate,
   onUpdate,
   onDelete,
 }: ObservationsPanelProps) {
   const safeObservations = Array.isArray(observations) ? observations : [];
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(initialCreateOpen);
   const [editingObservation, setEditingObservation] =
     useState<Observation | null>(null);
   const { observationMarkers } = useLookups();
@@ -77,7 +79,7 @@ export function ObservationsPanel({
         )}
         {safeObservations.map((observation) => {
           const marker = observationMarkers.find((item) =>
-            idsMatch(item.id, observation.marker)
+            idsMatch(item.id, observation.marker),
           );
 
           return (

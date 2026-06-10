@@ -17,9 +17,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ContactDetailPanel } from "@/components/contacts/ContactDetailPanel";
+import { ContactOverviewSkeleton } from "@/components/contacts/overview/ContactOverviewSkeleton";
 import { useContact } from "@/hooks/useContact";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 export default function ContactDetailPage() {
   const params = useParams<{ id: string }>();
@@ -46,94 +45,91 @@ export default function ContactDetailPage() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">   
-    <SidebarSJ />
-    <main className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <Button asChild variant="outline">
-          <Link href="/contacts">Back</Link>
-        </Button>
-        {contact && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="size-4" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete contact?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This removes the contact and related contact facts and
-                  observations. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  onClick={() => void confirmDelete()}
-                >
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto w-full max-w-[1760px] px-4 py-4 sm:px-6 lg:px-8">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <Button asChild variant="outline">
+            <Link href="/contacts">Back</Link>
+          </Button>
+          {contact && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="size-4" />
                   Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete contact?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This removes the contact and related contact facts and
+                    observations. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={() => void confirmDelete()}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+
+        {loading && <ContactOverviewSkeleton />}
+
+        {error && (
+          <div className="rounded-lg border border-border p-6">
+            <p className="font-medium">Unable to load contact</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {error.message}
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && !contact && (
+          <div className="rounded-lg border border-border p-6">
+            Contact not found.
+          </div>
+        )}
+
+        {contact && (
+          <ContactDetailPanel
+            contact={contact}
+            facts={facts}
+            observations={observations}
+            onCreateFact={async (data) => {
+              await createFact(data);
+              toast.success("Fact added.");
+            }}
+            onUpdateFact={async (factId, data) => {
+              await updateFact(factId, data);
+              toast.success("Fact updated.");
+            }}
+            onDeleteFact={async (factId) => {
+              await deleteFact(factId);
+              toast.success("Fact deleted.");
+            }}
+            onCreateObservation={async (data) => {
+              await createObservation(data);
+              toast.success("Observation added.");
+            }}
+            onUpdateObservation={async (observationId, data) => {
+              await updateObservation(observationId, data);
+              toast.success("Observation updated.");
+            }}
+            onDeleteObservation={async (observationId) => {
+              await deleteObservation(observationId);
+              toast.success("Observation deleted.");
+            }}
+          />
         )}
       </div>
-
-      {loading && (
-        <div className="h-96 animate-pulse rounded-lg border border-border bg-muted" />
-      )}
-
-      {error && (
-        <div className="rounded-lg border border-border p-6">
-          <p className="font-medium">Unable to load contact</p>
-          <p className="mt-1 text-sm text-muted-foreground">{error.message}</p>
-        </div>
-      )}
-
-      {!loading && !error && !contact && (
-        <div className="rounded-lg border border-border p-6">
-          Contact not found.
-        </div>
-      )}
-
-      {contact && (
-        <ContactDetailPanel
-          contact={contact}
-          facts={facts}
-          observations={observations}
-          onCreateFact={async (data) => {
-            await createFact(data);
-            toast.success("Fact added.");
-          }}
-          onUpdateFact={async (factId, data) => {
-            await updateFact(factId, data);
-            toast.success("Fact updated.");
-          }}
-          onDeleteFact={async (factId) => {
-            await deleteFact(factId);
-            toast.success("Fact deleted.");
-          }}
-          onCreateObservation={async (data) => {
-            await createObservation(data);
-            toast.success("Observation added.");
-          }}
-          onUpdateObservation={async (observationId, data) => {
-            await updateObservation(observationId, data);
-            toast.success("Observation updated.");
-          }}
-          onDeleteObservation={async (observationId) => {
-            await deleteObservation(observationId);
-            toast.success("Observation deleted.");
-          }}
-        />
-      )}
     </main>
-    </div>
-  </SidebarProvider>
   );
 }
