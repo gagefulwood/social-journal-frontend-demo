@@ -1,31 +1,14 @@
 import type { KeyboardEvent } from "react";
-import {
-  AlertCircle,
-  BookOpen,
-  BriefcaseBusiness,
-  ChevronRight,
-  ClipboardList,
-  Coffee,
-  GraduationCap,
-  Heart,
-  Home,
-  MessageCircle,
-  Shield,
-  Sparkles,
-  Star,
-  User,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight, ClipboardList } from "lucide-react";
 import { ContactOverviewEmptyState } from "./ContactOverviewEmptyState";
 import {
   flattenFactCategories,
   idsMatch,
 } from "@/components/contacts/contact-utils";
+import { getFactCategoryPresentation } from "@/components/contacts/fact-category-presentation";
 import { useLookups } from "@/hooks/useLookups";
 import { cn } from "@/lib/utils";
 import type { Fact } from "@/types/contacts";
-import type { FactCategory } from "@/types/lookups";
 
 type FactsPreviewCardProps = {
   facts: Fact[];
@@ -68,20 +51,20 @@ export function FactsPreviewCard({ facts, onViewAll }: FactsPreviewCardProps) {
 
       {previewFacts.length > 0 ? (
         <ul className="space-y-3.5">
-          {previewFacts.map((fact, index) => {
+          {previewFacts.map((fact) => {
             const category = categories.find((item) =>
               idsMatch(item.id, fact.category),
             );
-            const tone = getFactTone(index);
-            const Icon = getFactIcon(category);
+            const presentation = getFactCategoryPresentation(category);
+            const Icon = presentation.icon;
 
             return (
               <li key={fact.id} className="flex items-start gap-3 text-sm">
                 <span
                   className={cn(
                     "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg",
-                    tone.badge,
-                    tone.text,
+                    presentation.badge,
+                    presentation.text,
                   )}
                 >
                   <Icon className="size-4" />
@@ -115,39 +98,6 @@ export function FactsPreviewCard({ facts, onViewAll }: FactsPreviewCardProps) {
   );
 }
 
-type FactTone = {
-  badge: string;
-  text: string;
-};
-
-const FACT_TONES: FactTone[] = [
-  { badge: "bg-emerald-100", text: "text-emerald-700" },
-  { badge: "bg-violet-100", text: "text-violet-700" },
-  { badge: "bg-sky-100", text: "text-sky-700" },
-  { badge: "bg-orange-100", text: "text-orange-700" },
-];
-const DEFAULT_FACT_TONE: FactTone = FACT_TONES[0] ?? {
-  badge: "bg-emerald-100",
-  text: "text-emerald-700",
-};
-
-const FACT_ICON_MAP: Record<string, LucideIcon> = {
-  FiAlertCircle: AlertCircle,
-  FiBookOpen: BookOpen,
-  FiBriefcase: BriefcaseBusiness,
-  FiCoffee: Coffee,
-  FiFileText: ClipboardList,
-  FiGraduationCap: GraduationCap,
-  FiHeart: Heart,
-  FiHome: Home,
-  FiLock: Shield,
-  FiMessageCircle: MessageCircle,
-  FiShield: Shield,
-  FiStar: Star,
-  FiUser: User,
-  FiUsers: Users,
-};
-
 function selectPreviewFacts(facts: Fact[]): Fact[] {
   const seen = new Set<string>();
   const previewFacts: Fact[] = [];
@@ -168,16 +118,4 @@ function selectPreviewFacts(facts: Fact[]): Fact[] {
   }
 
   return previewFacts;
-}
-
-function getFactIcon(category: FactCategory | undefined): LucideIcon {
-  if (!category?.icon_reference) {
-    return Sparkles;
-  }
-
-  return FACT_ICON_MAP[category.icon_reference] ?? Sparkles;
-}
-
-function getFactTone(index: number): FactTone {
-  return FACT_TONES[index % FACT_TONES.length] ?? DEFAULT_FACT_TONE;
 }

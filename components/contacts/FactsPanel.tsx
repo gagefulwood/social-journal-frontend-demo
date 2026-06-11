@@ -1,44 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
-  AlertCircle,
-  BookOpen,
-  BriefcaseBusiness,
-  Clock,
-  Compass,
   ClipboardList,
-  Coffee,
   Edit,
   FileText,
-  GraduationCap,
-  Heart,
-  HeartHandshake,
-  HeartPulse,
-  Home,
-  MapPin,
-  MessageCircle,
-  Palette,
   Plus,
-  Shield,
-  ShieldCheck,
-  Star,
   Trash2,
-  User,
-  UserRound,
-  Users,
-  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FactForm } from "@/components/contacts/FactForm";
+import { Label } from "@/components/ui/label";
 import {
   flattenFactCategories,
   idsMatch,
 } from "@/components/contacts/contact-utils";
+import {
+  getFactCategoryPresentation,
+  type FactCategoryPresentation,
+} from "@/components/contacts/fact-category-presentation";
 import { useLookups } from "@/hooks/useLookups";
 import { cn } from "@/lib/utils";
 import type { ApiId } from "@/types/api";
-import type { CreateFactRequest, Fact, UpdateFactRequest } from "@/types/contacts";
+import type {
+  CreateFactRequest,
+  Fact,
+  UpdateFactRequest,
+} from "@/types/contacts";
 import type { FactCategory } from "@/types/lookups";
 
 type FactsPanelProps = {
@@ -49,6 +36,11 @@ type FactsPanelProps = {
   onDelete: (factId: ApiId) => Promise<void>;
 };
 
+type FactEditorState =
+  | { mode: "closed" }
+  | { mode: "create"; defaultCategoryId?: string }
+  | { mode: "edit"; factId: ApiId };
+
 export function FactsPanel({
   facts = [],
   contactFirstName = "this contact",
@@ -57,11 +49,30 @@ export function FactsPanel({
   onDelete,
 }: FactsPanelProps) {
   const safeFacts = Array.isArray(facts) ? facts : [];
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingFact, setEditingFact] = useState<Fact | null>(null);
+  const [editor, setEditor] = useState<FactEditorState>({ mode: "closed" });
+  const createComposerRef = useRef<HTMLDivElement | null>(null);
   const { factCategories } = useLookups();
   const categories = flattenFactCategories(factCategories);
   const groupedFacts = groupFactsByCategory(safeFacts, categories);
+
+  useEffect(() => {
+    if (editor.mode !== "create") {
+      return;
+    }
+
+    const animationFrame = requestAnimationFrame(() => {
+      createComposerRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+
+    return () => cancelAnimationFrame(animationFrame);
+  }, [editor]);
+
+  function openCreateComposer(defaultCategoryId?: string) {
+    setEditor({ mode: "create", defaultCategoryId });
+  }
 
   return (
     <section
@@ -84,24 +95,12 @@ export function FactsPanel({
           size="sm"
           variant="outline"
           className="border-violet-300 text-violet-700 hover:bg-violet-50"
-          onClick={() => setIsCreating(true)}
+          onClick={() => openCreateComposer()}
         >
           <Plus className="size-4" />
           Add fact
         </Button>
       </div>
-
-      {isCreating && (
-        <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
-          <FactForm
-            onSubmit={async (data) => {
-              await onCreate(data);
-              setIsCreating(false);
-            }}
-            onCancel={() => setIsCreating(false)}
-          />
-        </div>
-      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {safeFacts.length === 0 && (
@@ -118,32 +117,37 @@ export function FactsPanel({
               size="sm"
               variant="outline"
               className="mt-4 border-violet-300 text-violet-700 hover:bg-violet-50"
-              onClick={() => setIsCreating(true)}
+              onClick={() => openCreateComposer()}
             >
               <Plus className="size-4" />
               Add fact
             </Button>
           </div>
         )}
-        {groupedFacts.map((group, index) => {
-          const tone = getFactTone(index);
-          const Icon = getFactIcon(group.category);
+        {groupedFacts.map((group) => {
+          const presentation = getFactCategoryPresentation(group.category);
+          const Icon = presentation.icon;
 
           return (
             <div
               key={group.key}
               className={cn(
                 "overflow-hidden rounded-xl border bg-background shadow-sm transition-colors hover:shadow-md",
-                tone.border,
+                presentation.border,
               )}
             >
-              <div className={cn("flex items-center justify-between gap-3 border-b p-4", tone.header)}>
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-3 border-b p-4",
+                  presentation.header,
+                )}
+              >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
                     className={cn(
                       "flex size-10 shrink-0 items-center justify-center rounded-xl",
-                      tone.badge,
-                      tone.text,
+                      presentation.badge,
+                      presentation.text,
                     )}
                   >
                     <Icon className="size-5" />
@@ -155,8 +159,8 @@ export function FactsPanel({
                 <span
                   className={cn(
                     "rounded-full px-2.5 py-1 text-xs font-semibold",
-                    tone.count,
-                    tone.text,
+                    presentation.count,
+                    presentation.text,
                   )}
                 >
                   {group.facts.length}
@@ -164,40 +168,32 @@ export function FactsPanel({
               </div>
 
               <div className="space-y-3 p-4">
-                {group.facts.map((fact) =>
-                  editingFact?.id === fact.id ? (
-                    <div
-                      key={fact.id}
-                      className="rounded-lg border border-border bg-muted/30 p-3"
-                    >
-                      <FactForm
-                        fact={fact}
-                        onSubmit={async (data) => {
-                          await onUpdate(fact.id, data);
-                          setEditingFact(null);
-                        }}
-                        onCancel={() => setEditingFact(null)}
-                      />
-                    </div>
-                  ) : (
-                    <div key={fact.id} className="group/fact flex gap-2">
-                      <span
-                        className={cn(
-                          "mt-2 size-1.5 shrink-0 rounded-full",
-                          tone.dot,
+                {group.facts.map((fact) => {
+                  const isEditing =
+                    editor.mode === "edit" && idsMatch(editor.factId, fact.id);
+
+                  return (
+                    <div key={fact.id} className="space-y-2">
+                      <div className="group/fact flex gap-2">
+                        <span
+                          className={cn(
+                            "mt-2 size-1.5 shrink-0 rounded-full",
+                          presentation.dot,
                         )}
                       />
                       <p className="min-w-0 flex-1 break-words text-sm leading-6 text-foreground">
                         {fact.detail_value}
                       </p>
-                      <div className="flex shrink-0 gap-0.5 opacity-60 transition-opacity group-hover/fact:opacity-100">
-                        <Button
-                          size="icon-xs"
-                          variant="ghost"
-                          onClick={() => setEditingFact(fact)}
-                          aria-label="Edit fact"
-                          className="text-muted-foreground hover:text-violet-700"
-                        >
+                        <div className="flex shrink-0 gap-0.5 opacity-60 transition-opacity group-hover/fact:opacity-100">
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() =>
+                              setEditor({ mode: "edit", factId: fact.id })
+                            }
+                            aria-label="Edit fact"
+                            className="text-muted-foreground hover:text-violet-700"
+                          >
                           <Edit className="size-3.5" />
                         </Button>
                         <Button
@@ -208,28 +204,230 @@ export function FactsPanel({
                           className="text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="size-3.5" />
-                        </Button>
+                          </Button>
+                        </div>
                       </div>
+                      {isEditing && (
+                        <FactEditorTray
+                          categories={categories}
+                          fact={fact}
+                          mode="edit"
+                          presentation={presentation}
+                          onCancel={() => setEditor({ mode: "closed" })}
+                          onSubmit={async (data) => {
+                            await onUpdate(fact.id, data);
+                            setEditor({ mode: "closed" });
+                          }}
+                        />
+                      )}
                     </div>
-                  ),
-                )}
+                  );
+                })}
               </div>
             </div>
           );
         })}
       </div>
 
-      {safeFacts.length > 0 && (
+      <div ref={createComposerRef} className="mt-5">
+        {editor.mode === "create" ? (
+          <FactCreateComposer
+            categories={categories}
+            defaultCategoryId={editor.defaultCategoryId}
+            onCancel={() => setEditor({ mode: "closed" })}
+            onSubmit={async (data) => {
+              await onCreate(data);
+              setEditor({ mode: "closed" });
+            }}
+          />
+        ) : (
         <Button
           variant="outline"
-          className="mt-5 h-10 w-full border-violet-200 text-violet-700 hover:bg-violet-50"
-          onClick={() => setIsCreating(true)}
+          className="h-12 w-full border-dashed border-violet-200 text-violet-700 hover:bg-violet-50"
+          onClick={() => openCreateComposer()}
         >
           <Plus className="size-4" />
-          Add another fact
+          {safeFacts.length > 0 ? "Add another fact" : "Add your first fact"}
         </Button>
-      )}
+        )}
+      </div>
     </section>
+  );
+}
+
+type FactEditorBaseProps = {
+  categories: FactCategory[];
+  onCancel: () => void;
+  onSubmit: (data: CreateFactRequest) => Promise<void>;
+};
+
+type FactCreateComposerProps = FactEditorBaseProps & {
+  defaultCategoryId?: string;
+};
+
+function FactCreateComposer({
+  categories,
+  defaultCategoryId = "",
+  onCancel,
+  onSubmit,
+}: FactCreateComposerProps) {
+  return (
+    <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-sm shadow-emerald-100/50">
+      <div className="mb-4 flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+          <ClipboardList className="size-5" />
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-emerald-800">
+            Add a new fact
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Save something stable you want to remember.
+          </p>
+        </div>
+      </div>
+      <FactEditorFields
+        categories={categories}
+        initialCategoryId={defaultCategoryId}
+        initialDetail=""
+        mode="create"
+        onCancel={onCancel}
+        onSubmit={onSubmit}
+      />
+    </div>
+  );
+}
+
+type FactEditorTrayProps = FactEditorBaseProps & {
+  fact: Fact;
+  mode: "edit";
+  presentation: FactCategoryPresentation;
+};
+
+function FactEditorTray({
+  categories,
+  fact,
+  onCancel,
+  onSubmit,
+  presentation,
+}: FactEditorTrayProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-3 shadow-inner",
+        presentation.border,
+        presentation.header,
+      )}
+    >
+      <FactEditorFields
+        categories={categories}
+        initialCategoryId={fact.category == null ? "" : String(fact.category)}
+        initialDetail={fact.detail_value}
+        mode="edit"
+        onCancel={onCancel}
+        onSubmit={onSubmit}
+      />
+    </div>
+  );
+}
+
+type FactEditorFieldsProps = FactEditorBaseProps & {
+  initialCategoryId: string;
+  initialDetail: string;
+  mode: "create" | "edit";
+};
+
+function FactEditorFields({
+  categories,
+  initialCategoryId,
+  initialDetail,
+  mode,
+  onCancel,
+  onSubmit,
+}: FactEditorFieldsProps) {
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const [detail, setDetail] = useState(initialDetail);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const detailRef = useRef<HTMLTextAreaElement | null>(null);
+  const trimmedDetail = detail.trim();
+  const isUnchanged =
+    mode === "edit" &&
+    categoryId === initialCategoryId &&
+    trimmedDetail === initialDetail.trim();
+  const isSaveDisabled =
+    isSubmitting || trimmedDetail.length === 0 || isUnchanged;
+
+  useEffect(() => {
+    detailRef.current?.focus();
+  }, []);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isSaveDisabled) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        category: categoryId || null,
+        detail_value: trimmedDetail,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form className="space-y-3" onSubmit={handleSubmit}>
+      <div className="grid gap-3 md:grid-cols-[0.8fr_1.4fr]">
+        <div className="space-y-1.5">
+          <Label htmlFor={`fact-${mode}-category`}>Category</Label>
+          <select
+            id={`fact-${mode}-category`}
+            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm shadow-sm outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            value={categoryId}
+            onChange={(event) => setCategoryId(event.target.value)}
+          >
+            <option value="">Uncategorized</option>
+            {categories.map((category) => (
+              <option key={category.id} value={String(category.id)}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`fact-${mode}-detail`}>Detail</Label>
+          <textarea
+            ref={detailRef}
+            id={`fact-${mode}-detail`}
+            className="min-h-20 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm leading-6 shadow-sm outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            placeholder="Something stable I want to remember..."
+            value={detail}
+            onChange={(event) => setDetail(event.target.value)}
+          />
+        </div>
+      </div>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          className="border-border bg-background"
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSaveDisabled}
+          className="bg-violet-600 text-white hover:bg-violet-700"
+        >
+          {mode === "edit" ? "Save changes" : "Save fact"}
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -238,93 +436,6 @@ type FactGroup = {
   category: FactCategory | undefined;
   name: string;
   facts: Fact[];
-};
-
-type FactTone = {
-  badge: string;
-  border: string;
-  count: string;
-  dot: string;
-  header: string;
-  text: string;
-};
-
-const FACT_TONES: FactTone[] = [
-  {
-    badge: "bg-emerald-100",
-    border: "border-emerald-100",
-    count: "bg-emerald-100",
-    dot: "bg-emerald-500",
-    header: "border-emerald-100 bg-emerald-50/50",
-    text: "text-emerald-700",
-  },
-  {
-    badge: "bg-violet-100",
-    border: "border-violet-100",
-    count: "bg-violet-100",
-    dot: "bg-violet-500",
-    header: "border-violet-100 bg-violet-50/50",
-    text: "text-violet-700",
-  },
-  {
-    badge: "bg-sky-100",
-    border: "border-sky-100",
-    count: "bg-sky-100",
-    dot: "bg-sky-500",
-    header: "border-sky-100 bg-sky-50/50",
-    text: "text-sky-700",
-  },
-  {
-    badge: "bg-orange-100",
-    border: "border-orange-100",
-    count: "bg-orange-100",
-    dot: "bg-orange-500",
-    header: "border-orange-100 bg-orange-50/50",
-    text: "text-orange-700",
-  },
-];
-const DEFAULT_FACT_TONE: FactTone = FACT_TONES[0] ?? {
-  badge: "bg-emerald-100",
-  border: "border-emerald-100",
-  count: "bg-emerald-100",
-  dot: "bg-emerald-500",
-  header: "border-emerald-100 bg-emerald-50/50",
-  text: "text-emerald-700",
-};
-
-const FACT_ICON_MAP: Record<string, LucideIcon> = {
-  FiAlertCircle: AlertCircle,
-  FiBookOpen: BookOpen,
-  FiBriefcase: BriefcaseBusiness,
-  FiCoffee: Coffee,
-  FiFileText: ClipboardList,
-  FiGraduationCap: GraduationCap,
-  FiHeart: Heart,
-  FiHome: Home,
-  FiLock: Shield,
-  FiMessageCircle: MessageCircle,
-  FiShield: Shield,
-  FiStar: Star,
-  FiUser: User,
-  FiUsers: Users,
-};
-
-const CATEGORY_NAME_ICON_MAP: Record<string, LucideIcon> = {
-  availability: Clock,
-  communication: MessageCircle,
-  education: GraduationCap,
-  family: HeartHandshake,
-  health: HeartPulse,
-  interests: Palette,
-  location: MapPin,
-  logistics: MapPin,
-  logisticslocation: MapPin,
-  personal: UserRound,
-  preferences: Heart,
-  values: Compass,
-  valuesbeliefs: ShieldCheck,
-  work: BriefcaseBusiness,
-  workeducation: GraduationCap,
 };
 
 function groupFactsByCategory(
@@ -353,36 +464,4 @@ function groupFactsByCategory(
   return Array.from(groups.values()).sort((left, right) =>
     left.name.localeCompare(right.name),
   );
-}
-
-function getFactIcon(category: FactCategory | undefined): LucideIcon {
-  if (!category) {
-    return BookOpen;
-  }
-
-  const normalizedName = normalizeCategoryName(category.name);
-  const nameIcon = CATEGORY_NAME_ICON_MAP[normalizedName];
-
-  if (nameIcon) {
-    return nameIcon;
-  }
-
-  if (!category.icon_reference) {
-    return BookOpen;
-  }
-
-  return FACT_ICON_MAP[category.icon_reference] ?? BookOpen;
-}
-
-function getFactTone(index: number): FactTone {
-  return FACT_TONES[index % FACT_TONES.length] ?? DEFAULT_FACT_TONE;
-}
-
-function normalizeCategoryName(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/\band\b/g, " ")
-    .replace(/[^a-z0-9]+/g, "");
 }
