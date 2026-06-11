@@ -161,6 +161,7 @@ export function ContactDetailPanel({
               onViewFactsAndObservations={() =>
                 setActiveTab("facts-observations")
               }
+              onViewTimeline={() => setActiveTab("timeline")}
             />
           </TabsContent>
 
@@ -172,7 +173,7 @@ export function ContactDetailPanel({
               onDelete={onDeleteFact}
             />
             <ObservationsPanel
-              key={observationCreateRequest}
+              key={`observations-${observationCreateRequest}`}
               observations={observations}
               initialCreateOpen={observationCreateRequest > 0}
               onCreate={onCreateObservation}

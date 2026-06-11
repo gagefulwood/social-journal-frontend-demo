@@ -16,6 +16,7 @@ type ContactOverviewPanelProps = {
   eventsError?: ApiError | null;
   onRetryEvents?: () => void;
   onViewFactsAndObservations: () => void;
+  onViewTimeline: () => void;
 };
 
 export function ContactOverviewPanel({
@@ -27,6 +28,7 @@ export function ContactOverviewPanel({
   eventsError = null,
   onRetryEvents,
   onViewFactsAndObservations,
+  onViewTimeline,
 }: ContactOverviewPanelProps) {
   return (
     <div className="grid h-full items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -38,7 +40,11 @@ export function ContactOverviewPanel({
             onRetry={onRetryEvents}
           />
         )}
-        <StorySoFarStrip model={model} loading={eventsLoading} />
+        <StorySoFarStrip
+          model={model}
+          loading={eventsLoading}
+          onViewTimeline={onViewTimeline}
+        />
         <RelationshipPulsePanel contact={contact} model={model} />
       </div>
       <ContactKnowledgePreview

@@ -11,7 +11,7 @@ export function RelationshipSnapshotCard({
 }: RelationshipSnapshotCardProps) {
   return (
     <section className="rounded-xl border border-border/80 bg-card p-6 shadow-sm">
-      <div className="flex items-start gap-3">
+      <div className="flex w-full items-start gap-3 rounded-lg text-left">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
           <HeartPulse className="size-5" />
         </div>

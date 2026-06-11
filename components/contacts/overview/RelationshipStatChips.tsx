@@ -57,13 +57,14 @@ export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
         <div
           key={chip.eyebrow}
           className={cn(
-            "flex min-h-20 items-center gap-3 rounded-lg border px-4 py-3 shadow-sm",
+            "flex min-h-20 cursor-default items-center gap-3 rounded-lg border px-4 py-3 text-left shadow-sm transition-all duration-200",
+            "hover:-translate-y-0.5 hover:border-current hover:shadow-md motion-reduce:hover:translate-y-0",
             toneClasses[chip.tone],
           )}
         >
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full",
+              "flex size-10 shrink-0 items-center justify-center rounded-full transition-colors",
               iconToneClasses[chip.tone],
             )}
           >

@@ -32,7 +32,10 @@ export function FactsPanel({
   const categories = flattenFactCategories(factCategories);
 
   return (
-    <section className="rounded-lg border border-border bg-card p-5">
+    <section
+      id="contact-facts-section"
+      className="rounded-lg border border-border bg-card p-5"
+    >
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Facts</h2>

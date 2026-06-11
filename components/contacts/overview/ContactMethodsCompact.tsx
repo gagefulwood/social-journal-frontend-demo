@@ -1,4 +1,4 @@
-import { Mail, MessageCircle, Phone } from "lucide-react";
+import { Mail, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -15,22 +15,19 @@ export function ContactMethodsCompact({
     {
       label: "Email",
       href: email ? `mailto:${email}` : null,
+      disabledLabel: "Email address not set",
       icon: <Mail className="size-4" />,
     },
     {
       label: "Call",
       href: phoneNumber ? `tel:${phoneNumber}` : null,
+      disabledLabel: "Phone number not set",
       icon: <Phone className="size-4" />,
-    },
-    {
-      label: "Message",
-      href: phoneNumber ? `sms:${phoneNumber}` : null,
-      icon: <MessageCircle className="size-4" />,
     },
   ];
 
   return (
-    <div className="mx-auto grid w-full max-w-56 grid-cols-3 justify-items-center gap-3">
+    <div className="mx-auto grid w-full max-w-36 grid-cols-2 justify-items-center gap-3">
       {methods.map((method) =>
         method.href ? (
           <Button
@@ -38,8 +35,7 @@ export function ContactMethodsCompact({
             asChild
             variant="outline"
             size="icon"
-            title={method.label}
-            className="size-14 bg-background/80"
+            className="size-14 bg-background/80 text-violet-700 transition-all hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50 hover:shadow-sm active:translate-y-0 motion-reduce:hover:translate-y-0"
           >
             <a href={method.href} aria-label={method.label}>
               {method.icon}
@@ -52,9 +48,10 @@ export function ContactMethodsCompact({
             variant="outline"
             size="icon"
             disabled
-            title={`${method.label} not set`}
-            className={cn("size-14 bg-background/80 opacity-40")}
-            aria-label={`${method.label} not set`}
+            className={cn(
+              "size-14 border-dashed bg-background/60 text-muted-foreground opacity-45",
+            )}
+            aria-label={method.disabledLabel}
           >
             {method.icon}
           </Button>

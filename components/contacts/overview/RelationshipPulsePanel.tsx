@@ -1,4 +1,4 @@
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Contact } from "@/types/contacts";
 import type {
@@ -24,11 +24,15 @@ export function RelationshipPulsePanel({
         </p>
       </div>
 
-      <div className="mt-7 grid gap-6 lg:grid-cols-4">
+      <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <ConnectionGauge
           value={contact.connection_strength}
           summary={model.connectionBand.label}
           tone={model.connectionBand.tone}
+        />
+        <TrendSignal
+          summary={model.trend.label}
+          tone={model.trend.tone}
         />
         <FrequencyBars
           value={contact.interaction_frequency_score}
@@ -65,7 +69,7 @@ function ConnectionGauge({
   const accent = toneColor(tone);
 
   return (
-    <div className="border-border/70 lg:border-r lg:pr-6">
+    <div className={pulseMetricCardClass()}>
       <p className="mb-3 text-center text-sm font-medium">Connection</p>
       <div className="relative mx-auto flex size-24 items-center justify-center rounded-full bg-muted">
         <div
@@ -95,12 +99,57 @@ function ConnectionGauge({
   );
 }
 
-function FrequencyBars({ value, summary }: { value: number; summary: string }) {
+function TrendSignal({
+  summary,
+  tone,
+}: {
+  summary: string;
+  tone: OverviewTone;
+}) {
+  return (
+    <div className={pulseMetricCardClass()}>
+      <p className="mb-4 text-center text-sm font-medium">Relationship Trend</p>
+      <div
+        className={cn(
+          "mx-auto flex size-20 items-center justify-center rounded-full bg-muted",
+          tone === "positive" && "bg-emerald-50 text-emerald-700",
+          tone === "neutral" && "bg-sky-50 text-sky-700",
+          tone === "watch" && "bg-amber-50 text-amber-700",
+          tone === "muted" && "bg-violet-50 text-violet-700",
+        )}
+      >
+        <TrendingUp className="size-9" />
+      </div>
+      <p
+        className={cn(
+          "mt-4 text-center text-sm font-semibold",
+          tone === "positive" && "text-emerald-700",
+          tone === "neutral" && "text-sky-700",
+          tone === "watch" && "text-amber-600",
+          tone === "muted" && "text-violet-700",
+        )}
+      >
+        {summary}
+      </p>
+      <p className="text-center text-xs text-muted-foreground">
+        Recorded pattern
+      </p>
+    </div>
+  );
+}
+
+function FrequencyBars({
+  value,
+  summary,
+}: {
+  value: number;
+  summary: string;
+}) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
   const filledBars = Math.round((percent / 100) * 8);
 
   return (
-    <div className="border-border/70 lg:border-r lg:px-6">
+    <div className={pulseMetricCardClass()}>
       <p className="mb-4 text-center text-sm font-medium">
         Interaction Frequency
         <span className="block font-normal text-muted-foreground">
@@ -137,7 +186,7 @@ function DiversityScore({
   const percent = Math.max(0, Math.min(100, Math.round(value)));
 
   return (
-    <div className="border-border/70 lg:border-r lg:px-6">
+    <div className={pulseMetricCardClass()}>
       <p className="mb-4 text-center text-sm font-medium">
         Interaction Diversity
         <span className="block font-normal text-muted-foreground">(Score)</span>
@@ -164,7 +213,7 @@ function DiversityScore({
 
 function SentimentMeter({ model }: { model: ContactOverviewModel }) {
   return (
-    <div className="lg:pl-6">
+    <div className={pulseMetricCardClass()}>
       <p className="mb-4 text-center text-sm font-medium">Sentiment Balance</p>
 
       {model.sentiment.parts.length > 0 ? (
@@ -180,7 +229,6 @@ function SentimentMeter({ model }: { model: ContactOverviewModel }) {
                   index % 3 === 2 && "bg-emerald-500",
                 )}
                 style={{ width: `${part.percent}%` }}
-                title={`${part.label}: ${part.count}`}
               />
             ))}
           </div>
@@ -203,6 +251,13 @@ function SentimentMeter({ model }: { model: ContactOverviewModel }) {
         </>
       )}
     </div>
+  );
+}
+
+function pulseMetricCardClass(): string {
+  return cn(
+    "min-h-64 cursor-default rounded-lg border border-border/70 bg-background/60 px-4 py-5 text-left transition-all duration-200",
+    "hover:-translate-y-1 hover:border-violet-200 hover:bg-violet-50/40 hover:shadow-md motion-reduce:hover:translate-y-0",
   );
 }
 

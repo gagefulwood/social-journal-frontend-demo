@@ -86,7 +86,6 @@ export function ContactProfileRail({
                 variant="outline"
                 className="h-10 w-full bg-background/80"
                 aria-label="More contact details"
-                title="More"
               >
                 <MoreHorizontal className="size-4" />
                 <span>More</span>

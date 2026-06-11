@@ -2,12 +2,12 @@
 
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@/types/auth";
 import { ContextCategory } from "@/types/lookups";
-import type { ContactListItem } from "@/types/contacts";
+import type { Contact, ContactListItem } from "@/types/contacts";
 import { contactsApi } from "@/lib/api/contactsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ type EventFormValues = z.infer<typeof eventFormSchema>;
 
 type EventFormProps = {
   initialData?: Event;
+  initialContactId?: string | null;
   submitLabel: string;
   categories: ContextCategory[];
   onSubmit: (
@@ -53,6 +54,7 @@ type EventFormProps = {
 
 export function EventsForm({
   initialData,
+  initialContactId,
   submitLabel,
   categories,
   onSubmit,
@@ -61,15 +63,6 @@ export function EventsForm({
 
   const [error, setError] = useState<ApiError | null>(null);
   const [contacts, setContacts] = useState<ContactListItem[]>([]);
-
-  useEffect(() => {
-    async function load() {
-      const res = await contactsApi.list();
-      setContacts(res.results);
-    }
-
-    load();
-  }, []);
 
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
@@ -84,6 +77,54 @@ export function EventsForm({
       journal_type: undefined,
     },
   });
+  const selectedParticipants =
+    useWatch({
+      control: form.control,
+      name: "participants",
+    }) ?? [];
+
+  useEffect(() => {
+    async function load() {
+      const res = await contactsApi.list();
+      let nextContacts = res.results;
+
+      if (
+        initialContactId &&
+        !nextContacts.some((contact) => String(contact.id) === initialContactId)
+      ) {
+        try {
+          const contact = await contactsApi.get(initialContactId);
+          nextContacts = [toContactListItem(contact), ...nextContacts];
+        } catch {
+          // Ignore invalid contact query params; the form remains usable.
+        }
+      }
+
+      setContacts(nextContacts);
+    }
+
+    load();
+  }, [initialContactId]);
+
+  useEffect(() => {
+    if (!initialContactId || initialData) {
+      return;
+    }
+
+    const contactExists = contacts.some(
+      (contact) => String(contact.id) === initialContactId,
+    );
+
+    if (!contactExists) {
+      return;
+    }
+
+    const currentParticipants = form.getValues("participants");
+
+    if (!currentParticipants.includes(initialContactId)) {
+      form.setValue("participants", [...currentParticipants, initialContactId]);
+    }
+  }, [contacts, form, initialContactId, initialData]);
 
   async function handleSubmit(values: EventFormValues) {
     setError(null);
@@ -171,7 +212,7 @@ export function EventsForm({
         <p className="mb-4 text-xl font-medium">Participants</p>
 
         <div className="flex flex-wrap gap-4">
-            {form.watch("participants").map((id) => {
+            {selectedParticipants.map((id) => {
             const contact = contacts.find((c) => String(c.id) === String(id));
 
             return (
@@ -200,7 +241,9 @@ export function EventsForm({
 
             <DropdownMenuContent align="start" className="max-h-64 overflow-auto">
                 {contacts
-                .filter((c) => !form.watch("participants").includes(String(c.id)))
+                .filter(
+                  (c) => !selectedParticipants.includes(String(c.id)),
+                )
                 .map((contact) => (
                     <DropdownMenuItem
                     key={contact.id}
@@ -275,4 +318,22 @@ export function EventsForm({
       </div>
     </form>
   );
+}
+
+function toContactListItem(contact: Contact): ContactListItem {
+  return {
+    id: contact.id,
+    first_name: contact.first_name,
+    last_name: contact.last_name,
+    email: contact.email,
+    phone_number: contact.phone_number,
+    relation: contact.relation,
+    relation_name: contact.relation_name,
+    occupation: contact.occupation,
+    occupation_name: contact.occupation_name,
+    profile_picture: contact.profile_picture,
+    interaction_frequency_score: contact.interaction_frequency_score,
+    relationship_trend: contact.relationship_trend,
+    connection_strength: contact.connection_strength,
+  };
 }

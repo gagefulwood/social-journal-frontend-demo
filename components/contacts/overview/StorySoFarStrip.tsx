@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -14,11 +15,13 @@ import type { ContactOverviewModel } from "./contact-overview-utils";
 type StorySoFarStripProps = {
   model: ContactOverviewModel;
   loading?: boolean;
+  onViewTimeline: () => void;
 };
 
 export function StorySoFarStrip({
   model,
   loading = false,
+  onViewTimeline,
 }: StorySoFarStripProps) {
   const eventCount = model.storySoFarEvents.length;
 
@@ -34,7 +37,10 @@ export function StorySoFarStrip({
           ))}
         </div>
       ) : eventCount === 1 ? (
-        <LatestSharedMoment event={model.storySoFarEvents[0]} />
+        <LatestSharedMoment
+          event={model.storySoFarEvents[0]}
+          onViewTimeline={onViewTimeline}
+        />
       ) : eventCount === 2 ? (
         <TwoMomentStrip events={model.storySoFarEvents} />
       ) : eventCount > 2 ? (
@@ -57,17 +63,32 @@ export function StorySoFarStrip({
 
 function LatestSharedMoment({
   event,
+  onViewTimeline,
 }: {
   event: ContactOverviewModel["storySoFarEvents"][number] | undefined;
+  onViewTimeline: () => void;
 }) {
   if (!event) {
     return null;
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onViewTimeline();
+    }
+  }
+
   return (
     <div>
       <h2 className="text-lg font-semibold">Latest shared moment</h2>
-      <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+      <section
+        role="button"
+        tabIndex={0}
+        className="group mt-5 flex w-full flex-col gap-4 rounded-lg border border-transparent p-2 text-left outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50/40 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0 sm:flex-row sm:items-center"
+        onClick={onViewTimeline}
+        onKeyDown={handleKeyDown}
+      >
         <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
           <MapPin className="size-6" />
         </div>
@@ -90,14 +111,11 @@ function LatestSharedMoment({
               : "A recorded moment together."}
           </p>
         </div>
-        <Link
-          href={`/events/${event.id}`}
-          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-50"
-        >
-          View in Timeline
+        <span className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-violet-700 transition-colors group-hover:bg-violet-50">
+          View Timeline
           <ArrowRight className="size-4" />
-        </Link>
-      </div>
+        </span>
+      </section>
     </div>
   );
 }

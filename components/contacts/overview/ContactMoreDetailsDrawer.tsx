@@ -6,18 +6,35 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { formatDate } from "@/components/contacts/contact-utils";
 import { useLookups } from "@/hooks/useLookups";
+import { cn } from "@/lib/utils";
 import type { Contact } from "@/types/contacts";
 
 type ContactMoreDetailsDrawerProps = {
   contact: Contact;
   trigger: ReactNode;
 };
+
+type DetailItem = {
+  label: string;
+  value: string | null | undefined;
+};
+
+type DetailGroup = {
+  title: string;
+  items: DetailItem[];
+};
+
+function normalizeDetailValue(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : "Not set";
+}
 
 export function ContactMoreDetailsDrawer({
   contact,
@@ -31,23 +48,41 @@ export function ContactMoreDetailsDrawer({
     ? getEducationLevelById(contact.education_level)?.name
     : null;
 
-  const details = [
-    ["Email", contact.email || "Not set"],
-    ["Phone", contact.phone_number || "Not set"],
-    ["Birthday", formatDate(contact.birthday)],
-    ["Address", contact.address || "Not set"],
-    ["First met", formatDate(contact.first_met_date)],
-    ["Relationship", contact.relation_name || "Not set"],
-    ["Occupation", contact.custom_occupation || occupation || "Not set"],
-    ["Company", contact.company || "Not set"],
-    ["Education", contact.custom_education_level || education || "Not set"],
-    ["School", contact.school || "Not set"],
+  const detailGroups: DetailGroup[] = [
+    {
+      title: "Contact",
+      items: [
+        { label: "Email", value: contact.email },
+        { label: "Phone", value: contact.phone_number },
+        { label: "Address", value: contact.address },
+      ],
+    },
+    {
+      title: "Personal Context",
+      items: [
+        { label: "Birthday", value: formatDate(contact.birthday) },
+        { label: "First met", value: formatDate(contact.first_met_date) },
+        { label: "Relationship", value: contact.relation_name },
+      ],
+    },
+    {
+      title: "Work & School",
+      items: [
+        { label: "Company", value: contact.company },
+        { label: "Occupation", value: contact.custom_occupation || occupation },
+        {
+          label: "Education",
+          value: contact.custom_education_level || education,
+        },
+        { label: "School", value: contact.school },
+      ],
+    },
   ];
 
   return (
     <Sheet>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
-      <SheetContent className="overflow-y-auto">
+      <SheetContent className="overflow-y-auto sm:max-w-md">
         <SheetHeader>
           <SheetTitle>More Details</SheetTitle>
           <SheetDescription>
@@ -55,25 +90,43 @@ export function ContactMoreDetailsDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="px-4 pb-4">
-          <dl className="divide-y divide-border rounded-md border border-border">
-            {details.map(([label, value]) => (
-              <div key={label} className="grid gap-1 p-3">
-                <dt className="text-xs font-medium uppercase text-muted-foreground">
-                  {label}
-                </dt>
-                <dd className="break-words text-sm">{value}</dd>
-              </div>
-            ))}
-          </dl>
+        <div className="space-y-5 px-4 pb-2">
+          {detailGroups.map((group) => (
+            <section key={group.title} className="space-y-3">
+              <h3 className="text-sm font-semibold">{group.title}</h3>
+              <dl className="divide-y divide-border rounded-md border border-border bg-background/60">
+                {group.items.map((item) => {
+                  const value = normalizeDetailValue(item.value);
+                  const isMissing = value === "Not set";
 
-          <Button asChild className="mt-4 w-full" variant="outline">
+                  return (
+                    <div key={item.label} className="grid gap-1 p-3">
+                      <dt className="text-xs font-medium uppercase text-muted-foreground">
+                        {item.label}
+                      </dt>
+                      <dd
+                        className={cn(
+                          "break-words text-sm",
+                          isMissing && "text-muted-foreground",
+                        )}
+                      >
+                        {value}
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </section>
+          ))}
+        </div>
+        <SheetFooter>
+          <Button asChild className="w-full" variant="outline">
             <Link href={`/contacts/${contact.id}/edit`}>
               <Edit className="size-4" />
-              Edit contact
+              Edit Contact
             </Link>
           </Button>
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

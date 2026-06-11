@@ -75,6 +75,7 @@ export function ObservationForm({
         <textarea
           id="observation-body"
           rows={4}
+          autoFocus={!observation}
           className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           {...register("body")}
         />

@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {toast} from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {EventsForm} from "@/components/events/EventForm";
+import { EventsForm } from "@/components/events/EventForm";
 import type { CreateEventRequest, UpdateEventRequest } from "@/types/events";
 import { eventsApi } from "@/lib/api/eventsApi";
 import type { ContextCategory } from "@/types/lookups";
@@ -13,6 +13,8 @@ import { lookupsApi } from "@/lib/api/lookups";
 
 export default function NewEventPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialContactId = searchParams.get("contact");
 
     const [categories, setCategories] = useState<ContextCategory[]>([]);
 
@@ -42,8 +44,9 @@ export default function NewEventPage() {
             <EventsForm
                 submitLabel="Create Event"
                 categories={categories}
+                initialContactId={initialContactId}
                 onSubmit={async (data: CreateEventRequest | UpdateEventRequest) => {
-                    const event = await eventsApi.create(data as CreateEventRequest);
+                    await eventsApi.create(data as CreateEventRequest);
                     toast.success("Event created.");
                     router.push(`/events`);
                 }}
