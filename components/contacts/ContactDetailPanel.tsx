@@ -131,7 +131,7 @@ export function ContactDetailPanel({
               className="gap-2 px-5 data-active:text-violet-700 data-active:after:bg-violet-600"
             >
               <LayoutGrid className="size-4" />
-              Facts & Observations
+              Context
             </TabsTrigger>
             <TabsTrigger
               value="timeline"
@@ -165,21 +165,24 @@ export function ContactDetailPanel({
             />
           </TabsContent>
 
-          <TabsContent value="facts-observations" className="m-0 space-y-5 p-5">
-            <FactsPanel
-              facts={facts}
-              onCreate={onCreateFact}
-              onUpdate={onUpdateFact}
-              onDelete={onDeleteFact}
-            />
-            <ObservationsPanel
-              key={`observations-${observationCreateRequest}`}
-              observations={observations}
-              initialCreateOpen={observationCreateRequest > 0}
-              onCreate={onCreateObservation}
-              onUpdate={onUpdateObservation}
-              onDelete={onDeleteObservation}
-            />
+          <TabsContent value="facts-observations" className="m-0 p-4 sm:p-5">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
+              <FactsPanel
+                facts={facts}
+                contactFirstName={contact.first_name}
+                onCreate={onCreateFact}
+                onUpdate={onUpdateFact}
+                onDelete={onDeleteFact}
+              />
+              <ObservationsPanel
+                key={`observations-${observationCreateRequest}`}
+                observations={observations}
+                initialCreateOpen={observationCreateRequest > 0}
+                onCreate={onCreateObservation}
+                onUpdate={onUpdateObservation}
+                onDelete={onDeleteObservation}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="journals" className="m-0 p-5">
