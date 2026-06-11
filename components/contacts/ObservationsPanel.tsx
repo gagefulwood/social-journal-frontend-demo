@@ -1,24 +1,11 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { useState } from "react";
-import {
-  AlertCircle,
-  Bell,
-  Edit,
-  FileText,
-  Info,
-  MessageSquareText,
-  Plus,
-  Star,
-  Trash2,
-  User,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Edit, MessageSquareText, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ObservationForm } from "@/components/contacts/ObservationForm";
-import { formatDate, idsMatch } from "@/components/contacts/contact-utils";
+import { idsMatch } from "@/components/contacts/contact-utils";
+import { getObservationMarkerPresentation } from "@/components/contacts/observation-marker-presentation";
 import { useLookups } from "@/hooks/useLookups";
 import { cn } from "@/lib/utils";
 import type { ApiId } from "@/types/api";
@@ -27,7 +14,6 @@ import type {
   Observation,
   UpdateObservationRequest,
 } from "@/types/contacts";
-import type { ObservationMarker } from "@/types/lookups";
 
 type ObservationsPanelProps = {
   observations?: Observation[];
@@ -95,7 +81,7 @@ export function ObservationsPanel({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {safeObservations.length === 0 && (
           <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-6 text-center">
             <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-background text-violet-700 shadow-sm">
@@ -121,20 +107,42 @@ export function ObservationsPanel({
           const marker = observationMarkers.find((item) =>
             idsMatch(item.id, observation.marker),
           );
-          const tone = getTimelineTone(index);
-          const Icon = getMarkerIcon(marker);
-          const markerStyle = getMarkerStyle(marker);
+          const markerPresentation = getObservationMarkerPresentation(marker);
+          const Icon = markerPresentation.icon;
+          const dateParts = formatObservationDateParts(
+            observation.created_timestamp,
+          );
 
           return (
             <div
               key={observation.id}
-              className="grid gap-3 sm:grid-cols-[5rem_minmax(0,1fr)]"
+              className="grid gap-2.5 sm:grid-cols-[4.5rem_2.5rem_minmax(0,1fr)]"
             >
-              <div className="pt-3 text-xs font-medium leading-5 text-muted-foreground sm:text-right">
-                {formatDate(observation.created_timestamp)}
+              <div className="pt-2 text-xs font-medium leading-4 text-muted-foreground sm:text-right">
+                <span className="block">{dateParts.monthDay}</span>
+                <span className="block">{dateParts.year}</span>
+              </div>
+              <div className="relative flex justify-center">
+                <span
+                  className={cn(
+                    "absolute top-0 h-[calc(100%+0.75rem)] w-px rounded-full bg-border",
+                    index === sortedObservations.length - 1 && "h-8",
+                  )}
+                />
+                <span className="relative z-10 mt-0.5 flex size-8 items-center justify-center rounded-full border border-background bg-background shadow-sm">
+                  <span
+                    className={cn(
+                      "flex size-7 items-center justify-center rounded-full",
+                      markerPresentation.badge,
+                      markerPresentation.text,
+                    )}
+                  >
+                    <Icon className={markerPresentation.iconClassName} />
+                  </span>
+                </span>
               </div>
               {editingObservation?.id === observation.id ? (
-                <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <div className="rounded-xl border border-border bg-muted/30 p-3">
                   <ObservationForm
                     observation={observation}
                     onSubmit={async (data) => {
@@ -145,72 +153,51 @@ export function ObservationsPanel({
                   />
                 </div>
               ) : (
-                <div className="relative flex gap-3">
-                  <span
-                    className={cn(
-                      "absolute left-4 top-10 h-[calc(100%-2.5rem)] w-px rounded-full",
-                      index === sortedObservations.length - 1
-                        ? "bg-transparent"
-                        : tone.line,
-                    )}
-                  />
-                  <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full border bg-background shadow-sm">
-                    <span
-                      className={cn(
-                        "flex size-6 items-center justify-center rounded-full",
-                        tone.badge,
-                        tone.text,
-                      )}
-                      style={markerStyle.icon}
-                    >
-                      <Icon className="size-3.5" />
-                    </span>
-                  </span>
-                  <article className="min-w-0 flex-1 rounded-xl border border-border/80 bg-background p-4 shadow-sm transition-shadow hover:shadow-md">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                <article className="min-w-0 rounded-xl border border-border/80 bg-background p-3.5 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+                        {observation.body}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
                         <span
                           className={cn(
                             "inline-flex rounded-md px-2.5 py-1 text-xs font-medium",
-                            tone.pill,
-                            tone.text,
+                            markerPresentation.pill,
+                            markerPresentation.text,
                           )}
-                          style={markerStyle.pill}
                         >
                           {marker?.name ?? "Observation"}
                         </span>
                         {!observation.is_active && (
-                          <span className="ml-2 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                          <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                             Inactive
                           </span>
                         )}
                       </div>
-                      <div className="flex shrink-0 gap-0.5 opacity-65 transition-opacity hover:opacity-100">
-                        <Button
-                          size="icon-xs"
-                          variant="ghost"
-                          onClick={() => setEditingObservation(observation)}
-                          aria-label="Edit observation"
-                          className="text-muted-foreground hover:text-violet-700"
-                        >
-                          <Edit className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="icon-xs"
-                          variant="ghost"
-                          onClick={() => void onDelete(observation.id)}
-                          aria-label="Delete observation"
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
                     </div>
-                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">
-                      {observation.body}
-                    </p>
-                  </article>
-                </div>
+                    <div className="flex shrink-0 gap-0.5 opacity-60 transition-opacity hover:opacity-100">
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        onClick={() => setEditingObservation(observation)}
+                        aria-label="Edit observation"
+                        className="text-muted-foreground hover:text-violet-700"
+                      >
+                        <Edit className="size-3.5" />
+                      </Button>
+                      <Button
+                        size="icon-xs"
+                        variant="ghost"
+                        onClick={() => void onDelete(observation.id)}
+                        aria-label="Delete observation"
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </article>
               )}
             </div>
           );
@@ -220,84 +207,28 @@ export function ObservationsPanel({
   );
 }
 
-type TimelineTone = {
-  badge: string;
-  line: string;
-  pill: string;
-  text: string;
+type ObservationDateParts = {
+  monthDay: string;
+  year: string;
 };
 
-const TIMELINE_TONES: TimelineTone[] = [
-  {
-    badge: "bg-emerald-100",
-    line: "bg-emerald-300",
-    pill: "bg-emerald-100",
-    text: "text-emerald-700",
-  },
-  {
-    badge: "bg-orange-100",
-    line: "bg-orange-300",
-    pill: "bg-orange-100",
-    text: "text-orange-700",
-  },
-  {
-    badge: "bg-amber-100",
-    line: "bg-amber-300",
-    pill: "bg-amber-100",
-    text: "text-amber-700",
-  },
-  {
-    badge: "bg-sky-100",
-    line: "bg-sky-300",
-    pill: "bg-sky-100",
-    text: "text-sky-700",
-  },
-];
-const DEFAULT_TIMELINE_TONE: TimelineTone = TIMELINE_TONES[0] ?? {
-  badge: "bg-emerald-100",
-  line: "bg-emerald-300",
-  pill: "bg-emerald-100",
-  text: "text-emerald-700",
-};
+function formatObservationDateParts(value: string): ObservationDateParts {
+  const date = new Date(value);
 
-const MARKER_ICON_MAP: Record<string, LucideIcon> = {
-  FiAlertCircle: AlertCircle,
-  FiBell: Bell,
-  FiFileText: FileText,
-  FiInfo: Info,
-  FiStar: Star,
-  FiUser: User,
-  FiUsers: Users,
-};
-
-function getTimelineTone(index: number): TimelineTone {
-  return TIMELINE_TONES[index % TIMELINE_TONES.length] ?? DEFAULT_TIMELINE_TONE;
-}
-
-function getMarkerIcon(marker: ObservationMarker | undefined): LucideIcon {
-  if (!marker?.icon_reference) {
-    return Star;
-  }
-
-  return MARKER_ICON_MAP[marker.icon_reference] ?? Star;
-}
-
-function getMarkerStyle(marker: ObservationMarker | undefined): {
-  icon?: CSSProperties;
-  pill?: CSSProperties;
-} {
-  if (!marker?.color_hex) {
-    return {};
+  if (Number.isNaN(date.getTime())) {
+    return {
+      monthDay: "Not set",
+      year: "",
+    };
   }
 
   return {
-    icon: {
-      backgroundColor: "transparent",
-      color: marker.color_hex,
-    },
-    pill: {
-      backgroundColor: "transparent",
-      color: marker.color_hex,
-    },
+    monthDay: new Intl.DateTimeFormat(undefined, {
+      day: "numeric",
+      month: "short",
+    }).format(date),
+    year: new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+    }).format(date),
   };
 }

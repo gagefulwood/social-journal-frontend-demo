@@ -1,22 +1,11 @@
-import type { CSSProperties, KeyboardEvent } from "react";
-import {
-  AlertCircle,
-  Bell,
-  ChevronRight,
-  FileText,
-  Info,
-  MessageSquareText,
-  Star,
-  User,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import type { KeyboardEvent } from "react";
+import { ChevronRight, MessageSquareText } from "lucide-react";
 import { ContactOverviewEmptyState } from "./ContactOverviewEmptyState";
 import { formatDate, idsMatch } from "@/components/contacts/contact-utils";
+import { getObservationMarkerPresentation } from "@/components/contacts/observation-marker-presentation";
 import { useLookups } from "@/hooks/useLookups";
 import { cn } from "@/lib/utils";
 import type { Observation } from "@/types/contacts";
-import type { ObservationMarker } from "@/types/lookups";
 
 type RecentObservationsPreviewCardProps = {
   observations: Observation[];
@@ -69,39 +58,43 @@ export function RecentObservationsPreviewCard({
       </div>
 
       {previewObservations.length > 0 ? (
-        <ul className="space-y-4">
+        <ul className="space-y-3">
           {previewObservations.map((observation) => {
             const marker = observationMarkers.find((item) =>
               idsMatch(item.id, observation.marker),
             );
-            const Icon = getMarkerIcon(marker);
-            const markerStyle = getMarkerStyle(marker);
+            const markerPresentation = getObservationMarkerPresentation(marker);
+            const Icon = markerPresentation.icon;
 
             return (
               <li
                 key={observation.id}
-                className="relative flex gap-3 pl-1 text-sm"
+                className="relative flex gap-2.5 text-sm"
               >
-                <span
-                  className={cn(
-                    "mt-1 h-full min-h-16 w-0.5 shrink-0 rounded-full bg-violet-200",
-                    !marker && "bg-orange-200",
-                  )}
-                  style={markerStyle.line}
-                />
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full border bg-background text-violet-700 shadow-sm">
+                <div className="relative mt-0.5 w-8 shrink-0 self-stretch">
                   <span
-                    className="flex size-6 items-center justify-center rounded-full bg-violet-50 text-violet-700"
-                    style={markerStyle.icon}
-                  >
-                    <Icon className="size-3.5" />
+                    className={cn(
+                      "absolute left-0 top-1 h-full min-h-12 w-0.5 rounded-full",
+                      markerPresentation.line,
+                    )}
+                  />
+                  <span className="absolute left-2 top-0 flex size-6 items-center justify-center rounded-full border border-background bg-background shadow-sm">
+                    <span
+                      className={cn(
+                        "flex size-5 items-center justify-center rounded-full",
+                        markerPresentation.badge,
+                        markerPresentation.text,
+                      )}
+                    >
+                      <Icon className={markerPresentation.iconClassName} />
+                    </span>
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-muted-foreground">
+                  <p className="text-xs font-semibold leading-4 text-muted-foreground">
                     {formatDate(observation.created_timestamp)}
                   </p>
-                  <p className="line-clamp-3 whitespace-pre-wrap leading-6 text-foreground">
+                  <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-5 text-foreground">
                     {observation.body}
                   </p>
                 </div>
@@ -129,39 +122,4 @@ export function RecentObservationsPreviewCard({
       </span>
     </section>
   );
-}
-
-const MARKER_ICON_MAP: Record<string, LucideIcon> = {
-  FiAlertCircle: AlertCircle,
-  FiBell: Bell,
-  FiFileText: FileText,
-  FiInfo: Info,
-  FiStar: Star,
-  FiUser: User,
-  FiUsers: Users,
-};
-
-function getMarkerIcon(marker: ObservationMarker | undefined): LucideIcon {
-  if (!marker?.icon_reference) {
-    return Star;
-  }
-
-  return MARKER_ICON_MAP[marker.icon_reference] ?? Star;
-}
-
-function getMarkerStyle(marker: ObservationMarker | undefined): {
-  line?: CSSProperties;
-  icon?: CSSProperties;
-} {
-  if (!marker?.color_hex) {
-    return {};
-  }
-
-  return {
-    line: { backgroundColor: marker.color_hex },
-    icon: {
-      color: marker.color_hex,
-      backgroundColor: "transparent",
-    },
-  };
 }
