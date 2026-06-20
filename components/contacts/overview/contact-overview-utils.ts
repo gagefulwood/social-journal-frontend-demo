@@ -24,12 +24,7 @@ export type TrendPresentation = {
 };
 
 export type SentimentSummary = {
-  label:
-    | "No mood signal"
-    | "Limited signal"
-    | "Mostly positive"
-    | "Mostly difficult"
-    | "Mixed";
+  label: string;
   detail: string;
   tone: OverviewTone;
   total: number;
@@ -276,11 +271,29 @@ export function getSentimentSummary(
     }
   }
 
-  const dominantMood = parts[0]?.label ?? null;
+  const dominantPart = parts[0] ?? null;
+  const secondPart = parts[1] ?? null;
+  const dominantMood = dominantPart?.label ?? null;
+  const dominantShare = dominantPart ? dominantPart.count / total : 0;
+  const hasClearDominantMood =
+    parts.length === 1 ||
+    (dominantShare >= 0.6 &&
+      (!secondPart || dominantPart.count > secondPart.count));
   const summaryParts = parts.map((part) => ({
     ...part,
     percent: Math.round((part.count / total) * 100),
   }));
+
+  if (dominantMood && hasClearDominantMood) {
+    return {
+      label: formatMoodLabel(dominantMood),
+      detail: moodSignalDetail(total, dominantMood),
+      tone: toneForSentimentKey(dominantMood),
+      total,
+      dominantMood,
+      parts: summaryParts,
+    };
+  }
 
   if (total <= 2) {
     return {
@@ -543,6 +556,31 @@ function normalizeSentimentKey(label: string): string {
     .trim()
     .toLowerCase()
     .replace(/[\s_-]+/g, " ");
+}
+
+function toneForSentimentKey(label: string): OverviewTone {
+  const normalizedLabel = normalizeSentimentKey(label);
+
+  if (POSITIVE_SENTIMENT_KEYS.has(normalizedLabel)) {
+    return "positive";
+  }
+
+  if (NEGATIVE_SENTIMENT_KEYS.has(normalizedLabel)) {
+    return "watch";
+  }
+
+  return "neutral";
+}
+
+function formatMoodLabel(label: string): string {
+  const displayLabel = label
+    .trim()
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[\s_-]+/g, " ");
+
+  return displayLabel
+    ? `${displayLabel.charAt(0).toUpperCase()}${displayLabel.slice(1)}`
+    : "Mood";
 }
 
 function normalizeText(value: string): string {

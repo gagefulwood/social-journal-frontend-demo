@@ -15,9 +15,9 @@ export function ContactKnowledgePreview({
   onViewFactsAndObservations,
 }: ContactKnowledgePreviewProps) {
   return (
-    <aside className="flex h-full flex-col rounded-2xl border border-border/80 bg-card/95 p-5 shadow-sm shadow-violet-100/60">
+    <aside className="flex h-full flex-col rounded-2xl border border-border/80 bg-card/95 p-5 shadow-sm">
       <div className="flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 shadow-sm shadow-violet-100">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground shadow-sm">
           <Heart className="size-5" />
         </span>
         <div>

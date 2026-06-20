@@ -105,14 +105,16 @@ export default function RegisterForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       {errors.root?.message && (
-        <p className="text-sm text-red-500">{errors.root.message}</p>
+        <p className="text-sm text-destructive">{errors.root.message}</p>
       )}
 
       <div>
         <Label htmlFor="first_name">First Name</Label>
         <Input id="first_name" {...register("first_name")} />
         {errors.first_name?.message && (
-          <p className="text-sm text-red-500">{errors.first_name.message}</p>
+          <p className="text-sm text-destructive">
+            {errors.first_name.message}
+          </p>
         )}
       </div>
 
@@ -120,7 +122,7 @@ export default function RegisterForm() {
         <Label htmlFor="last_name">Last Name</Label>
         <Input id="last_name" {...register("last_name")} />
         {errors.last_name?.message && (
-          <p className="text-sm text-red-500">{errors.last_name.message}</p>
+          <p className="text-sm text-destructive">{errors.last_name.message}</p>
         )}
       </div>
 
@@ -128,7 +130,7 @@ export default function RegisterForm() {
         <Label htmlFor="username">Username</Label>
         <Input id="username" {...register("username")} />
         {errors.username?.message && (
-          <p className="text-sm text-red-500">{errors.username.message}</p>
+          <p className="text-sm text-destructive">{errors.username.message}</p>
         )}
       </div>
 
@@ -136,7 +138,7 @@ export default function RegisterForm() {
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" {...register("email")} />
         {errors.email?.message && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
+          <p className="text-sm text-destructive">{errors.email.message}</p>
         )}
       </div>
 
@@ -144,7 +146,9 @@ export default function RegisterForm() {
         <Label htmlFor="phone_number">Phone Number (optional)</Label>
         <Input id="phone_number" {...register("phone_number")} />
         {errors.phone_number?.message && (
-          <p className="text-sm text-red-500">{errors.phone_number.message}</p>
+          <p className="text-sm text-destructive">
+            {errors.phone_number.message}
+          </p>
         )}
       </div>
 
@@ -152,21 +156,21 @@ export default function RegisterForm() {
         <Label htmlFor="password">Password</Label>
         <Input id="password" type="password" {...register("password")} />
 
-        <div className="mt-2 h-2 w-full rounded bg-gray-200">
+        <div className="mt-2 h-2 w-full rounded bg-muted">
           <div
             className={`h-2 rounded ${
               strength <= 1
-                ? "bg-red-500"
+                ? "bg-destructive"
                 : strength <= 3
-                  ? "bg-yellow-400"
-                  : "bg-green-500"
+                  ? "bg-warning"
+                  : "bg-success"
             }`}
             style={{ width: `${(strength / 4) * 100}%` }}
           />
         </div>
 
         {errors.password?.message && (
-          <p className="text-sm text-red-500">{errors.password.message}</p>
+          <p className="text-sm text-destructive">{errors.password.message}</p>
         )}
       </div>
 
@@ -178,7 +182,7 @@ export default function RegisterForm() {
           {...register("password_confirm")}
         />
         {errors.password_confirm?.message && (
-          <p className="text-sm text-red-500">
+          <p className="text-sm text-destructive">
             {errors.password_confirm.message}
           </p>
         )}

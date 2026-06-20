@@ -121,28 +121,28 @@ export function ContactDetailPanel({
           >
             <TabsTrigger
               value="overview"
-              className="gap-2 px-5 data-active:text-violet-700 data-active:after:bg-violet-600"
+              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
             >
               <Sparkles className="size-4" />
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="facts-observations"
-              className="gap-2 px-5 data-active:text-violet-700 data-active:after:bg-violet-600"
+              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
             >
               <LayoutGrid className="size-4" />
               Context
             </TabsTrigger>
             <TabsTrigger
               value="timeline"
-              className="gap-2 px-5 data-active:text-violet-700 data-active:after:bg-violet-600"
+              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
             >
               <CalendarDays className="size-4" />
               Timeline
             </TabsTrigger>
             <TabsTrigger
               value="journals"
-              className="gap-2 px-5 data-active:text-violet-700 data-active:after:bg-violet-600"
+              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
             >
               <NotebookTabs className="size-4" />
               Journals

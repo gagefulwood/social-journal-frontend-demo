@@ -20,11 +20,8 @@ export function RememberNextTimeList({ model }: RememberNextTimeListProps) {
   return (
     <ul className="space-y-2">
       {model.rememberNextTimeItems.map((item) => (
-        <li
-          key={item.id}
-          className="flex items-start gap-2 text-sm"
-        >
-          <span className="mt-2 size-1.5 shrink-0 rounded-full bg-emerald-600" />
+        <li key={item.id} className="flex items-start gap-2 text-sm">
+          <span className="mt-2 size-1.5 shrink-0 rounded-full bg-marker-violet-foreground" />
           <p className="line-clamp-2 min-w-0 leading-6">{item.text}</p>
         </li>
       ))}

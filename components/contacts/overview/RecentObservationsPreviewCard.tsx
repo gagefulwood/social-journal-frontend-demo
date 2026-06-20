@@ -41,18 +41,18 @@ export function RecentObservationsPreviewCard({
       role="button"
       tabIndex={0}
       aria-label="View all observations"
-      className="rounded-xl border border-border/70 bg-background/80 p-4 shadow-sm shadow-violet-100/50 outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50/30 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0"
+      className="rounded-xl border border-border/70 bg-background/80 p-4 shadow-sm outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/30 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0"
       onClick={onViewAll}
       onKeyDown={handleKeyDown}
     >
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700 shadow-sm shadow-violet-100">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-marker-rose text-marker-rose-foreground shadow-sm">
             <MessageSquareText className="size-5" />
           </span>
           <h3 className="font-semibold">Recent Observations</h3>
         </div>
-        <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
+        <span className="rounded-full bg-marker-rose px-2.5 py-1 text-xs font-semibold text-marker-rose-foreground">
           {activeObservations.length}
         </span>
       </div>
@@ -110,7 +110,7 @@ export function RecentObservationsPreviewCard({
         />
       )}
 
-      <span className="mt-4 flex h-9 w-full items-center justify-between border-t border-border/70 pt-3 text-sm font-semibold text-violet-700">
+      <span className="mt-4 flex h-9 w-full items-center justify-between border-t border-border/70 pt-3 text-sm font-semibold text-primary-strong">
         View all observations
         {isEmpty ? (
           <ChevronRight className="size-4" />

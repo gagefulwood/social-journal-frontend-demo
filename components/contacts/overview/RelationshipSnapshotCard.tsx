@@ -12,7 +12,7 @@ export function RelationshipSnapshotCard({
   return (
     <section className="rounded-xl border border-border/80 bg-card p-6 shadow-sm">
       <div className="flex w-full items-start gap-3 rounded-lg text-left">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
           <HeartPulse className="size-5" />
         </div>
         <div className="min-w-0 flex-1">

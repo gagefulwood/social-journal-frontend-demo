@@ -1,26 +1,26 @@
+import type { ReactNode } from "react";
 import { Activity, HeartPulse, MessageCircle, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type {
-  ContactOverviewModel,
-  OverviewTone,
-} from "./contact-overview-utils";
+import type { ContactOverviewModel } from "./contact-overview-utils";
 
 type RelationshipStatChipsProps = {
   model: ContactOverviewModel;
 };
 
-const toneClasses: Record<OverviewTone, string> = {
-  positive: "border-emerald-100 bg-emerald-50/80 text-emerald-800",
-  neutral: "border-sky-100 bg-sky-50/80 text-sky-800",
-  watch: "border-amber-100 bg-amber-50/80 text-amber-800",
-  muted: "border-violet-100 bg-violet-50/80 text-violet-800",
+type SignalTone = "success" | "warning" | "info" | "muted";
+
+const toneClasses: Record<SignalTone, string> = {
+  success: "border-success-muted bg-success-muted text-success",
+  warning: "border-warning-muted bg-warning-muted text-warning",
+  info: "border-info-muted bg-info-muted text-info",
+  muted: "border-border bg-muted text-muted-foreground",
 };
 
-const iconToneClasses: Record<OverviewTone, string> = {
-  positive: "bg-emerald-100 text-emerald-700",
-  neutral: "bg-sky-100 text-sky-700",
-  watch: "bg-amber-100 text-amber-700",
-  muted: "bg-violet-100 text-violet-700",
+const iconToneClasses: Record<SignalTone, string> = {
+  success: "bg-background/70 text-success",
+  warning: "bg-background/70 text-warning",
+  info: "bg-background/70 text-info",
+  muted: "bg-background/70 text-muted-foreground",
 };
 
 export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
@@ -28,28 +28,33 @@ export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
     {
       label: model.connectionBand.label,
       eyebrow: "Connection",
-      tone: model.connectionBand.tone,
+      tone: "success",
       icon: <HeartPulse className="size-5" />,
     },
     {
       label: model.trend.label,
       eyebrow: model.trend.eyebrow,
-      tone: model.trend.tone,
+      tone: model.trend.value === "growing" ? "success" : "muted",
       icon: <TrendingUp className="size-5" />,
     },
     {
       label: model.sentiment.label,
       eyebrow: "Mood",
-      tone: model.sentiment.tone,
+      tone: model.sentiment.total > 0 ? "warning" : "muted",
       icon: <MessageCircle className="size-5" />,
     },
     {
       label: model.frequencyLabel,
       eyebrow: "Frequency",
-      tone: model.frequencyLabel === "No rhythm yet" ? "muted" : "neutral",
+      tone: model.frequencyLabel === "No rhythm yet" ? "muted" : "info",
       icon: <Activity className="size-5" />,
     },
-  ] as const;
+  ] satisfies Array<{
+    label: string;
+    eyebrow: string;
+    tone: SignalTone;
+    icon: ReactNode;
+  }>;
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

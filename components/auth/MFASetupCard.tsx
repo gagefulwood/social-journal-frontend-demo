@@ -82,14 +82,16 @@ export function MFASetupCard() {
   };
 
   return (
-    <div className="rounded-lg border bg-gray-50 p-6 shadow-md">
+    <div className="rounded-lg border bg-muted/30 p-6 shadow-md">
       <h3 className="mb-4 font-semibold">MFA Setup</h3>
 
-      {loading && <p className="text-sm text-gray-600">Loading MFA setup...</p>}
+      {loading && (
+        <p className="text-sm text-muted-foreground">Loading MFA setup...</p>
+      )}
 
       {!loading && error && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-red-500">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
           {!setup && (
             <Button type="button" variant="outline" onClick={loadSetup}>
               Retry
@@ -103,8 +105,7 @@ export function MFASetupCard() {
           <div className="flex flex-col items-center gap-4">
             <QRCodeSVG value={setup.totpUri} className="size-48" />
             <p className="break-all text-sm">
-              Manual key:{" "}
-              <span className="font-mono">{setup.manualKey}</span>
+              Manual key: <span className="font-mono">{setup.manualKey}</span>
             </p>
           </div>
 

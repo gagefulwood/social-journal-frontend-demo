@@ -29,7 +29,7 @@ export default function LoginForm() {
       setError(
         apiError.status === 401
           ? "Invalid email/username or password. Please try again."
-          : apiError.message || "Unable to log in. Please try again."
+          : apiError.message || "Unable to log in. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -38,7 +38,7 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Input
         type="text"

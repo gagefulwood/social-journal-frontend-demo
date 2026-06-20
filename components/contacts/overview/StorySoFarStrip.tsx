@@ -85,11 +85,11 @@ function LatestSharedMoment({
       <section
         role="button"
         tabIndex={0}
-        className="group mt-5 flex w-full flex-col gap-4 rounded-lg border border-transparent p-2 text-left outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50/40 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0 sm:flex-row sm:items-center"
+        className="group mt-5 flex w-full flex-col gap-4 rounded-lg border border-transparent p-2 text-left outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/30 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0 sm:flex-row sm:items-center"
         onClick={onViewTimeline}
         onKeyDown={handleKeyDown}
       >
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
           <MapPin className="size-6" />
         </div>
         <div className="min-w-0 flex-1">
@@ -111,7 +111,7 @@ function LatestSharedMoment({
               : "A recorded moment together."}
           </p>
         </div>
-        <span className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-violet-700 transition-colors group-hover:bg-violet-50">
+        <span className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-primary-strong transition-colors group-hover:bg-muted/30">
           View Timeline
           <ArrowRight className="size-4" />
         </span>
@@ -133,11 +133,11 @@ function TwoMomentStrip({
           <Link
             key={event.id}
             href={`/events/${event.id}`}
-            className="group flex items-start gap-3 rounded-lg border border-border/80 bg-background/70 p-4 transition-colors hover:bg-violet-50/50"
+            className="group flex items-start gap-3 rounded-lg border border-border/80 bg-background/70 p-4 transition-colors hover:bg-muted/30"
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
               {event.tier === "milestone" ? (
-                <Star className="size-5 text-amber-700" />
+                <Star className="size-5 text-primary-strong" />
               ) : (
                 <MapPin className="size-5" />
               )}
@@ -146,7 +146,7 @@ function TwoMomentStrip({
               <p className="text-xs font-medium text-muted-foreground">
                 {formatDate(event.eventTimestamp)}
               </p>
-              <p className="mt-1 line-clamp-2 text-sm font-semibold group-hover:text-violet-700">
+              <p className="mt-1 line-clamp-2 text-sm font-semibold group-hover:text-primary-strong">
                 {event.title}
               </p>
               <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
@@ -174,16 +174,16 @@ function FullStoryStrip({ model }: { model: ContactOverviewModel }) {
       </div>
 
       <div className="relative grid gap-4 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-5">
-        <div className="pointer-events-none absolute left-10 right-10 top-7 hidden border-t border-dashed border-violet-200 md:block" />
+        <div className="pointer-events-none absolute left-10 right-10 top-7 hidden border-t border-dashed border-border md:block" />
         {model.storySoFarEvents.map((event) => (
           <Link
             key={event.id}
             href={`/events/${event.id}`}
             className="group relative rounded-lg border border-transparent bg-transparent p-2 text-center transition-colors hover:bg-muted/40"
           >
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-violet-100 text-violet-700 ring-8 ring-background">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground ring-8 ring-background">
               {event.tier === "milestone" ? (
-                <Star className="size-6 text-amber-700" />
+                <Star className="size-6 text-primary-strong" />
               ) : event.locationLabel ? (
                 <MapPin className="size-6" />
               ) : event.journaled ? (

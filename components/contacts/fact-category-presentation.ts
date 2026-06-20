@@ -52,115 +52,116 @@ const FACT_ICON_MAP: Record<string, LucideIcon> = {
 };
 
 const FACT_CATEGORY_TONES = {
-  emerald: {
-    badge: "bg-emerald-100",
-    border: "border-emerald-100",
-    count: "bg-emerald-100",
-    dot: "bg-emerald-500",
-    header: "border-emerald-100 bg-emerald-50/50",
-    text: "text-emerald-700",
+  teal: {
+    badge: "bg-marker-teal",
+    border: "border-marker-teal",
+    count: "bg-marker-teal",
+    dot: "bg-marker-teal-foreground",
+    header: "border-marker-teal bg-marker-teal/35",
+    text: "text-marker-teal-foreground",
   },
-  orange: {
-    badge: "bg-orange-100",
-    border: "border-orange-100",
-    count: "bg-orange-100",
-    dot: "bg-orange-500",
-    header: "border-orange-100 bg-orange-50/50",
-    text: "text-orange-700",
+  fuchsia: {
+    badge: "bg-marker-fuchsia",
+    border: "border-marker-fuchsia",
+    count: "bg-marker-fuchsia",
+    dot: "bg-marker-fuchsia-foreground",
+    header: "border-marker-fuchsia bg-marker-fuchsia/35",
+    text: "text-marker-fuchsia-foreground",
   },
-  sky: {
-    badge: "bg-sky-100",
-    border: "border-sky-100",
-    count: "bg-sky-100",
-    dot: "bg-sky-500",
-    header: "border-sky-100 bg-sky-50/50",
-    text: "text-sky-700",
+  indigo: {
+    badge: "bg-marker-indigo",
+    border: "border-marker-indigo",
+    count: "bg-marker-indigo",
+    dot: "bg-marker-indigo-foreground",
+    header: "border-marker-indigo bg-marker-indigo/35",
+    text: "text-marker-indigo-foreground",
   },
-  slate: {
-    badge: "bg-slate-100",
-    border: "border-slate-200",
-    count: "bg-slate-100",
-    dot: "bg-slate-400",
-    header: "border-slate-200 bg-slate-50/70",
-    text: "text-slate-700",
+  rose: {
+    badge: "bg-marker-rose",
+    border: "border-marker-rose",
+    count: "bg-marker-rose",
+    dot: "bg-marker-rose-foreground",
+    header: "border-marker-rose bg-marker-rose/35",
+    text: "text-marker-rose-foreground",
   },
   violet: {
-    badge: "bg-violet-100",
-    border: "border-violet-100",
-    count: "bg-violet-100",
-    dot: "bg-violet-500",
-    header: "border-violet-100 bg-violet-50/50",
-    text: "text-violet-700",
+    badge: "bg-marker-violet",
+    border: "border-marker-violet",
+    count: "bg-marker-violet",
+    dot: "bg-marker-violet-foreground",
+    header: "border-marker-violet bg-marker-violet/35",
+    text: "text-marker-violet-foreground",
   },
 } satisfies Record<string, Omit<FactCategoryPresentation, "icon">>;
 
 const DEFAULT_FACT_CATEGORY_PRESENTATION: FactCategoryPresentation = {
-  ...FACT_CATEGORY_TONES.slate,
+  ...FACT_CATEGORY_TONES.teal,
   icon: BookOpen,
 };
 
-const CATEGORY_NAME_PRESENTATION_MAP: Record<string, FactCategoryPresentation> = {
-  availability: {
-    ...FACT_CATEGORY_TONES.sky,
-    icon: Clock,
-  },
-  communication: {
-    ...FACT_CATEGORY_TONES.emerald,
-    icon: MessageCircle,
-  },
-  education: {
-    ...FACT_CATEGORY_TONES.emerald,
-    icon: GraduationCap,
-  },
-  family: {
-    ...FACT_CATEGORY_TONES.violet,
-    icon: HeartHandshake,
-  },
-  health: {
-    ...FACT_CATEGORY_TONES.sky,
-    icon: HeartPulse,
-  },
-  interests: {
-    ...FACT_CATEGORY_TONES.orange,
-    icon: Palette,
-  },
-  location: {
-    ...FACT_CATEGORY_TONES.orange,
-    icon: MapPin,
-  },
-  logistics: {
-    ...FACT_CATEGORY_TONES.orange,
-    icon: MapPin,
-  },
-  logisticslocation: {
-    ...FACT_CATEGORY_TONES.orange,
-    icon: MapPin,
-  },
-  personal: {
-    ...FACT_CATEGORY_TONES.violet,
-    icon: UserRound,
-  },
-  preferences: {
-    ...FACT_CATEGORY_TONES.violet,
-    icon: Heart,
-  },
-  values: {
-    ...FACT_CATEGORY_TONES.orange,
-    icon: Compass,
-  },
-  valuesbeliefs: {
-    ...FACT_CATEGORY_TONES.orange,
-    icon: ShieldCheck,
-  },
-  work: {
-    ...FACT_CATEGORY_TONES.sky,
-    icon: BriefcaseBusiness,
-  },
-  workeducation: {
-    ...FACT_CATEGORY_TONES.sky,
-    icon: GraduationCap,
-  },
-};
+const CATEGORY_NAME_PRESENTATION_MAP: Record<string, FactCategoryPresentation> =
+  {
+    availability: {
+      ...FACT_CATEGORY_TONES.indigo,
+      icon: Clock,
+    },
+    communication: {
+      ...FACT_CATEGORY_TONES.teal,
+      icon: MessageCircle,
+    },
+    education: {
+      ...FACT_CATEGORY_TONES.fuchsia,
+      icon: GraduationCap,
+    },
+    family: {
+      ...FACT_CATEGORY_TONES.rose,
+      icon: HeartHandshake,
+    },
+    health: {
+      ...FACT_CATEGORY_TONES.indigo,
+      icon: HeartPulse,
+    },
+    interests: {
+      ...FACT_CATEGORY_TONES.fuchsia,
+      icon: Palette,
+    },
+    location: {
+      ...FACT_CATEGORY_TONES.teal,
+      icon: MapPin,
+    },
+    logistics: {
+      ...FACT_CATEGORY_TONES.teal,
+      icon: MapPin,
+    },
+    logisticslocation: {
+      ...FACT_CATEGORY_TONES.teal,
+      icon: MapPin,
+    },
+    personal: {
+      ...FACT_CATEGORY_TONES.violet,
+      icon: UserRound,
+    },
+    preferences: {
+      ...FACT_CATEGORY_TONES.rose,
+      icon: Heart,
+    },
+    values: {
+      ...FACT_CATEGORY_TONES.fuchsia,
+      icon: Compass,
+    },
+    valuesbeliefs: {
+      ...FACT_CATEGORY_TONES.fuchsia,
+      icon: ShieldCheck,
+    },
+    work: {
+      ...FACT_CATEGORY_TONES.indigo,
+      icon: BriefcaseBusiness,
+    },
+    workeducation: {
+      ...FACT_CATEGORY_TONES.indigo,
+      icon: GraduationCap,
+    },
+  };
 
 export function getFactCategoryPresentation(
   category: FactCategory | undefined,

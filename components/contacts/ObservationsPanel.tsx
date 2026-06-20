@@ -53,10 +53,10 @@ export function ObservationsPanel({
   );
 
   return (
-    <section className="rounded-xl border border-border/80 bg-card p-5 shadow-sm shadow-violet-100/40">
+    <section className="rounded-xl border border-border/80 bg-card p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 shadow-sm shadow-violet-100">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marker-rose text-marker-rose-foreground shadow-sm">
             <MessageSquareText className="size-5" />
           </span>
           <div>
@@ -69,7 +69,7 @@ export function ObservationsPanel({
         <Button
           size="sm"
           variant="outline"
-          className="border-violet-300 text-violet-700 hover:bg-violet-50"
+          className="border-primary/30 text-primary-strong hover:bg-accent hover:text-accent-foreground"
           onClick={() => setEditor({ mode: "create" })}
         >
           <Plus className="size-4" />
@@ -90,8 +90,8 @@ export function ObservationsPanel({
         )}
 
         {safeObservations.length === 0 && editor.mode !== "create" && (
-          <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-6 text-center">
-            <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-background text-violet-700 shadow-sm">
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-marker-rose text-marker-rose-foreground shadow-sm">
               <MessageSquareText className="size-5" />
             </div>
             <p className="mt-3 text-sm font-semibold">No observations yet.</p>
@@ -102,7 +102,7 @@ export function ObservationsPanel({
             <Button
               size="sm"
               variant="outline"
-              className="mt-4 border-violet-300 text-violet-700 hover:bg-violet-50"
+              className="mt-4 border-primary/30 text-primary-strong hover:bg-accent hover:text-accent-foreground"
               onClick={() => setEditor({ mode: "create" })}
             >
               <Plus className="size-4" />
@@ -151,7 +151,7 @@ export function ObservationsPanel({
                   </span>
                 </span>
               </div>
-              <article className="min-w-0 rounded-xl border border-border/80 bg-background p-3.5 shadow-sm transition-shadow hover:shadow-md">
+              <article className="min-w-0 rounded-xl border border-border/80 bg-background p-3.5 shadow-sm">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -186,7 +186,7 @@ export function ObservationsPanel({
                           })
                         }
                         aria-label="Edit observation"
-                        className="text-muted-foreground hover:text-violet-700"
+                        className="text-muted-foreground hover:text-primary-strong"
                       >
                         <Edit className="size-3.5" />
                       </Button>
@@ -269,13 +269,13 @@ function ObservationComposerTimelineItem({
           </span>
         </span>
       </div>
-      <article className="min-w-0 rounded-xl border border-violet-100 bg-violet-50/40 p-3.5 shadow-sm shadow-violet-100/50">
+      <article className="min-w-0 rounded-xl border border-border bg-muted/30 p-3.5 shadow-sm">
         <div className="mb-3 flex items-start gap-2">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-marker-rose text-marker-rose-foreground">
             <MessageSquareText className="size-4" />
           </span>
           <div>
-            <h3 className="text-sm font-semibold text-violet-800">
+            <h3 className="text-sm font-semibold text-foreground">
               Add a new observation
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -411,7 +411,7 @@ function ObservationEditorFields({
         <Button
           type="submit"
           disabled={isSaveDisabled}
-          className="bg-violet-600 text-white hover:bg-violet-700"
+          className="bg-primary-strong text-primary-foreground hover:bg-primary"
         >
           {mode === "edit" ? "Save changes" : "Save observation"}
         </Button>
@@ -428,33 +428,10 @@ type ObservationEditorTone = {
 function getObservationEditorTone(
   markerPresentation: ObservationMarkerPresentation,
 ): ObservationEditorTone {
-  switch (markerPresentation.text) {
-    case "text-amber-700":
-      return {
-        border: "border-amber-100",
-        surface: "bg-amber-50/50",
-      };
-    case "text-emerald-700":
-      return {
-        border: "border-emerald-100",
-        surface: "bg-emerald-50/50",
-      };
-    case "text-rose-700":
-      return {
-        border: "border-rose-100",
-        surface: "bg-rose-50/50",
-      };
-    case "text-sky-700":
-      return {
-        border: "border-sky-100",
-        surface: "bg-sky-50/50",
-      };
-    default:
-      return {
-        border: "border-violet-100",
-        surface: "bg-violet-50/50",
-      };
-  }
+  return {
+    border: markerPresentation.border,
+    surface: markerPresentation.surface,
+  };
 }
 
 type ObservationDateParts = {

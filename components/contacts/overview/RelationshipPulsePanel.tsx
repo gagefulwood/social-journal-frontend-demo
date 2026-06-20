@@ -1,6 +1,10 @@
+"use client";
+
 import { Lightbulb, TrendingUp } from "lucide-react";
+import { useLookups } from "@/hooks/useLookups";
 import { cn } from "@/lib/utils";
 import type { Contact } from "@/types/contacts";
+import type { Mood } from "@/types/lookups";
 import type {
   ContactOverviewModel,
   OverviewTone,
@@ -28,12 +32,8 @@ export function RelationshipPulsePanel({
         <ConnectionGauge
           value={contact.connection_strength}
           summary={model.connectionBand.label}
-          tone={model.connectionBand.tone}
         />
-        <TrendSignal
-          summary={model.trend.label}
-          tone={model.trend.tone}
-        />
+        <TrendSignal summary={model.trend.label} tone={model.trend.tone} />
         <FrequencyBars
           value={contact.interaction_frequency_score}
           summary={model.frequencyLabel}
@@ -59,14 +59,12 @@ export function RelationshipPulsePanel({
 function ConnectionGauge({
   value,
   summary,
-  tone,
 }: {
   value: number;
   summary: string;
-  tone: OverviewTone;
 }) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
-  const accent = toneColor(tone);
+  const accent = tokenColor("success-solid");
 
   return (
     <div className={pulseMetricCardClass()}>
@@ -75,7 +73,7 @@ function ConnectionGauge({
         <div
           className="absolute inset-0 rounded-full"
           style={{
-            background: `conic-gradient(${accent} ${percent * 3.6}deg, rgb(243 244 246) 0deg)`,
+            background: `conic-gradient(${accent} ${percent * 3.6}deg, var(--muted) 0deg)`,
           }}
         />
         <div className="relative flex size-16 flex-col items-center justify-center rounded-full bg-background">
@@ -84,13 +82,7 @@ function ConnectionGauge({
         </div>
       </div>
       <p
-        className={cn(
-          "mt-3 text-center text-sm font-semibold",
-          tone === "positive" && "text-emerald-700",
-          tone === "neutral" && "text-sky-700",
-          tone === "watch" && "text-amber-600",
-          tone === "muted" && "text-violet-700",
-        )}
+        className={cn("mt-3 text-center text-sm font-semibold", "text-success")}
       >
         {summary}
       </p>
@@ -106,16 +98,17 @@ function TrendSignal({
   summary: string;
   tone: OverviewTone;
 }) {
+  const isGrowing = tone === "positive";
+
   return (
     <div className={pulseMetricCardClass()}>
       <p className="mb-4 text-center text-sm font-medium">Relationship Trend</p>
       <div
         className={cn(
           "mx-auto flex size-20 items-center justify-center rounded-full bg-muted",
-          tone === "positive" && "bg-emerald-50 text-emerald-700",
-          tone === "neutral" && "bg-sky-50 text-sky-700",
-          tone === "watch" && "bg-amber-50 text-amber-700",
-          tone === "muted" && "bg-violet-50 text-violet-700",
+          isGrowing
+            ? "bg-success-muted text-success"
+            : "bg-muted text-muted-foreground",
         )}
       >
         <TrendingUp className="size-9" />
@@ -123,10 +116,7 @@ function TrendSignal({
       <p
         className={cn(
           "mt-4 text-center text-sm font-semibold",
-          tone === "positive" && "text-emerald-700",
-          tone === "neutral" && "text-sky-700",
-          tone === "watch" && "text-amber-600",
-          tone === "muted" && "text-violet-700",
+          isGrowing ? "text-success" : "text-muted-foreground",
         )}
       >
         {summary}
@@ -138,13 +128,7 @@ function TrendSignal({
   );
 }
 
-function FrequencyBars({
-  value,
-  summary,
-}: {
-  value: number;
-  summary: string;
-}) {
+function FrequencyBars({ value, summary }: { value: number; summary: string }) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
   const filledBars = Math.round((percent / 100) * 8);
 
@@ -161,14 +145,14 @@ function FrequencyBars({
           <div
             key={index}
             className={cn(
-              "w-3 rounded-full bg-violet-100",
-              index < filledBars && "bg-violet-500",
+              "w-3 rounded-full bg-info-muted",
+              index < filledBars && "bg-info-solid",
             )}
             style={{ height: `${24 + index * 5}px` }}
           />
         ))}
       </div>
-      <p className="mt-3 text-center text-sm font-semibold text-violet-700">
+      <p className="mt-3 text-center text-sm font-semibold text-info">
         {summary}
       </p>
       <p className="text-center text-xs text-muted-foreground">{percent}/100</p>
@@ -199,7 +183,7 @@ function DiversityScore({
       </p>
       <div className="mx-auto mt-4 h-2 max-w-36 rounded-full bg-muted">
         <div
-          className="h-full rounded-full bg-violet-500"
+          className="h-full rounded-full bg-info-solid"
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -212,27 +196,28 @@ function DiversityScore({
 }
 
 function SentimentMeter({ model }: { model: ContactOverviewModel }) {
+  const { moods } = useLookups();
+
   return (
     <div className={pulseMetricCardClass()}>
       <p className="mb-4 text-center text-sm font-medium">Sentiment Balance</p>
 
       {model.sentiment.parts.length > 0 ? (
         <>
-          <div className="mx-auto mt-6 flex h-5 max-w-40 items-center rounded-full bg-violet-50 px-1">
-            {model.sentiment.parts.slice(0, 5).map((part, index) => (
+          <div className="mx-auto mt-6 flex h-5 max-w-40 items-center rounded-full bg-muted px-1">
+            {model.sentiment.parts.map((part) => (
               <div
                 key={part.label}
                 className={cn(
                   "h-3 rounded-full",
-                  index % 3 === 0 && "bg-amber-400",
-                  index % 3 === 1 && "bg-violet-500",
-                  index % 3 === 2 && "bg-emerald-500",
+                  moodSegmentColorClass(part.label, moods),
                 )}
                 style={{ width: `${part.percent}%` }}
+                title={`${part.label}: ${part.count}`}
               />
             ))}
           </div>
-          <p className="mt-4 text-center text-sm font-semibold text-amber-600">
+          <p className="mt-4 text-center text-sm font-semibold text-warning">
             {model.sentiment.label}
           </p>
           <p className="mx-auto mt-1 max-w-40 text-center text-xs leading-5 text-muted-foreground">
@@ -241,7 +226,7 @@ function SentimentMeter({ model }: { model: ContactOverviewModel }) {
         </>
       ) : (
         <>
-          <div className="mx-auto mt-6 h-5 max-w-40 rounded-full bg-violet-50" />
+          <div className="mx-auto mt-6 h-5 max-w-40 rounded-full bg-muted" />
           <p className="mt-4 text-center text-sm font-semibold">
             {model.sentiment.label}
           </p>
@@ -257,22 +242,76 @@ function SentimentMeter({ model }: { model: ContactOverviewModel }) {
 function pulseMetricCardClass(): string {
   return cn(
     "min-h-64 cursor-default rounded-lg border border-border/70 bg-background/60 px-4 py-5 text-left transition-all duration-200",
-    "hover:-translate-y-1 hover:border-violet-200 hover:bg-violet-50/40 hover:shadow-md motion-reduce:hover:translate-y-0",
+    "hover:-translate-y-1 hover:border-border hover:bg-muted/30 hover:shadow-md motion-reduce:hover:translate-y-0",
   );
 }
 
-function toneColor(tone: OverviewTone): string {
-  if (tone === "positive") {
-    return "rgb(34 197 94)";
+type MoodSegmentColorClass =
+  | "bg-mood-happy"
+  | "bg-mood-content"
+  | "bg-mood-neutral"
+  | "bg-mood-anxious"
+  | "bg-mood-sad"
+  | "bg-mood-angry";
+
+const namedMoodSegmentColors: Record<string, MoodSegmentColorClass> = {
+  angry: "bg-mood-angry",
+  anxious: "bg-mood-anxious",
+  content: "bg-mood-content",
+  happy: "bg-mood-happy",
+  neutral: "bg-mood-neutral",
+  sad: "bg-mood-sad",
+};
+
+const fallbackMoodSegmentColors: MoodSegmentColorClass[] = [
+  "bg-mood-happy",
+  "bg-mood-content",
+  "bg-mood-neutral",
+  "bg-mood-anxious",
+  "bg-mood-sad",
+  "bg-mood-angry",
+];
+
+function moodSegmentColorClass(
+  label: string,
+  moods: Mood[],
+): MoodSegmentColorClass {
+  const normalizedLabel = normalizeMoodKey(label);
+  const namedColor = namedMoodSegmentColors[normalizedLabel];
+
+  if (namedColor) {
+    return namedColor;
   }
 
-  if (tone === "neutral") {
-    return "rgb(14 165 233)";
+  const lookupMood = moods.find(
+    (mood) => normalizeMoodKey(mood.name) === normalizedLabel,
+  );
+  const fallbackSeed = lookupMood
+    ? `${lookupMood.name}:${lookupMood.polarity}`
+    : label;
+
+  return fallbackMoodSegmentColors[
+    stableHash(fallbackSeed) % fallbackMoodSegmentColors.length
+  ];
+}
+
+function normalizeMoodKey(label: string): string {
+  return label
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, " ");
+}
+
+function stableHash(value: string): number {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
 
-  if (tone === "watch") {
-    return "rgb(245 158 11)";
-  }
+  return hash;
+}
 
-  return "rgb(139 92 246)";
+function tokenColor(token: "success-solid"): string {
+  return `var(--${token})`;
 }

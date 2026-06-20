@@ -1,13 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import {
-  ClipboardList,
-  Edit,
-  FileText,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { ClipboardList, Edit, FileText, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -77,11 +71,11 @@ export function FactsPanel({
   return (
     <section
       id="contact-facts-section"
-      className="rounded-xl border border-border/80 bg-card p-5 shadow-sm shadow-emerald-100/40"
+      className="rounded-xl border border-border/80 bg-card p-5 shadow-sm"
     >
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 shadow-sm shadow-emerald-100">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground shadow-sm">
             <ClipboardList className="size-5" />
           </span>
           <div>
@@ -94,7 +88,7 @@ export function FactsPanel({
         <Button
           size="sm"
           variant="outline"
-          className="border-violet-300 text-violet-700 hover:bg-violet-50"
+          className="border-primary/30 text-primary-strong hover:bg-accent hover:text-accent-foreground"
           onClick={() => openCreateComposer()}
         >
           <Plus className="size-4" />
@@ -104,8 +98,8 @@ export function FactsPanel({
 
       <div className="grid gap-4 sm:grid-cols-2">
         {safeFacts.length === 0 && (
-          <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/30 p-6 text-center sm:col-span-2">
-            <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-background text-emerald-700 shadow-sm">
+          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center sm:col-span-2">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground shadow-sm">
               <FileText className="size-5" />
             </div>
             <p className="mt-3 text-sm font-semibold">No facts saved yet.</p>
@@ -116,7 +110,7 @@ export function FactsPanel({
             <Button
               size="sm"
               variant="outline"
-              className="mt-4 border-violet-300 text-violet-700 hover:bg-violet-50"
+              className="mt-4 border-primary/30 text-primary-strong hover:bg-accent hover:text-accent-foreground"
               onClick={() => openCreateComposer()}
             >
               <Plus className="size-4" />
@@ -132,7 +126,7 @@ export function FactsPanel({
             <div
               key={group.key}
               className={cn(
-                "overflow-hidden rounded-xl border bg-background shadow-sm transition-colors hover:shadow-md",
+                "overflow-hidden rounded-xl border bg-background shadow-sm transition-shadow hover:shadow-md",
                 presentation.border,
               )}
             >
@@ -178,12 +172,12 @@ export function FactsPanel({
                         <span
                           className={cn(
                             "mt-2 size-1.5 shrink-0 rounded-full",
-                          presentation.dot,
-                        )}
-                      />
-                      <p className="min-w-0 flex-1 break-words text-sm leading-6 text-foreground">
-                        {fact.detail_value}
-                      </p>
+                            presentation.dot,
+                          )}
+                        />
+                        <p className="min-w-0 flex-1 break-words text-sm leading-6 text-foreground">
+                          {fact.detail_value}
+                        </p>
                         <div className="flex shrink-0 gap-0.5 opacity-60 transition-opacity group-hover/fact:opacity-100">
                           <Button
                             size="icon-xs"
@@ -192,18 +186,18 @@ export function FactsPanel({
                               setEditor({ mode: "edit", factId: fact.id })
                             }
                             aria-label="Edit fact"
-                            className="text-muted-foreground hover:text-violet-700"
+                            className="text-muted-foreground hover:text-primary-strong"
                           >
-                          <Edit className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="icon-xs"
-                          variant="ghost"
-                          onClick={() => void onDelete(fact.id)}
-                          aria-label="Delete fact"
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
+                            <Edit className="size-3.5" />
+                          </Button>
+                          <Button
+                            size="icon-xs"
+                            variant="ghost"
+                            onClick={() => void onDelete(fact.id)}
+                            aria-label="Delete fact"
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="size-3.5" />
                           </Button>
                         </div>
                       </div>
@@ -241,14 +235,14 @@ export function FactsPanel({
             }}
           />
         ) : (
-        <Button
-          variant="outline"
-          className="h-12 w-full border-dashed border-violet-200 text-violet-700 hover:bg-violet-50"
-          onClick={() => openCreateComposer()}
-        >
-          <Plus className="size-4" />
-          {safeFacts.length > 0 ? "Add another fact" : "Add your first fact"}
-        </Button>
+          <Button
+            variant="outline"
+            className="h-12 w-full border-dashed border-primary/30 text-primary-strong hover:bg-accent hover:text-accent-foreground"
+            onClick={() => openCreateComposer()}
+          >
+            <Plus className="size-4" />
+            {safeFacts.length > 0 ? "Add another fact" : "Add your first fact"}
+          </Button>
         )}
       </div>
     </section>
@@ -272,13 +266,13 @@ function FactCreateComposer({
   onSubmit,
 }: FactCreateComposerProps) {
   return (
-    <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 shadow-sm shadow-emerald-100/50">
+    <div className="rounded-xl border border-border bg-muted/30 p-4 shadow-sm">
       <div className="mb-4 flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground">
           <ClipboardList className="size-5" />
         </span>
         <div>
-          <h3 className="text-sm font-semibold text-emerald-800">
+          <h3 className="text-sm font-semibold text-foreground">
             Add a new fact
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -422,7 +416,7 @@ function FactEditorFields({
         <Button
           type="submit"
           disabled={isSaveDisabled}
-          className="bg-violet-600 text-white hover:bg-violet-700"
+          className="bg-primary-strong text-primary-foreground hover:bg-primary"
         >
           {mode === "edit" ? "Save changes" : "Save fact"}
         </Button>
@@ -445,7 +439,9 @@ function groupFactsByCategory(
   const groups = new Map<string, FactGroup>();
 
   for (const fact of facts) {
-    const category = categories.find((item) => idsMatch(item.id, fact.category));
+    const category = categories.find((item) =>
+      idsMatch(item.id, fact.category),
+    );
     const key = category ? `category-${String(category.id)}` : "uncategorized";
     const existingGroup = groups.get(key);
 

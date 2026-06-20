@@ -29,7 +29,7 @@ export function ContactProfileRail({
   const name = contactName(contact);
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-violet-100 bg-violet-50/60 bg-gradient-to-b from-violet-50 via-violet-50/70 to-violet-50/60 p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-xl border border-border/80 bg-card p-6 shadow-sm">
       <div className="flex flex-col items-center text-center">
         <div className="relative size-28 overflow-hidden rounded-full bg-muted shadow-sm ring-4 ring-background">
           {contact.profile_picture?.url ? (
@@ -44,7 +44,7 @@ export function ContactProfileRail({
               }}
             />
           ) : (
-            <div className="flex size-full items-center justify-center bg-gradient-to-br from-violet-100 via-white to-emerald-50 text-2xl font-semibold text-violet-700">
+            <div className="flex size-full items-center justify-center bg-accent text-2xl font-semibold text-accent-foreground">
               {contactInitials(contact)}
             </div>
           )}
@@ -61,7 +61,7 @@ export function ContactProfileRail({
       <div className="mt-5 space-y-2">
         <Button
           asChild
-          className="h-11 w-full bg-violet-600 text-white shadow-sm hover:bg-violet-700"
+          className="h-11 w-full bg-primary-strong text-primary-foreground shadow-sm hover:bg-primary"
         >
           <Link href={`/events/new?contact=${contact.id}`}>
             <Plus className="size-4" />
@@ -95,7 +95,7 @@ export function ContactProfileRail({
         </div>
       </div>
 
-      <div className="mt-6 border-t border-violet-100 pt-5">
+      <div className="mt-6 border-t border-border pt-5">
         <div className="flex items-start gap-3">
           <CalendarClock className="mt-0.5 size-4 text-muted-foreground" />
           <div className="min-w-0">
@@ -127,7 +127,7 @@ export function ContactProfileRail({
         <RememberNextTimeList model={model} />
       </div>
 
-      <div className="mt-auto border-t border-violet-100 pt-6">
+      <div className="mt-auto border-t border-border pt-6">
         <p className="mb-3 text-sm font-semibold">Contact</p>
         <ContactMethodsCompact
           email={contact.email}

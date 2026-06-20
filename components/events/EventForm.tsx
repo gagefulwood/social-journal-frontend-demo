@@ -36,7 +36,11 @@ const eventFormSchema = z.object({
 
 const journalTypes = [
   { label: "Log", value: "reflection", route: "/journals/new" },
-  { label: "Reflection", value: "incident", route: "/journals/reflections/new" },
+  {
+    label: "Reflection",
+    value: "incident",
+    route: "/journals/reflections/new",
+  },
   { label: "Exercise", value: "exercise", route: "/journals/exercises/new" },
 ];
 
@@ -47,9 +51,7 @@ type EventFormProps = {
   initialContactId?: string | null;
   submitLabel: string;
   categories: ContextCategory[];
-  onSubmit: (
-    data: CreateEventRequest | UpdateEventRequest
-  ) => Promise<void>;
+  onSubmit: (data: CreateEventRequest | UpdateEventRequest) => Promise<void>;
 };
 
 export function EventsForm({
@@ -73,7 +75,7 @@ export function EventsForm({
       tier: initialData?.tier ?? "routine",
       context_category: initialData?.context_category ?? null,
       participants:
-      initialData?.participants?.map((p) => String(p.contact.id)) ?? [],
+        initialData?.participants?.map((p) => String(p.contact.id)) ?? [],
       journal_type: undefined,
     },
   });
@@ -144,17 +146,14 @@ export function EventsForm({
       onSubmit={form.handleSubmit(handleSubmit)}
       className="rounded-xl border border-border bg-card p-8"
     >
-      <h1 className="mb-8 text-3xl font-semibold">
-        {submitLabel}
-      </h1>
+      <h1 className="mb-8 text-3xl font-semibold">{submitLabel}</h1>
 
       <div className="grid gap-10 lg:grid-cols-2">
         <div className="space-y-5">
-
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...form.register("title")} />
-            <p className="text-sm text-red-500">
+            <p className="text-sm text-destructive">
               {form.formState.errors.title?.message}
             </p>
           </div>
@@ -170,10 +169,7 @@ export function EventsForm({
 
           <div className="space-y-2">
             <Label htmlFor="location_label">Location</Label>
-            <Input
-              id="location_label"
-              {...form.register("location_label")}
-            />
+            <Input id="location_label" {...form.register("location_label")} />
           </div>
 
           <div className="space-y-2">
@@ -206,64 +202,65 @@ export function EventsForm({
           </div>
         </div>
         <div className="space-y-5">
-
           {/* This is the part where I'm adding contacts to all of this... though I'm not sure how to make this display on the contacts' pages*/}
-        <div>
-        <p className="mb-4 text-xl font-medium">Participants</p>
+          <div>
+            <p className="mb-4 text-xl font-medium">Participants</p>
 
-        <div className="flex flex-wrap gap-4">
-            {selectedParticipants.map((id) => {
-            const contact = contacts.find((c) => String(c.id) === String(id));
+            <div className="flex flex-wrap gap-4">
+              {selectedParticipants.map((id) => {
+                const contact = contacts.find(
+                  (c) => String(c.id) === String(id),
+                );
 
-            return (
-                <div
-                key={id}
-                className="flex h-20 w-20 flex-col items-center justify-center rounded-full border bg-muted text-xs text-center p-2"
+                return (
+                  <div
+                    key={id}
+                    className="flex h-20 w-20 flex-col items-center justify-center rounded-full border bg-muted text-xs text-center p-2"
+                  >
+                    <span className="font-medium leading-tight">
+                      {contact
+                        ? `${contact.first_name} ${contact.last_name}`
+                        : "Unknown"}
+                    </span>
+                  </div>
+                );
+              })}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-20 w-20 items-center justify-center rounded-full border text-3xl transition hover:bg-muted"
+                  >
+                    +
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  align="start"
+                  className="max-h-64 overflow-auto"
                 >
-                <span className="font-medium leading-tight">
-                    {contact
-                    ? `${contact.first_name} ${contact.last_name}`
-                    : "Unknown"}
-                </span>
-                </div>
-            );
-            })}
+                  {contacts
+                    .filter((c) => !selectedParticipants.includes(String(c.id)))
+                    .map((contact) => (
+                      <DropdownMenuItem
+                        key={contact.id}
+                        onClick={() => {
+                          const current = form.getValues("participants");
 
-            <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button
-                type="button"
-                className="flex h-20 w-20 items-center justify-center rounded-full border text-3xl transition hover:bg-muted"
-                >
-                +
-                </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="start" className="max-h-64 overflow-auto">
-                {contacts
-                .filter(
-                  (c) => !selectedParticipants.includes(String(c.id)),
-                )
-                .map((contact) => (
-                    <DropdownMenuItem
-                    key={contact.id}
-                    onClick={() => {
-                        const current = form.getValues("participants");
-
-                        form.setValue("participants", [
-                        ...current,
-                        String(contact.id),
-                        ]);
-                    }}
-                    >
-                    {contact.first_name} {contact.last_name}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-        </div>
-
+                          form.setValue("participants", [
+                            ...current,
+                            String(contact.id),
+                          ]);
+                        }}
+                      >
+                        {contact.first_name} {contact.last_name}
+                      </DropdownMenuItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -273,7 +270,6 @@ export function EventsForm({
         <p className="mb-3 text-xl font-medium">Journals</p>
 
         <div className="relative flex h-20 items-center rounded-md border border-input bg-background px-4">
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -302,19 +298,14 @@ export function EventsForm({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
         </div>
       </div>
 
       {error && (
-        <p className="mt-4 text-sm text-red-500">
-          {error.message}
-        </p>
+        <p className="mt-4 text-sm text-destructive">{error.message}</p>
       )}
       <div className="mt-8 flex justify-end">
-        <Button type="submit">
-          {submitLabel}
-        </Button>
+        <Button type="submit">{submitLabel}</Button>
       </div>
     </form>
   );
