@@ -9,6 +9,8 @@ import {
   Star,
 } from "lucide-react";
 import { ContactOverviewEmptyState } from "./ContactOverviewEmptyState";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { formatDate } from "@/components/contacts/contact-utils";
 import type { ContactOverviewModel } from "./contact-overview-utils";
 
@@ -26,38 +28,40 @@ export function StorySoFarStrip({
   const eventCount = model.storySoFarEvents.length;
 
   return (
-    <section className="rounded-xl border border-border/80 bg-card p-6 shadow-sm">
-      {loading ? (
-        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-28 animate-pulse rounded-md bg-muted"
-            />
-          ))}
-        </div>
-      ) : eventCount === 1 ? (
-        <LatestSharedMoment
-          event={model.storySoFarEvents[0]}
-          onViewTimeline={onViewTimeline}
-        />
-      ) : eventCount === 2 ? (
-        <TwoMomentStrip events={model.storySoFarEvents} />
-      ) : eventCount > 2 ? (
-        <FullStoryStrip model={model} />
-      ) : (
-        <>
-          <h2 className="text-lg font-semibold">Our Story So Far</h2>
-          <div className="mt-5">
-            <ContactOverviewEmptyState
-              icon={<CalendarClock className="size-4" />}
-              title={model.storySoFarEmptyState ?? "No shared moments yet"}
-              copy="Add events to build this story."
-            />
+    <SurfaceCard asChild className="p-4">
+      <section>
+        {loading ? (
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-24 animate-pulse rounded-md bg-muted"
+              />
+            ))}
           </div>
-        </>
-      )}
-    </section>
+        ) : eventCount === 1 ? (
+          <LatestSharedMoment
+            event={model.storySoFarEvents[0]}
+            onViewTimeline={onViewTimeline}
+          />
+        ) : eventCount === 2 ? (
+          <TwoMomentStrip events={model.storySoFarEvents} />
+        ) : eventCount > 2 ? (
+          <FullStoryStrip model={model} onViewTimeline={onViewTimeline} />
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold">Our Story So Far</h2>
+            <div className="mt-4">
+              <ContactOverviewEmptyState
+                icon={<CalendarClock className="size-4" />}
+                title={model.storySoFarEmptyState ?? "No shared moments yet"}
+                copy="Add events to build this story."
+              />
+            </div>
+          </>
+        )}
+      </section>
+    </SurfaceCard>
   );
 }
 
@@ -85,12 +89,12 @@ function LatestSharedMoment({
       <section
         role="button"
         tabIndex={0}
-        className="group mt-5 flex w-full flex-col gap-4 rounded-lg border border-transparent p-2 text-left outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/30 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0 sm:flex-row sm:items-center"
+        className="group mt-4 flex w-full flex-col gap-3 rounded-lg border border-transparent p-2 text-left outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/20 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0 sm:flex-row sm:items-center"
         onClick={onViewTimeline}
         onKeyDown={handleKeyDown}
       >
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-          <MapPin className="size-6" />
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+          <MapPin className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm text-muted-foreground">
@@ -111,7 +115,7 @@ function LatestSharedMoment({
               : "A recorded moment together."}
           </p>
         </div>
-        <span className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-primary-strong transition-colors group-hover:bg-muted/30">
+        <span className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-primary-strong transition-colors group-hover:bg-muted/20">
           View Timeline
           <ArrowRight className="size-4" />
         </span>
@@ -128,12 +132,12 @@ function TwoMomentStrip({
   return (
     <div>
       <h2 className="text-lg font-semibold">Our Story So Far</h2>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
         {events.map((event) => (
           <Link
             key={event.id}
             href={`/events/${event.id}`}
-            className="group flex items-start gap-3 rounded-lg border border-border/80 bg-background/70 p-4 transition-colors hover:bg-muted/30"
+            className="group flex items-start gap-3 rounded-lg border border-border/80 bg-background/70 p-3 transition-colors hover:bg-muted/20"
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
               {event.tier === "milestone" ? (
@@ -161,44 +165,58 @@ function TwoMomentStrip({
   );
 }
 
-function FullStoryStrip({ model }: { model: ContactOverviewModel }) {
+function FullStoryStrip({
+  model,
+  onViewTimeline,
+}: {
+  model: ContactOverviewModel;
+  onViewTimeline: () => void;
+}) {
+  const visibleEvents = model.storySoFarEvents.slice(0, 4);
+
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">Our Story So Far</h2>
-          <p className="text-sm text-muted-foreground">
-            Shared moments recorded with {model.displayName}.
-          </p>
-        </div>
-      </div>
+      <SectionHeader
+        title="Our Story So Far"
+        description={`Shared moments recorded with ${model.displayName}.`}
+        action={
+          <button
+            type="button"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium text-primary-strong outline-none transition-colors hover:bg-muted/20 focus-visible:ring-3 focus-visible:ring-ring/50"
+            onClick={onViewTimeline}
+          >
+            View Timeline
+            <ArrowRight className="size-4" />
+          </button>
+        }
+      />
 
-      <div className="relative grid gap-4 sm:grid-cols-2 md:grid-cols-4 2xl:grid-cols-5">
-        <div className="pointer-events-none absolute left-10 right-10 top-7 hidden border-t border-dashed border-border md:block" />
-        {model.storySoFarEvents.map((event) => (
+      <div className="relative mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+        <div className="pointer-events-none absolute left-8 right-8 top-5 hidden border-t border-dashed border-border md:block" />
+        {visibleEvents.map((event) => (
           <Link
             key={event.id}
             href={`/events/${event.id}`}
-            className="group relative rounded-lg border border-transparent bg-transparent p-2 text-center transition-colors hover:bg-muted/40"
+            className="group relative rounded-lg border border-transparent bg-transparent p-1.5 text-center transition-colors hover:bg-muted/20"
           >
-            <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground ring-8 ring-background">
+            <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground ring-5 ring-background">
               {event.tier === "milestone" ? (
-                <Star className="size-6 text-primary-strong" />
+                <Star className="size-4 text-primary-strong" />
               ) : event.locationLabel ? (
-                <MapPin className="size-6" />
+                <MapPin className="size-4" />
               ) : event.journaled ? (
-                <MessageCircle className="size-6" />
+                <MessageCircle className="size-4" />
               ) : (
-                <Coffee className="size-6" />
+                <Coffee className="size-4" />
               )}
             </div>
-            <p className="mt-3 text-xs font-medium text-muted-foreground">
+            <p className="mt-2 text-xs font-medium leading-4 text-muted-foreground">
               {event.dateLabel}
             </p>
-            <p className="mx-auto mt-1 line-clamp-2 max-w-28 text-sm font-semibold group-hover:text-primary">
+            <p className="mx-auto mt-0.5 line-clamp-2 max-w-28 text-sm font-semibold leading-5 group-hover:text-primary">
               {event.title}
             </p>
-            <div className="mt-1 flex min-h-5 justify-center gap-1.5 text-xs text-muted-foreground">
+            <div className="mt-0.5 flex min-h-4 justify-center gap-1.5 text-xs text-muted-foreground">
               {event.locationLabel ? (
                 <span className="truncate">{event.locationLabel}</span>
               ) : (

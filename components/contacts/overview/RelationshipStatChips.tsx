@@ -57,27 +57,29 @@ export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
   }>;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-4">
       {chips.map((chip) => (
         <div
           key={chip.eyebrow}
           className={cn(
-            "flex min-h-20 cursor-default items-center gap-3 rounded-lg border px-4 py-3 text-left shadow-sm transition-all duration-200",
+            "flex min-h-16 cursor-default items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left shadow-sm transition-all duration-200",
             "hover:-translate-y-0.5 hover:border-current hover:shadow-md motion-reduce:hover:translate-y-0",
             toneClasses[chip.tone],
           )}
         >
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full transition-colors",
+              "flex size-8 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:size-4",
               iconToneClasses[chip.tone],
             )}
           >
             {chip.icon}
           </span>
-          <div>
-            <p className="text-base font-semibold leading-none">{chip.label}</p>
-            <p className="mt-1 text-xs font-medium leading-none opacity-75">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-none">
+              {chip.label}
+            </p>
+            <p className="mt-1 text-[0.7rem] font-medium leading-none opacity-75">
               {chip.eyebrow}
             </p>
           </div>

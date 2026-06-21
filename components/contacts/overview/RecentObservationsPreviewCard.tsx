@@ -1,6 +1,7 @@
-import type { KeyboardEvent } from "react";
 import { ChevronRight, MessageSquareText } from "lucide-react";
-import { ContactOverviewEmptyState } from "./ContactOverviewEmptyState";
+import { EmptyActionBox } from "@/components/ui/empty-action-box";
+import { IconBadge } from "@/components/ui/icon-badge";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { formatDate, idsMatch } from "@/components/contacts/contact-utils";
 import { getObservationMarkerPresentation } from "@/components/contacts/observation-marker-presentation";
 import { useLookups } from "@/hooks/useLookups";
@@ -29,97 +30,95 @@ export function RecentObservationsPreviewCard({
     .slice(0, 3);
   const isEmpty = previewObservations.length === 0;
 
-  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onViewAll();
-    }
-  }
-
   return (
-    <section
-      role="button"
-      tabIndex={0}
-      aria-label="View all observations"
-      className="rounded-xl border border-border/70 bg-background/80 p-4 shadow-sm outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/30 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0"
-      onClick={onViewAll}
-      onKeyDown={handleKeyDown}
-    >
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-marker-rose text-marker-rose-foreground shadow-sm">
-            <MessageSquareText className="size-5" />
-          </span>
-          <h3 className="font-semibold">Recent Observations</h3>
-        </div>
-        <span className="rounded-full bg-marker-rose px-2.5 py-1 text-xs font-semibold text-marker-rose-foreground">
-          {activeObservations.length}
-        </span>
-      </div>
-
-      {previewObservations.length > 0 ? (
-        <ul className="space-y-3">
-          {previewObservations.map((observation) => {
-            const marker = observationMarkers.find((item) =>
-              idsMatch(item.id, observation.marker),
-            );
-            const markerPresentation = getObservationMarkerPresentation(marker);
-            const Icon = markerPresentation.icon;
-
-            return (
-              <li
-                key={observation.id}
-                className="relative flex gap-2.5 text-sm"
-              >
-                <div className="relative mt-0.5 w-8 shrink-0 self-stretch">
-                  <span
-                    className={cn(
-                      "absolute left-0 top-1 h-full min-h-12 w-0.5 rounded-full",
-                      markerPresentation.line,
-                    )}
-                  />
-                  <span className="absolute left-2 top-0 flex size-6 items-center justify-center rounded-full border border-background bg-background shadow-sm">
-                    <span
-                      className={cn(
-                        "flex size-5 items-center justify-center rounded-full",
-                        markerPresentation.badge,
-                        markerPresentation.text,
-                      )}
-                    >
-                      <Icon className={markerPresentation.iconClassName} />
-                    </span>
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold leading-4 text-muted-foreground">
-                    {formatDate(observation.created_timestamp)}
-                  </p>
-                  <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-5 text-foreground">
-                    {observation.body}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <ContactOverviewEmptyState
-          icon={<MessageSquareText className="size-4" />}
-          title="No recent observations"
-          copy="Recent notes and patterns will appear here once you save observations."
-        />
-      )}
-
-      <span className="mt-4 flex h-9 w-full items-center justify-between border-t border-border/70 pt-3 text-sm font-semibold text-primary-strong">
-        View all observations
-        {isEmpty ? (
-          <ChevronRight className="size-4" />
-        ) : (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+    <SurfaceCard asChild hoverable>
+      <button
+        type="button"
+        aria-label="View all observations"
+        className="block w-full appearance-none p-3.5 text-left font-[inherit] text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0"
+        onClick={onViewAll}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <IconBadge tone="rose" size="md">
+              <MessageSquareText className="size-5" />
+            </IconBadge>
+            <h3 className="font-semibold">Recent Observations</h3>
+          </div>
+          <span className="rounded-full bg-marker-rose px-2.5 py-1 text-xs font-semibold text-marker-rose-foreground">
             {activeObservations.length}
           </span>
+        </div>
+
+        {previewObservations.length > 0 ? (
+          <ul className="space-y-2.5">
+            {previewObservations.map((observation) => {
+              const marker = observationMarkers.find((item) =>
+                idsMatch(item.id, observation.marker),
+              );
+              const markerPresentation =
+                getObservationMarkerPresentation(marker);
+              const Icon = markerPresentation.icon;
+
+              return (
+                <li
+                  key={observation.id}
+                  className="relative flex gap-2.5 text-sm"
+                >
+                  <div className="relative mt-0.5 w-8 shrink-0 self-stretch">
+                    <span
+                      className={cn(
+                        "absolute left-0 top-1 h-full min-h-10 w-0.5 rounded-full",
+                        markerPresentation.line,
+                      )}
+                    />
+                    <span className="absolute left-2 top-0 flex size-6 items-center justify-center rounded-full border border-background bg-background shadow-sm">
+                      <span
+                        className={cn(
+                          "flex size-5 items-center justify-center rounded-full",
+                          markerPresentation.badge,
+                          markerPresentation.text,
+                        )}
+                      >
+                        <Icon className={markerPresentation.iconClassName} />
+                      </span>
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold leading-4 text-muted-foreground">
+                      {formatDate(observation.created_timestamp)}
+                    </p>
+                    <p className="line-clamp-2 whitespace-pre-wrap text-sm leading-5 text-foreground">
+                      {observation.body}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyActionBox
+            icon={
+              <IconBadge tone="neutral" size="sm" className="shadow-none">
+                <MessageSquareText className="size-4" />
+              </IconBadge>
+            }
+            title="No recent observations"
+            copy="Recent notes and patterns will appear here once you save observations."
+          />
         )}
-      </span>
-    </section>
+
+        <span className="mt-3 flex h-8 w-full items-center justify-between border-t border-border/70 pt-2.5 text-sm font-semibold text-primary-strong">
+          View all observations
+          {isEmpty ? (
+            <ChevronRight className="size-4" />
+          ) : (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              {activeObservations.length}
+            </span>
+          )}
+        </span>
+      </button>
+    </SurfaceCard>
   );
 }

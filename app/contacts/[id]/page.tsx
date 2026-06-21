@@ -46,7 +46,7 @@ export default function ContactDetailPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-[1760px] px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1760px] px-4 py-4 sm:px-5 lg:px-4">
         <div className="mb-4 flex items-center justify-between gap-4">
           <Button asChild variant="outline">
             <Link href="/contacts">Back</Link>

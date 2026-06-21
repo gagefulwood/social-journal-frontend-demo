@@ -29,9 +29,9 @@ export function ContactProfileRail({
   const name = contactName(contact);
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-border/80 bg-card p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-xl border border-border/80 bg-card p-5 shadow-sm">
       <div className="flex flex-col items-center text-center">
-        <div className="relative size-28 overflow-hidden rounded-full bg-muted shadow-sm ring-4 ring-background">
+        <div className="relative size-24 overflow-hidden rounded-full bg-muted shadow-sm ring-4 ring-background">
           {contact.profile_picture?.url ? (
             <div
               role="img"
@@ -50,15 +50,15 @@ export function ContactProfileRail({
           )}
         </div>
 
-        <h1 className="mt-5 max-w-full break-words text-2xl font-semibold leading-8">
+        <h1 className="mt-4 max-w-full break-words text-xl font-semibold leading-7">
           {model.displayName}
         </h1>
-        <p className="mt-2 max-w-64 text-sm leading-6 text-muted-foreground">
+        <p className="mt-1 max-w-60 text-sm leading-5 text-muted-foreground">
           {model.contextLine}
         </p>
       </div>
 
-      <div className="mt-5 space-y-2">
+      <div className="mt-4 space-y-2">
         <Button
           asChild
           className="h-11 w-full bg-primary-strong text-primary-foreground shadow-sm hover:bg-primary"
@@ -95,7 +95,7 @@ export function ContactProfileRail({
         </div>
       </div>
 
-      <div className="mt-6 border-t border-border pt-5">
+      <div className="mt-5 border-t border-border pt-4">
         <div className="flex items-start gap-3">
           <CalendarClock className="mt-0.5 size-4 text-muted-foreground" />
           <div className="min-w-0">
@@ -120,14 +120,14 @@ export function ContactProfileRail({
         </div>
       </div>
 
-      <div className="mt-7">
+      <div className="mt-5">
         <div className="mb-3">
           <h2 className="text-sm font-semibold">Remember next time</h2>
         </div>
         <RememberNextTimeList model={model} />
       </div>
 
-      <div className="mt-auto border-t border-border pt-6">
+      <div className="mt-auto border-t border-border pt-5">
         <p className="mb-3 text-sm font-semibold">Contact</p>
         <ContactMethodsCompact
           email={contact.email}

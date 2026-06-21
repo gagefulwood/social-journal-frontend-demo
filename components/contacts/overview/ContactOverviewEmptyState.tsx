@@ -12,9 +12,9 @@ export function ContactOverviewEmptyState({
   copy,
 }: ContactOverviewEmptyStateProps) {
   return (
-    <div className="rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-4 text-sm">
+    <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4 text-sm">
       {icon && (
-        <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-background/80 text-muted-foreground">
+        <div className="mb-3 flex size-9 items-center justify-center rounded-md bg-card text-muted-foreground">
           {icon}
         </div>
       )}

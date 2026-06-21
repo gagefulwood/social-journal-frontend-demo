@@ -1,7 +1,10 @@
 import { Heart } from "lucide-react";
+import { IconBadge } from "@/components/ui/icon-badge";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SurfaceCard } from "@/components/ui/surface-card";
+import type { Fact, Observation } from "@/types/contacts";
 import { FactsPreviewCard } from "./FactsPreviewCard";
 import { RecentObservationsPreviewCard } from "./RecentObservationsPreviewCard";
-import type { Fact, Observation } from "@/types/contacts";
 
 type ContactKnowledgePreviewProps = {
   facts: Fact[];
@@ -15,28 +18,28 @@ export function ContactKnowledgePreview({
   onViewFactsAndObservations,
 }: ContactKnowledgePreviewProps) {
   return (
-    <aside className="flex h-full flex-col rounded-2xl border border-border/80 bg-card/95 p-5 shadow-sm">
-      <div className="flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground shadow-sm">
-          <Heart className="size-5" />
-        </span>
-        <div>
-          <h2 className="text-xl font-semibold">Context Clues</h2>
-          <p className="text-sm text-muted-foreground">
-            A quick look at key things you&apos;ve saved.
-          </p>
+    <SurfaceCard asChild className="flex flex-col p-4">
+      <aside>
+        <SectionHeader
+          title="Context Clues"
+          description="A quick look at key things you've saved."
+          icon={
+            <IconBadge tone="violet" size="lg">
+              <Heart className="size-5" />
+            </IconBadge>
+          }
+        />
+        <div className="mt-4 space-y-3">
+          <FactsPreviewCard
+            facts={facts}
+            onViewAll={onViewFactsAndObservations}
+          />
+          <RecentObservationsPreviewCard
+            observations={observations}
+            onViewAll={onViewFactsAndObservations}
+          />
         </div>
-      </div>
-      <div className="mt-5 space-y-4">
-        <FactsPreviewCard
-          facts={facts}
-          onViewAll={onViewFactsAndObservations}
-        />
-        <RecentObservationsPreviewCard
-          observations={observations}
-          onViewAll={onViewFactsAndObservations}
-        />
-      </div>
-    </aside>
+      </aside>
+    </SurfaceCard>
   );
 }

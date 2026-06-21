@@ -99,7 +99,7 @@ export function ContactDetailPanel({
   }
 
   return (
-    <div className="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[296px_minmax(0,1fr)]">
       <aside className="flex self-stretch">
         <ContactProfileRail
           contact={contact}
@@ -109,7 +109,7 @@ export function ContactDetailPanel({
         />
       </aside>
 
-      <div className="min-w-0 rounded-xl border border-border bg-background shadow-sm">
+      <div className="min-w-0 rounded-xl border border-border bg-card shadow-sm">
         <Tabs
           className="h-full"
           value={activeTab}
@@ -149,7 +149,7 @@ export function ContactDetailPanel({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="m-0 p-4 sm:p-5">
+          <TabsContent value="overview" className="m-0 p-3 sm:p-4">
             <ContactOverviewPanel
               contact={contact}
               facts={facts}

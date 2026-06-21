@@ -35,7 +35,7 @@ export function ContactMethodsCompact({
             asChild
             variant="outline"
             size="icon"
-            className="size-14 bg-background/80 text-primary-strong transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/30 hover:shadow-sm active:translate-y-0 motion-reduce:hover:translate-y-0"
+            className="size-14 bg-background/80 text-primary-strong transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/20 hover:shadow-sm active:translate-y-0 motion-reduce:hover:translate-y-0"
           >
             <a href={method.href} aria-label={method.label}>
               {method.icon}

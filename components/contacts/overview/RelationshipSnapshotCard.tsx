@@ -1,4 +1,7 @@
 import { HeartPulse } from "lucide-react";
+import { IconBadge } from "@/components/ui/icon-badge";
+import { SectionHeader } from "@/components/ui/section-header";
+import { SurfaceCard } from "@/components/ui/surface-card";
 import { RelationshipStatChips } from "./RelationshipStatChips";
 import type { ContactOverviewModel } from "./contact-overview-utils";
 
@@ -10,30 +13,30 @@ export function RelationshipSnapshotCard({
   model,
 }: RelationshipSnapshotCardProps) {
   return (
-    <section className="rounded-xl border border-border/80 bg-card p-6 shadow-sm">
-      <div className="flex w-full items-start gap-3 rounded-lg text-left">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-          <HeartPulse className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-semibold leading-7">
-            Relationship Snapshot
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            {model.relationshipSnapshot.headline}
-          </p>
-          {model.relationshipSnapshot.details.length > 0 && (
-            <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+    <SurfaceCard asChild className="p-4">
+      <section>
+        <SectionHeader
+          title="Relationship Snapshot"
+          description={
+            <>
+              <p>{model.relationshipSnapshot.headline}</p>
               {model.relationshipSnapshot.details.map((detail) => (
-                <p key={detail}>{detail}</p>
+                <p key={detail} className="mt-1">
+                  {detail}
+                </p>
               ))}
-            </div>
-          )}
+            </>
+          }
+          icon={
+            <IconBadge tone="accent" size="lg" shape="circle">
+              <HeartPulse className="size-5" />
+            </IconBadge>
+          }
+        />
+        <div className="mt-4">
+          <RelationshipStatChips model={model} />
         </div>
-      </div>
-      <div className="mt-6">
-        <RelationshipStatChips model={model} />
-      </div>
-    </section>
+      </section>
+    </SurfaceCard>
   );
 }
