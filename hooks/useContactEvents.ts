@@ -21,11 +21,15 @@ export function useContactEvents(
       page: params.page,
       page_size: params.page_size,
       title: params.title?.trim() || undefined,
+      search: params.search?.trim() || undefined,
       event_after: params.event_after,
       event_before: params.event_before,
       tier: params.tier,
+      impact: params.impact || undefined,
       context_category: params.context_category || undefined,
+      interaction_mode: params.interaction_mode || undefined,
       journaled: params.journaled,
+      has_mood: params.has_mood,
     };
 
     return {
@@ -38,11 +42,15 @@ export function useContactEvents(
     params.page,
     params.page_size,
     params.title,
+    params.search,
     params.event_after,
     params.event_before,
     params.tier,
+    params.impact,
     params.context_category,
+    params.interaction_mode,
     params.journaled,
+    params.has_mood,
   ]);
 
   const fetchContactEvents = useCallback(async () => {
