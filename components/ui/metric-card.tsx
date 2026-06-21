@@ -22,6 +22,7 @@ type MetricChipProps = {
   eyebrow?: string
   icon?: ReactNode
   tone?: MetricTone
+  layout?: "inline" | "stacked"
   className?: string
 }
 
@@ -102,8 +103,36 @@ function MetricChip({
   eyebrow,
   icon,
   tone = "muted",
+  layout = "inline",
   className,
 }: MetricChipProps) {
+  if (layout === "stacked") {
+    return (
+      <div
+        data-slot="metric-chip"
+        className={cn(
+          "grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 rounded-lg border px-3 py-2 text-sm font-medium",
+          chipToneClasses[tone],
+          className
+        )}
+      >
+        {icon && (
+          <span className="row-span-2 shrink-0 self-center [&_svg]:size-4">
+            {icon}
+          </span>
+        )}
+        <span className="min-w-0 truncate font-semibold leading-5">
+          {label}
+        </span>
+        {eyebrow && (
+          <span className="min-w-0 truncate text-xs font-normal leading-4 opacity-75">
+            {eyebrow}
+          </span>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       data-slot="metric-chip"

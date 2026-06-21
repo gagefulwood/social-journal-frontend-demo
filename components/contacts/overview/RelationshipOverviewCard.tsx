@@ -5,18 +5,18 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { RelationshipStatChips } from "./RelationshipStatChips";
 import type { ContactOverviewModel } from "./contact-overview-utils";
 
-type RelationshipSnapshotCardProps = {
+type RelationshipOverviewCardProps = {
   model: ContactOverviewModel;
 };
 
-export function RelationshipSnapshotCard({
+export function RelationshipOverviewCard({
   model,
-}: RelationshipSnapshotCardProps) {
+}: RelationshipOverviewCardProps) {
   return (
     <SurfaceCard asChild className="p-4">
       <section>
         <SectionHeader
-          title="Relationship Snapshot"
+          title="Relationship Overview"
           description={
             <>
               <p>{model.relationshipSnapshot.headline}</p>

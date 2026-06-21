@@ -144,7 +144,7 @@ export function EventsForm({
   return (
     <form
       onSubmit={form.handleSubmit(handleSubmit)}
-      className="rounded-xl border border-border bg-card p-8"
+      className="rounded-lg border border-border bg-card p-8"
     >
       <h1 className="mb-8 text-3xl font-semibold">{submitLabel}</h1>
 

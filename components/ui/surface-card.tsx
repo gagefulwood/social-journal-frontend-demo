@@ -20,7 +20,7 @@ function SurfaceCard({
     <Comp
       data-slot="surface-card"
       className={cn(
-        "rounded-xl border border-border/80 bg-card shadow-sm",
+        "rounded-lg border border-border/80 bg-card shadow-sm",
         hoverable &&
           "transition-all duration-200 hover:border-border hover:bg-muted/20 hover:shadow-md",
         className

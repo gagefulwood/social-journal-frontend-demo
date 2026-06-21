@@ -391,18 +391,11 @@ export function selectStorySoFarEvents(
   events: EventListItem[],
 ): StorySoFarEvent[] {
   return [...events]
-    .sort((left, right) => {
-      const tierDifference = tierRank(right.tier) - tierRank(left.tier);
-
-      if (tierDifference !== 0) {
-        return tierDifference;
-      }
-
-      return (
+    .sort(
+      (left, right) =>
         timestampValue(right.event_timestamp) -
-        timestampValue(left.event_timestamp)
-      );
-    })
+        timestampValue(left.event_timestamp),
+    )
     .slice(0, 5)
     .map((event) => ({
       id: event.id,
@@ -432,9 +425,8 @@ export function buildRelationshipSnapshot({
 
   if (!latestEvent) {
     return {
-      headline:
-        "Not enough shared moments yet. Add an event to start building this relationship story.",
-      details: [],
+      headline: `No shared moments recorded with ${firstName} yet.`,
+      details,
       latestEvent: null,
       eventCount: 0,
       emptyState: "Add events to build this story",
@@ -593,10 +585,6 @@ function sortRecentEvents(events: EventListItem[]): EventListItem[] {
       timestampValue(right.event_timestamp) -
       timestampValue(left.event_timestamp),
   );
-}
-
-function tierRank(tier: EventTier): number {
-  return tier === "milestone" ? 1 : 0;
 }
 
 function timestampValue(value: string): number {

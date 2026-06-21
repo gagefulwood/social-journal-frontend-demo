@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
-import { Activity, HeartPulse, MessageCircle, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+  Activity,
+  HeartPulse,
+  LayoutGrid,
+  MessageCircle,
+  TrendingUp,
+} from "lucide-react";
+import { MetricChip } from "@/components/ui/metric-card";
 import type { ContactOverviewModel } from "./contact-overview-utils";
 
 type RelationshipStatChipsProps = {
@@ -9,45 +15,37 @@ type RelationshipStatChipsProps = {
 
 type SignalTone = "success" | "warning" | "info" | "muted";
 
-const toneClasses: Record<SignalTone, string> = {
-  success: "border-success-muted bg-success-muted text-success",
-  warning: "border-warning-muted bg-warning-muted text-warning",
-  info: "border-info-muted bg-info-muted text-info",
-  muted: "border-border bg-muted text-muted-foreground",
-};
-
-const iconToneClasses: Record<SignalTone, string> = {
-  success: "bg-background/70 text-success",
-  warning: "bg-background/70 text-warning",
-  info: "bg-background/70 text-info",
-  muted: "bg-background/70 text-muted-foreground",
-};
-
 export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
   const chips = [
     {
       label: model.connectionBand.label,
-      eyebrow: "Connection",
-      tone: "success",
-      icon: <HeartPulse className="size-5" />,
+      eyebrow: "connection",
+      tone: signalToneForOverviewTone(model.connectionBand.tone),
+      icon: <HeartPulse />,
     },
     {
       label: model.trend.label,
-      eyebrow: model.trend.eyebrow,
+      eyebrow: "rhythm",
       tone: model.trend.value === "growing" ? "success" : "muted",
-      icon: <TrendingUp className="size-5" />,
-    },
-    {
-      label: model.sentiment.label,
-      eyebrow: "Mood",
-      tone: model.sentiment.total > 0 ? "warning" : "muted",
-      icon: <MessageCircle className="size-5" />,
+      icon: <TrendingUp />,
     },
     {
       label: model.frequencyLabel,
-      eyebrow: "Frequency",
+      eyebrow: "lately",
       tone: model.frequencyLabel === "No rhythm yet" ? "muted" : "info",
-      icon: <Activity className="size-5" />,
+      icon: <Activity />,
+    },
+    {
+      label: model.sentiment.label,
+      eyebrow: "mood",
+      tone: model.sentiment.total > 0 ? "warning" : "muted",
+      icon: <MessageCircle />,
+    },
+    {
+      label: model.diversityLabel,
+      eyebrow: "contexts",
+      tone: "muted",
+      icon: <LayoutGrid />,
     },
   ] satisfies Array<{
     label: string;
@@ -57,34 +55,32 @@ export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
   }>;
 
   return (
-    <div className="grid gap-2.5 sm:grid-cols-2 2xl:grid-cols-4">
+    <div className="grid gap-2.5 lg:grid-cols-5">
       {chips.map((chip) => (
-        <div
+        <MetricChip
           key={chip.eyebrow}
-          className={cn(
-            "flex min-h-16 cursor-default items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left shadow-sm transition-all duration-200",
-            "hover:-translate-y-0.5 hover:border-current hover:shadow-md motion-reduce:hover:translate-y-0",
-            toneClasses[chip.tone],
-          )}
-        >
-          <span
-            className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:size-4",
-              iconToneClasses[chip.tone],
-            )}
-          >
-            {chip.icon}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold leading-none">
-              {chip.label}
-            </p>
-            <p className="mt-1 text-[0.7rem] font-medium leading-none opacity-75">
-              {chip.eyebrow}
-            </p>
-          </div>
-        </div>
+          label={chip.label}
+          eyebrow={chip.eyebrow}
+          tone={chip.tone}
+          icon={chip.icon}
+          layout="stacked"
+          className="min-h-14"
+        />
       ))}
     </div>
   );
+}
+
+function signalToneForOverviewTone(
+  tone: ContactOverviewModel["connectionBand"]["tone"],
+): SignalTone {
+  if (tone === "positive") {
+    return "success";
+  }
+
+  if (tone === "watch") {
+    return "warning";
+  }
+
+  return "muted";
 }

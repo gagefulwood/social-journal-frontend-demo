@@ -34,7 +34,7 @@ export default function LogDetailPage() {
   if (loading) {
     return (
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-xl border bg-card p-8">
+        <div className="rounded-lg border bg-card p-8">
           <p className="text-muted-foreground">
             Loading journal...
           </p>
@@ -46,7 +46,7 @@ export default function LogDetailPage() {
   if (!log) {
     return (
       <main className="mx-auto max-w-5xl px-6 py-10">
-        <div className="rounded-xl border bg-card p-8">
+        <div className="rounded-lg border bg-card p-8">
           <p className="text-destructive">
             Journal not found.
           </p>
@@ -67,7 +67,7 @@ export default function LogDetailPage() {
             <Link href="/journals">Back</Link>
           </Button>
         </div>
-        <section className="rounded-xl border border-border bg-card p-8 shadow-sm">
+        <section className="rounded-lg border border-border bg-card p-8 shadow-sm">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-5">
                 <div>
@@ -133,6 +133,5 @@ export default function LogDetailPage() {
     </SidebarProvider>
   );
 }
-
 
 

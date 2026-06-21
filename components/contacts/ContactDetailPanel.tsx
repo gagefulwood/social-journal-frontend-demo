@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import {
   BookOpenText,
   CalendarDays,
@@ -52,6 +52,9 @@ type ContactDetailPanelProps = {
   onDeleteObservation: (observationId: ApiId) => Promise<void>;
 };
 
+const contactDetailTabContentClassName =
+  "mx-auto w-full max-w-[1320px] px-0 py-4 sm:py-5";
+
 export function ContactDetailPanel({
   contact,
   facts = [],
@@ -99,8 +102,8 @@ export function ContactDetailPanel({
   }
 
   return (
-    <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[296px_minmax(0,1fr)]">
-      <aside className="flex self-stretch">
+    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-stretch xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[296px_minmax(0,1fr)]">
+      <aside className="min-w-0 md:self-stretch">
         <ContactProfileRail
           contact={contact}
           model={overviewModel}
@@ -109,47 +112,47 @@ export function ContactDetailPanel({
         />
       </aside>
 
-      <div className="min-w-0 rounded-xl border border-border bg-card shadow-sm">
+      <div className="min-w-0">
         <Tabs
-          className="h-full"
+          className="min-w-0 gap-0"
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as ContactDetailTab)}
         >
           <TabsList
             variant="line"
-            className="h-16 w-full max-w-full justify-start overflow-x-auto rounded-none border-b border-border px-5"
+            className="h-14 w-full max-w-full justify-start overflow-x-auto rounded-none border-b border-border px-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-16 sm:px-5"
           >
             <TabsTrigger
               value="overview"
-              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
+              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
             >
               <Sparkles className="size-4" />
               Overview
             </TabsTrigger>
             <TabsTrigger
               value="facts-observations"
-              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
+              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
             >
               <LayoutGrid className="size-4" />
               Context
             </TabsTrigger>
             <TabsTrigger
               value="timeline"
-              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
+              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
             >
               <CalendarDays className="size-4" />
               Timeline
             </TabsTrigger>
             <TabsTrigger
               value="journals"
-              className="gap-2 px-5 data-active:text-primary-strong data-active:after:bg-primary-strong"
+              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
             >
               <NotebookTabs className="size-4" />
               Journals
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="m-0 p-3 sm:p-4">
+          <ContactDetailTabContent value="overview">
             <ContactOverviewPanel
               contact={contact}
               facts={facts}
@@ -163,9 +166,9 @@ export function ContactDetailPanel({
               }
               onViewTimeline={() => setActiveTab("timeline")}
             />
-          </TabsContent>
+          </ContactDetailTabContent>
 
-          <TabsContent value="facts-observations" className="m-0 p-4 sm:p-5">
+          <ContactDetailTabContent value="facts-observations">
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)]">
               <FactsPanel
                 facts={facts}
@@ -183,9 +186,9 @@ export function ContactDetailPanel({
                 onDelete={onDeleteObservation}
               />
             </div>
-          </TabsContent>
+          </ContactDetailTabContent>
 
-          <TabsContent value="journals" className="m-0 p-5">
+          <ContactDetailTabContent value="journals">
             <section className="rounded-lg border border-border bg-card p-8 text-center">
               <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
                 <BookOpenText className="size-6" />
@@ -195,13 +198,27 @@ export function ContactDetailPanel({
                 Journal entries will appear here once journals are rebuilt.
               </p>
             </section>
-          </TabsContent>
+          </ContactDetailTabContent>
 
-          <TabsContent value="timeline" className="m-0 p-5">
+          <ContactDetailTabContent value="timeline">
             <TimelinePanel />
-          </TabsContent>
+          </ContactDetailTabContent>
         </Tabs>
       </div>
     </div>
+  );
+}
+
+function ContactDetailTabContent({
+  value,
+  children,
+}: {
+  value: ContactDetailTab;
+  children: ReactNode;
+}) {
+  return (
+    <TabsContent value={value} tabIndex={-1} className="m-0">
+      <div className={contactDetailTabContentClassName}>{children}</div>
+    </TabsContent>
   );
 }

@@ -41,7 +41,7 @@ export function IdentityPanel({ contact }: IdentityPanelProps) {
   return (
     <section className="rounded-lg border border-border bg-card p-5">
       <div className="flex flex-col items-center text-center">
-        <div className="size-24 overflow-hidden rounded-2xl bg-muted">
+        <div className="size-24 overflow-hidden rounded-lg bg-muted">
           {contact.profile_picture?.url ? (
             <div
               role="img"

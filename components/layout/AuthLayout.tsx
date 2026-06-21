@@ -10,7 +10,7 @@ interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30">
-      <div className="w-full max-w-md p-8 bg-card shadow-lg rounded-xl">
+      <div className="w-full max-w-md rounded-lg bg-card p-8 shadow-lg">
         {children}
       </div>
     </div>

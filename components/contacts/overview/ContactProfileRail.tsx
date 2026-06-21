@@ -29,9 +29,9 @@ export function ContactProfileRail({
   const name = contactName(contact);
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-border/80 bg-card p-5 shadow-sm">
-      <div className="flex flex-col items-center text-center">
-        <div className="relative size-24 overflow-hidden rounded-full bg-muted shadow-sm ring-4 ring-background">
+    <section className="sticky top-2 z-20 w-full self-start rounded-lg border border-border/80 bg-card/95 p-3 shadow-sm backdrop-blur md:static md:flex md:h-full md:flex-col md:self-stretch md:bg-card md:p-5 md:backdrop-blur-none">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 text-left md:flex md:flex-col md:items-center md:text-center">
+        <div className="relative size-12 overflow-hidden rounded-full bg-muted shadow-sm ring-4 ring-background md:size-24">
           {contact.profile_picture?.url ? (
             <div
               role="img"
@@ -44,31 +44,33 @@ export function ContactProfileRail({
               }}
             />
           ) : (
-            <div className="flex size-full items-center justify-center bg-accent text-2xl font-semibold text-accent-foreground">
+            <div className="flex size-full items-center justify-center bg-accent text-base font-semibold text-accent-foreground md:text-2xl">
               {contactInitials(contact)}
             </div>
           )}
         </div>
 
-        <h1 className="mt-4 max-w-full break-words text-xl font-semibold leading-7">
-          {model.displayName}
-        </h1>
-        <p className="mt-1 max-w-60 text-sm leading-5 text-muted-foreground">
-          {model.contextLine}
-        </p>
+        <div className="min-w-0 md:mt-4">
+          <h1 className="max-w-full truncate text-base font-semibold leading-6 md:break-words md:text-xl md:leading-7">
+            {model.displayName}
+          </h1>
+          <p className="mt-0.5 max-w-full truncate text-sm leading-5 text-muted-foreground md:mx-auto md:mt-1 md:max-w-60 md:whitespace-normal">
+            {model.contextLine}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-4 space-y-2">
+      <div className="mt-3 space-y-2 md:mt-4">
         <Button
           asChild
-          className="h-11 w-full bg-primary-strong text-primary-foreground shadow-sm hover:bg-primary"
+          className="h-10 w-full bg-primary-strong text-primary-foreground shadow-sm hover:bg-primary md:h-11"
         >
           <Link href={`/events/new?contact=${contact.id}`}>
             <Plus className="size-4" />
             Log Moment
           </Link>
         </Button>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
+        <div className="hidden grid-cols-[1fr_auto] gap-2 md:grid">
           <Button
             type="button"
             variant="outline"
@@ -95,7 +97,7 @@ export function ContactProfileRail({
         </div>
       </div>
 
-      <div className="mt-5 border-t border-border pt-4">
+      <div className="mt-5 hidden border-t border-border pt-4 md:block">
         <div className="flex items-start gap-3">
           <CalendarClock className="mt-0.5 size-4 text-muted-foreground" />
           <div className="min-w-0">
@@ -120,15 +122,19 @@ export function ContactProfileRail({
         </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 hidden border-t border-border pt-4 md:block">
         <div className="mb-3">
-          <h2 className="text-sm font-semibold">Remember next time</h2>
+          <h2 className="text-xs font-medium uppercase text-muted-foreground">
+            Remember next time
+          </h2>
         </div>
         <RememberNextTimeList model={model} />
       </div>
 
-      <div className="mt-auto border-t border-border pt-5">
-        <p className="mb-3 text-sm font-semibold">Contact</p>
+      <div className="mt-5 hidden border-t border-border pt-4 md:mt-auto md:block">
+        <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">
+          Contact
+        </p>
         <ContactMethodsCompact
           email={contact.email}
           phoneNumber={contact.phone_number}

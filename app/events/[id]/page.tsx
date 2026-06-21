@@ -46,7 +46,7 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="rounded-xl border bg-card p-8">
+        <div className="rounded-lg border bg-card p-8">
           <p className="text-muted-foreground">Loading event...</p>
         </div>
       </main>
@@ -56,7 +56,7 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="rounded-xl border bg-card p-8">
+        <div className="rounded-lg border bg-card p-8">
           <p className="text-destructive">Event not found.</p>
         </div>
       </main>
@@ -74,7 +74,7 @@ export default function EventDetailPage() {
             </Button>
           </div>
 
-          <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <section className="rounded-lg border border-border bg-card p-8 shadow-sm">
             <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-16 items-start">
               <div>
                 <div>
@@ -116,7 +116,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
-              <div className="w-full xl:w-[420px] rounded-2xl bg-foreground p-8 text-background">
+              <div className="w-full rounded-lg bg-foreground p-8 text-background xl:w-[420px]">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">Contacts Connected:</h2>
 
@@ -155,7 +155,7 @@ export default function EventDetailPage() {
               </div>
 
               {journals.length === 0 ? (
-                <div className="mt-6 rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
+                <div className="mt-6 rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
                   No journals connected to this event yet.
                 </div>
               ) : (
@@ -164,7 +164,7 @@ export default function EventDetailPage() {
                     <Link
                       key={journal.id}
                       href={`/journals/${journal.id}`}
-                      className="rounded-xl border border-border bg-background p-5 transition hover:border-primary hover:shadow-md"
+                      className="rounded-lg border border-border bg-background p-5 transition hover:border-primary hover:shadow-md"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>

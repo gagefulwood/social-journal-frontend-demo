@@ -71,11 +71,11 @@ export function FactsPanel({
   return (
     <section
       id="contact-facts-section"
-      className="rounded-xl border border-border/80 bg-card p-5 shadow-sm"
+      className="rounded-lg border border-border/80 bg-card p-5 shadow-sm"
     >
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground shadow-sm">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-marker-violet text-marker-violet-foreground shadow-sm">
             <ClipboardList className="size-5" />
           </span>
           <div>
@@ -98,8 +98,8 @@ export function FactsPanel({
 
       <div className="grid gap-4 sm:grid-cols-2">
         {safeFacts.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center sm:col-span-2">
-            <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground shadow-sm">
+          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center sm:col-span-2">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-md bg-marker-violet text-marker-violet-foreground shadow-sm">
               <FileText className="size-5" />
             </div>
             <p className="mt-3 text-sm font-semibold">No facts saved yet.</p>
@@ -126,7 +126,7 @@ export function FactsPanel({
             <div
               key={group.key}
               className={cn(
-                "overflow-hidden rounded-xl border bg-background shadow-sm transition-shadow hover:shadow-md",
+                "overflow-hidden rounded-lg border bg-background shadow-sm transition-shadow hover:shadow-md",
                 presentation.border,
               )}
             >
@@ -139,7 +139,7 @@ export function FactsPanel({
                 <div className="flex min-w-0 items-center gap-3">
                   <span
                     className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                      "flex size-10 shrink-0 items-center justify-center rounded-md",
                       presentation.badge,
                       presentation.text,
                     )}
@@ -266,9 +266,9 @@ function FactCreateComposer({
   onSubmit,
 }: FactCreateComposerProps) {
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4 shadow-sm">
+    <div className="rounded-lg border border-border bg-muted/30 p-4 shadow-sm">
       <div className="mb-4 flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-marker-violet text-marker-violet-foreground">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-marker-violet text-marker-violet-foreground">
           <ClipboardList className="size-5" />
         </span>
         <div>
@@ -308,7 +308,7 @@ function FactEditorTray({
   return (
     <div
       className={cn(
-        "rounded-xl border p-3 shadow-inner",
+        "rounded-lg border p-3 shadow-inner",
         presentation.border,
         presentation.header,
       )}

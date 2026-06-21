@@ -48,7 +48,7 @@ const sizeClasses: Record<IconBadgeSize, string> = {
 }
 
 const shapeClasses: Record<IconBadgeShape, string> = {
-  rounded: "rounded-xl",
+  rounded: "rounded-md",
   circle: "rounded-full",
 }
 

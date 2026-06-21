@@ -1,7 +1,7 @@
 import { ContactOverviewErrorState } from "./ContactOverviewErrorState";
 import { ContactKnowledgePreview } from "./ContactKnowledgePreview";
+import { RelationshipOverviewCard } from "./RelationshipOverviewCard";
 import { RelationshipPulsePanel } from "./RelationshipPulsePanel";
-import { RelationshipSnapshotCard } from "./RelationshipSnapshotCard";
 import { StorySoFarStrip } from "./StorySoFarStrip";
 import type { ApiError } from "@/types/auth";
 import type { Contact, Fact, Observation } from "@/types/contacts";
@@ -31,33 +31,34 @@ export function ContactOverviewPanel({
   onViewTimeline,
 }: ContactOverviewPanelProps) {
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,330px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,350px)] xl:items-start">
+    <div className="grid gap-3 sm:gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,330px)] xl:items-stretch 2xl:grid-cols-[minmax(0,1fr)_minmax(320px,350px)]">
       <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-4">
         <div className="order-1 min-w-0 xl:order-none">
-          <RelationshipSnapshotCard model={model} />
+          <RelationshipOverviewCard model={model} />
         </div>
-        <div className="order-2 min-w-0 xl:order-none">
-          <RelationshipPulsePanel contact={contact} model={model} />
-        </div>
-        {eventsError && (
-          <div className="order-3 min-w-0 xl:order-none">
-            <ContactOverviewErrorState
-              message={eventsError.message}
-              onRetry={onRetryEvents}
-            />
-          </div>
-        )}
-        <div className="order-5 min-w-0 xl:order-none">
+        <div className="order-3 min-w-0 md:order-2 xl:order-none">
           <StorySoFarStrip
             model={model}
             loading={eventsLoading}
             onViewTimeline={onViewTimeline}
           />
         </div>
+        <div className="order-4 min-w-0 md:order-3 xl:order-none">
+          <RelationshipPulsePanel contact={contact} model={model} />
+        </div>
+        {eventsError && (
+          <div className="order-5 min-w-0 xl:order-none">
+            <ContactOverviewErrorState
+              message={eventsError.message}
+              onRetry={onRetryEvents}
+            />
+          </div>
+        )}
       </div>
-      <div className="order-4 min-w-0 xl:order-none xl:self-start">
+      <div className="order-2 min-w-0 md:order-6 xl:order-none xl:self-stretch">
         <ContactKnowledgePreview
           facts={facts}
+          model={model}
           observations={observations}
           onViewFactsAndObservations={onViewFactsAndObservations}
         />

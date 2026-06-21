@@ -53,10 +53,10 @@ export function ObservationsPanel({
   );
 
   return (
-    <section className="rounded-xl border border-border/80 bg-card p-5 shadow-sm">
+    <section className="rounded-lg border border-border/80 bg-card p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-marker-rose text-marker-rose-foreground shadow-sm">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-marker-rose text-marker-rose-foreground shadow-sm">
             <MessageSquareText className="size-5" />
           </span>
           <div>
@@ -90,8 +90,8 @@ export function ObservationsPanel({
         )}
 
         {safeObservations.length === 0 && editor.mode !== "create" && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
-            <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-marker-rose text-marker-rose-foreground shadow-sm">
+          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+            <div className="mx-auto flex size-11 items-center justify-center rounded-md bg-marker-rose text-marker-rose-foreground shadow-sm">
               <MessageSquareText className="size-5" />
             </div>
             <p className="mt-3 text-sm font-semibold">No observations yet.</p>
@@ -151,7 +151,7 @@ export function ObservationsPanel({
                   </span>
                 </span>
               </div>
-              <article className="min-w-0 rounded-xl border border-border/80 bg-background p-3.5 shadow-sm">
+              <article className="min-w-0 rounded-lg border border-border/80 bg-background p-3.5 shadow-sm">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -269,7 +269,7 @@ function ObservationComposerTimelineItem({
           </span>
         </span>
       </div>
-      <article className="min-w-0 rounded-xl border border-border bg-muted/30 p-3.5 shadow-sm">
+      <article className="min-w-0 rounded-lg border border-border bg-muted/30 p-3.5 shadow-sm">
         <div className="mb-3 flex items-start gap-2">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-marker-rose text-marker-rose-foreground">
             <MessageSquareText className="size-4" />
@@ -311,7 +311,7 @@ function ObservationEditorTray({
   return (
     <div
       className={cn(
-        "rounded-xl border p-3 shadow-inner",
+        "rounded-lg border p-3 shadow-inner",
         editorTone.border,
         editorTone.surface,
       )}
