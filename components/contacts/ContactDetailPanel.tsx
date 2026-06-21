@@ -40,6 +40,8 @@ type ContactDetailTab = (typeof contactDetailTabs)[number];
 type ContactDetailPanelProps = {
   contact: Contact | null;
   facts?: Fact[];
+  headerEnd?: ReactNode;
+  headerStart?: ReactNode;
   observations?: Observation[];
   onCreateFact: (data: CreateFactRequest) => Promise<void>;
   onUpdateFact: (factId: ApiId, data: UpdateFactRequest) => Promise<void>;
@@ -58,6 +60,8 @@ const contactDetailTabContentClassName =
 export function ContactDetailPanel({
   contact,
   facts = [],
+  headerEnd,
+  headerStart,
   observations = [],
   onCreateFact,
   onUpdateFact,
@@ -102,56 +106,62 @@ export function ContactDetailPanel({
   }
 
   return (
-    <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-stretch xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[296px_minmax(0,1fr)]">
-      <aside className="min-w-0 md:self-stretch">
-        <ContactProfileRail
-          contact={contact}
-          model={overviewModel}
-          lastInteraction={overviewModel.relationshipSnapshot.latestEvent}
-          onAddNote={handleAddNote}
-        />
-      </aside>
+    <Tabs
+      className="min-w-0 gap-0"
+      value={activeTab}
+      onValueChange={(value) => setActiveTab(value as ContactDetailTab)}
+    >
+      <header className="mb-4 grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border">
+        <div className="min-w-0 justify-self-start">{headerStart}</div>
 
-      <div className="min-w-0">
-        <Tabs
-          className="min-w-0 gap-0"
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as ContactDetailTab)}
+        <TabsList
+          variant="line"
+          className="mx-auto h-14 max-w-full justify-center overflow-x-auto rounded-none border-b-0 px-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-16 sm:px-4"
         >
-          <TabsList
-            variant="line"
-            className="h-14 w-full max-w-full justify-start overflow-x-auto rounded-none border-b border-border px-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-16 sm:px-5"
+          <TabsTrigger
+            value="overview"
+            className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
           >
-            <TabsTrigger
-              value="overview"
-              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
-            >
-              <Sparkles className="size-4" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="facts-observations"
-              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
-            >
-              <LayoutGrid className="size-4" />
-              Context
-            </TabsTrigger>
-            <TabsTrigger
-              value="timeline"
-              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
-            >
-              <CalendarDays className="size-4" />
-              Timeline
-            </TabsTrigger>
-            <TabsTrigger
-              value="journals"
-              className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
-            >
-              <NotebookTabs className="size-4" />
-              Journals
-            </TabsTrigger>
-          </TabsList>
+            <Sparkles className="size-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="facts-observations"
+            className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
+          >
+            <LayoutGrid className="size-4" />
+            Context
+          </TabsTrigger>
+          <TabsTrigger
+            value="timeline"
+            className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
+          >
+            <CalendarDays className="size-4" />
+            Timeline
+          </TabsTrigger>
+          <TabsTrigger
+            value="journals"
+            className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-5"
+          >
+            <NotebookTabs className="size-4" />
+            Journals
+          </TabsTrigger>
+        </TabsList>
 
+        <div className="min-w-0 justify-self-end">{headerEnd}</div>
+      </header>
+
+      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:items-stretch xl:grid-cols-[280px_minmax(0,1fr)] 2xl:grid-cols-[296px_minmax(0,1fr)]">
+        <aside className="min-w-0 md:self-stretch">
+          <ContactProfileRail
+            contact={contact}
+            model={overviewModel}
+            lastInteraction={overviewModel.relationshipSnapshot.latestEvent}
+            onAddNote={handleAddNote}
+          />
+        </aside>
+
+        <div className="min-w-0">
           <ContactDetailTabContent value="overview">
             <ContactOverviewPanel
               contact={contact}
@@ -203,9 +213,9 @@ export function ContactDetailPanel({
           <ContactDetailTabContent value="timeline">
             <TimelinePanel />
           </ContactDetailTabContent>
-        </Tabs>
+        </div>
       </div>
-    </div>
+    </Tabs>
   );
 }
 

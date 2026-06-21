@@ -25,7 +25,6 @@ import {
   Phone,
   Search,
   TrendingUp,
-  Users,
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +68,15 @@ type TimelineStat = {
   icon: ComponentType<{ className?: string }>;
   className: string;
 };
+
+type InteractionModeKind =
+  | "plan"
+  | "phone"
+  | "video"
+  | "message"
+  | "email"
+  | "other"
+  | "unset";
 
 export function TimelinePanel() {
   const params = useParams<{ id: string }>();
@@ -319,58 +327,54 @@ export function TimelinePanel() {
           )}
 
           {!error && hasResults && (
-            <div className="relative">
-              <div className="absolute bottom-6 left-[5.375rem] top-6 hidden w-px bg-border sm:block" />
-              <div className="space-y-3">
-                {timelineRows.map((row) => (
-                  <div
-                    key={row.key}
-                    className="grid gap-2 sm:grid-cols-[4.75rem_1.25rem_minmax(0,1fr)] sm:gap-0"
-                  >
-                    <div className="hidden pr-2 pt-4 text-right sm:block">
-                      {row.showLabel && (
-                        <p className="whitespace-pre-line text-xs font-medium uppercase leading-4 text-muted-foreground">
-                          {row.label}
-                        </p>
-                      )}
+            <div className="max-h-[calc(100vh-17rem)] min-h-0 overflow-y-auto pr-2">
+              <div className="relative">
+                <div className="absolute bottom-5 left-[4.375rem] top-5 hidden w-px bg-border sm:block" />
+                <div className="space-y-2.5">
+                  {timelineRows.map((row) => (
+                    <div
+                      key={row.key}
+                      className="grid gap-2 sm:grid-cols-[4rem_0.75rem_minmax(0,1fr)] sm:gap-0"
+                    >
+                      <div className="hidden pr-2 pt-3.5 text-right sm:block">
+                        {row.showLabel && (
+                          <p className="whitespace-pre-line text-[11px] font-medium uppercase leading-4 text-muted-foreground">
+                            {row.label}
+                          </p>
+                        )}
+                      </div>
+                      <div className="relative hidden min-h-20 justify-center sm:flex">
+                        <span className="z-10 mt-[1.125rem] size-2 rounded-full bg-primary-strong ring-3 ring-card" />
+                      </div>
+                      <div className="min-w-0 sm:pl-2.5">
+                        {row.showLabel && (
+                          <p className="mb-2 whitespace-pre-line text-[11px] font-medium uppercase leading-4 text-muted-foreground sm:hidden">
+                            {row.label}
+                          </p>
+                        )}
+                        <TimelineItem event={row.event} nowMs={nowMs} />
+                      </div>
                     </div>
-                    <div className="relative hidden min-h-[5.5rem] justify-center sm:flex">
-                      <span className="z-10 mt-5 size-2.5 rounded-full bg-primary-strong ring-4 ring-card" />
-                    </div>
-                    <div className="min-w-0 sm:pl-3">
-                      {row.showLabel && (
-                        <p className="mb-2 whitespace-pre-line text-xs font-medium uppercase leading-4 text-muted-foreground sm:hidden">
-                          {row.label}
-                        </p>
-                      )}
-                      <TimelineItem event={row.event} nowMs={nowMs} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {!error && hasResults && (
+        {!error && hasResults && canLoadMore && (
           <div className="mt-3">
-            {canLoadMore ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 w-full bg-background"
-                onClick={() => void handleLoadMore()}
-              >
-                {loadingMore ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : null}
-                Load more
-              </Button>
-            ) : (
-              <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-center text-sm text-muted-foreground">
-                Showing {timelineEvents.length} of {resultCount} moments
-              </div>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 w-full bg-background"
+              onClick={() => void handleLoadMore()}
+            >
+              {loadingMore ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : null}
+              Load more
+            </Button>
           </div>
         )}
       </section>
@@ -427,78 +431,76 @@ function TimelineItem({
   nowMs: number;
 }) {
   const isUpcoming = new Date(event.event_timestamp).getTime() > nowMs;
-  const participantsText = participantSummary(event);
   const iconWellClassName = interactionModeWellClass(
     event.interaction_mode?.name,
   );
-  const contextText =
-    event.location_label ||
-    event.interaction_mode?.name ||
-    event.context_category?.name ||
-    "";
+  const contextText = [
+    event.context_category?.name,
+    event.location_label,
+  ]
+    .filter(Boolean)
+    .join(" / ");
   const contextIcon = event.location_label
-    ? <MapPin className="size-3.5" />
-    : event.interaction_mode
-      ? interactionModeIcon(event.interaction_mode.name, "size-3.5")
-      : <CalendarDays className="size-3.5" />;
-  const hasSignals = Boolean(event.mood) || Boolean(event.impact);
-  const hasRightMeta = isUpcoming || hasSignals;
+    ? <MapPin className="size-3" />
+    : <CalendarDays className="size-3" />;
+  const description = event.description?.trim();
+  const hasPastSignals =
+    !isUpcoming && (Boolean(event.mood) || Boolean(event.impact));
+  const hasRightMeta = isUpcoming || hasPastSignals;
 
   return (
-    <article className="rounded-lg border border-border bg-card p-3 shadow-xs transition-colors hover:border-primary/30 sm:p-4">
-      <div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)_auto]">
+    <article className="rounded-md border border-border bg-card p-3 shadow-xs transition-colors hover:border-primary/30">
+      <div className="grid gap-2.5 md:grid-cols-[auto_minmax(0,1fr)_auto]">
         <div
           className={cn(
-            "flex size-11 items-center justify-center rounded-md",
+            "flex size-10 items-center justify-center rounded-md",
             iconWellClassName,
           )}
         >
-          {interactionModeIcon(event.interaction_mode?.name, "size-5")}
+          {interactionModeIcon(event.interaction_mode?.name, "size-4")}
         </div>
 
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="min-w-0 text-sm font-semibold leading-5 sm:text-base">
-              {event.title || "Untitled event"}
-            </h3>
-            <TierBadge tier={event.tier} />
-          </div>
+          <h3 className="min-w-0 text-sm font-semibold leading-5">
+            {event.title || "Untitled event"}
+          </h3>
 
-          <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
-            {contextText && (
+          {contextText && (
+            <div className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 {contextIcon}
                 {contextText}
               </span>
-            )}
-            {participantsText && (
-              <span className="inline-flex items-center gap-1">
-                <Users className="size-3.5" />
-                {participantsText}
-              </span>
-            )}
+            </div>
+          )}
+
+          <div className="mt-1.5">
+            <TierBadge tier={event.tier} />
           </div>
 
-          {event.description && (
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              {event.description}
-            </p>
-          )}
+          <p
+            className={cn(
+              "mt-2 text-xs leading-5 text-muted-foreground",
+              !description && "italic",
+            )}
+          >
+            {description || "No description text"}
+          </p>
         </div>
 
         <div className="flex items-start justify-end gap-2">
           {hasRightMeta && (
-            <div className="grid min-w-[7rem] gap-2 md:justify-items-start">
+            <div className="grid min-w-[7rem] gap-2 justify-items-end text-right">
               {isUpcoming && (
                 <div className="grid gap-1">
                   <StatusBadge label="Upcoming" />
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-[11px] leading-4 text-muted-foreground">
                     {formatDateTime(event.event_timestamp)}
                   </span>
                 </div>
               )}
-              {hasSignals && (
-                <div className="grid gap-3 sm:grid-cols-2">
+              {hasPastSignals && (
+                <div className="grid gap-2.5 text-left sm:grid-cols-2">
                   {event.mood && (
                     <TimelineSignal
                       label="Mood"
@@ -528,7 +530,7 @@ function TimelineItem({
               <button
                 type="button"
                 aria-label={`Open actions for ${event.title || "event"}`}
-                className="flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <MoreHorizontal className="size-4" />
               </button>
@@ -560,14 +562,16 @@ function TimelineSignal({
 }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 inline-flex items-center gap-1 text-sm", className)}>
+      <p className="text-[10px] font-medium uppercase leading-3 text-muted-foreground">
+        {label}
+      </p>
+      <p className={cn("mt-1 inline-flex items-center gap-1 text-xs", className)}>
         {Icon ? (
-          <Icon className="size-4" />
+          <Icon className="size-3.5" />
         ) : (
           <span
             className={cn(
-              "size-2 rounded-full",
+              "size-1.5 rounded-full",
               indicatorClassName ?? "bg-muted-foreground",
             )}
           />
@@ -824,31 +828,31 @@ function TimelineState({
   title: string;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-10 text-center">
-      <div className="mx-auto flex size-11 items-center justify-center rounded-md bg-background text-muted-foreground">
-        <Icon className="size-5" />
+    <div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
+      <div className="mx-auto flex size-10 items-center justify-center rounded-md bg-background text-muted-foreground">
+        <Icon className="size-4" />
       </div>
-      <h3 className="mt-4 text-base font-semibold">{title}</h3>
-      <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+      <h3 className="mt-3 text-sm font-semibold">{title}</h3>
+      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
         {message}
       </p>
-      {action && <div className="mt-4">{action}</div>}
+      {action && <div className="mt-3">{action}</div>}
     </div>
   );
 }
 
 function TimelineSkeleton() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {Array.from({ length: 4 }).map((_, index) => (
         <div
           key={index}
-          className="rounded-lg border border-border bg-background p-4"
+          className="rounded-md border border-border bg-background p-3"
         >
-          <div className="flex gap-3">
-            <div className="size-11 animate-pulse rounded-md bg-muted" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+          <div className="flex gap-2.5">
+            <div className="size-10 animate-pulse rounded-md bg-muted" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <div className="h-3.5 w-1/3 animate-pulse rounded bg-muted" />
               <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
               <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
             </div>
@@ -865,7 +869,7 @@ function TierBadge({ tier }: { tier: EventTier }) {
   return (
     <span
       className={cn(
-        "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase leading-4",
+        "rounded-full border px-1.5 py-0 text-[10px] font-semibold uppercase leading-4",
         isMilestone
           ? "border-marker-violet bg-marker-violet text-marker-violet-foreground"
           : "border-marker-indigo bg-marker-indigo text-marker-indigo-foreground",
@@ -878,7 +882,7 @@ function TierBadge({ tier }: { tier: EventTier }) {
 
 function StatusBadge({ label }: { label: string }) {
   return (
-    <span className="rounded-full border border-info-muted bg-info-muted px-2 py-0.5 text-[11px] font-medium leading-4 text-info">
+    <span className="rounded-full border border-success-muted bg-success-muted px-1.5 py-0 text-[10px] font-medium leading-4 text-success">
       {label}
     </span>
   );
@@ -996,94 +1000,81 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function participantSummary(event: EventListItem) {
-  if (event.participants.length === 0) {
-    return event.participant_count > 0
-      ? `${event.participant_count} participants`
-      : "";
-  }
-
-  const names = event.participants
-    .map((participant) =>
-      [participant.contact.first_name, participant.contact.last_name]
-        .filter(Boolean)
-        .join(" "),
-    )
-    .filter(Boolean);
-
-  if (names.length === 0) {
-    return `${event.participant_count} participants`;
-  }
-
-  if (names.length <= 2) {
-    return `With ${names.join(", ")}`;
-  }
-
-  return `With ${names.slice(0, 2).join(", ")} +${names.length - 2}`;
-}
-
 function interactionModeIcon(modeName: string | undefined, className: string) {
-  const normalized = modeName?.toLowerCase() ?? "";
-
-  if (normalized.includes("video")) {
-    return <Video className={className} />;
+  switch (interactionModeKind(modeName)) {
+    case "video":
+      return <Video className={className} />;
+    case "phone":
+      return <Phone className={className} />;
+    case "message":
+      return <MessageSquare className={className} />;
+    case "email":
+      return <Mail className={className} />;
+    case "plan":
+    case "other":
+    case "unset":
+      return <CalendarDays className={className} />;
   }
-
-  if (normalized.includes("phone") || normalized.includes("call")) {
-    return <Phone className={className} />;
-  }
-
-  if (normalized.includes("email")) {
-    return <Mail className={className} />;
-  }
-
-  if (normalized.includes("text") || normalized.includes("message")) {
-    return <MessageSquare className={className} />;
-  }
-
-  if (
-    normalized.includes("in person") ||
-    normalized.includes("meet") ||
-    normalized.includes("plan")
-  ) {
-    return <CalendarDays className={className} />;
-  }
-
-  return <Users className={className} />;
 }
 
 function interactionModeWellClass(modeName: string | undefined) {
-  const normalized = modeName?.toLowerCase() ?? "";
+  switch (interactionModeKind(modeName)) {
+    case "video":
+      return "bg-marker-indigo text-marker-indigo-foreground";
+    case "phone":
+      return "bg-marker-teal text-marker-teal-foreground";
+    case "message":
+      return "bg-marker-rose text-marker-rose-foreground";
+    case "email":
+      return "bg-marker-fuchsia text-marker-fuchsia-foreground";
+    case "plan":
+      return "bg-marker-violet text-marker-violet-foreground";
+    case "other":
+      return "bg-marker-indigo text-marker-indigo-foreground";
+    case "unset":
+      return "bg-muted text-muted-foreground";
+  }
+}
+
+function interactionModeKind(modeName: string | undefined): InteractionModeKind {
+  const normalized = modeName?.trim().toLowerCase() ?? "";
+
+  if (!normalized) {
+    return "unset";
+  }
 
   if (normalized.includes("video")) {
-    return "bg-marker-indigo text-marker-indigo-foreground";
+    return "video";
   }
 
   if (normalized.includes("phone") || normalized.includes("call")) {
-    return "bg-marker-teal text-marker-teal-foreground";
+    return "phone";
   }
 
   if (normalized.includes("email")) {
-    return "bg-marker-fuchsia text-marker-fuchsia-foreground";
+    return "email";
   }
 
-  if (normalized.includes("text") || normalized.includes("message")) {
-    return "bg-marker-rose text-marker-rose-foreground";
+  if (
+    normalized.includes("text") ||
+    normalized.includes("message") ||
+    normalized.includes("chat") ||
+    normalized.includes("dm") ||
+    normalized.includes("social")
+  ) {
+    return "message";
   }
 
   if (
     normalized.includes("in person") ||
+    normalized.includes("in-person") ||
     normalized.includes("meet") ||
     normalized.includes("plan")
   ) {
-    return "bg-marker-violet text-marker-violet-foreground";
+    return "plan";
   }
 
-  if (normalized.includes("social")) {
-    return "bg-marker-fuchsia text-marker-fuchsia-foreground";
-  }
-
-  return "bg-muted text-muted-foreground";
+  return "other";
 }
 
 function impactLabel(impact: EventImpact) {
