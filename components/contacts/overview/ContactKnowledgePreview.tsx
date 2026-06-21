@@ -35,7 +35,7 @@ export function ContactKnowledgePreview({
             </IconBadge>
           }
         />
-        <div className="mt-5 divide-y divide-border/70">
+        <div className="mt-4 divide-y divide-border/70 border-t border-border/70 pt-4">
           <div className="pb-4">
             <FactsPreviewCard
               excludedFactIds={rememberedFactIds}
