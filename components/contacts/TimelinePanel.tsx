@@ -13,7 +13,6 @@ import {
   CalendarCheck2,
   CalendarClock,
   CalendarDays,
-  Check,
   Filter,
   Heart,
   Loader2,
@@ -698,25 +697,28 @@ function TimelineFilters({
         </FilterField>
 
         <FilterField label="Event tier">
-          <div className="grid gap-2">
-            <FilterCheckButton
-              checked={tier === "all" || tier === "routine"}
-              label="Routine"
-              onClick={() => onTierChange(tier === "routine" ? "all" : "routine")}
+          <div
+            className="grid grid-cols-3 gap-1 rounded-md border border-border bg-muted/40 p-1"
+            role="group"
+            aria-label="Event tier"
+          >
+            <FilterSegmentButton
+              active={tier === "all"}
+              label="All"
+              onClick={() => onTierChange("all")}
             />
-            <FilterCheckButton
-              checked={tier === "all" || tier === "milestone"}
+            <FilterSegmentButton
+              active={tier === "routine"}
+              label="Routine"
+              onClick={() =>
+                onTierChange(tier === "routine" ? "all" : "routine")
+              }
+            />
+            <FilterSegmentButton
+              active={tier === "milestone"}
               label="Milestone"
               onClick={() =>
                 onTierChange(tier === "milestone" ? "all" : "milestone")
-              }
-            />
-            <FilterCheckButton
-              checked={dateRange !== "past"}
-              label="Upcoming"
-              tone="success"
-              onClick={() =>
-                onDateRangeChange(dateRange === "past" ? "all" : "past")
               }
             />
           </div>
@@ -778,39 +780,27 @@ function FilterField({
   );
 }
 
-function FilterCheckButton({
-  checked,
+function FilterSegmentButton({
+  active,
   label,
   onClick,
-  tone = "primary",
 }: {
-  checked: boolean;
+  active: boolean;
   label: string;
   onClick: () => void;
-  tone?: "primary" | "success";
 }) {
   return (
     <button
       type="button"
-      aria-pressed={checked}
+      aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-2 rounded-md text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-        !checked && "text-muted-foreground hover:text-foreground",
+        "inline-flex h-8 items-center justify-center rounded-sm px-2 text-xs font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+        active
+          ? "bg-background text-primary-strong shadow-xs"
+          : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
       )}
       onClick={onClick}
     >
-      <span
-        className={cn(
-          "flex size-5 items-center justify-center rounded-sm border",
-          checked && tone === "success"
-            ? "border-success-muted bg-success-muted text-success"
-            : checked
-              ? "border-primary bg-accent text-primary-strong"
-              : "border-border bg-background text-transparent",
-        )}
-      >
-        <Check className="size-3.5" />
-      </span>
       {label}
     </button>
   );

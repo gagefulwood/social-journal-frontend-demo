@@ -6,7 +6,8 @@ import {
   type EventListParams,
 } from "@/lib/api/eventsApi";
 import type { ApiError } from "@/types/auth";
-import type { EventListResponse } from "@/types/events";
+import type { ApiId } from "@/types/api";
+import type { Event, EventListResponse } from "@/types/events";
 
 export function useEvents(params: EventListParams = {}) {
   const [data, setData] = useState<EventListResponse | null>(null);
@@ -90,4 +91,77 @@ export function useEvents(params: EventListParams = {}) {
         error,
         refetch: fetchEvents,
     }
+}
+
+export function useEvent(id: ApiId | null | undefined) {
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState(Boolean(id));
+  const [error, setError] = useState<ApiError | null>(null);
+
+  const eventId = useMemo(() => (id ? String(id) : null), [id]);
+
+  const fetchEvent = useCallback(async () => {
+    if (!eventId) {
+      setEvent(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await eventsApi.get(eventId);
+      setEvent(response);
+    } catch (err) {
+      setEvent(null);
+      setError(err as ApiError);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadEvent() {
+      if (!eventId) {
+        setEvent(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await eventsApi.get(eventId);
+        if (isActive) {
+          setEvent(response);
+        }
+      } catch (err) {
+        if (isActive) {
+          setEvent(null);
+          setError(err as ApiError);
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadEvent();
+
+    return () => {
+      isActive = false;
+    };
+  }, [eventId]);
+
+  return {
+    event,
+    loading,
+    error,
+    refetch: fetchEvent,
+  };
 }
