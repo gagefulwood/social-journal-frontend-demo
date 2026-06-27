@@ -66,6 +66,17 @@ export type EventListItem = {
   journaled: boolean;
 };
 
+export type EventRelatedReason =
+  | "shared_participant"
+  | "same_context"
+  | "same_interaction_mode"
+  | "same_tier"
+  | string;
+
+export type EventRelatedItem = EventListItem & {
+  relation_reasons: EventRelatedReason[];
+};
+
 export type Event = {
   id: ApiId;
   user: ApiId;

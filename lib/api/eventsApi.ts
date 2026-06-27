@@ -9,6 +9,7 @@ import type {
   EventListResponse,
   EventLogSummary,
   EventParticipant,
+  EventRelatedItem,
   EventReflectionSummary,
   EventTier,
   EventTimelineSummary,
@@ -51,6 +52,16 @@ export const eventsApi = {
 
   async get(id: ApiId): Promise<Event> {
     const response = await api.get<Event>(`/api/events/${id}/`);
+    return response.data;
+  },
+
+  async getRelated(id: ApiId, limit = 2): Promise<EventRelatedItem[]> {
+    const response = await api.get<EventRelatedItem[]>(
+      `/api/events/${id}/related/`,
+      {
+        params: { limit },
+      },
+    );
     return response.data;
   },
 
