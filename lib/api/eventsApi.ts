@@ -3,13 +3,16 @@ import type { ApiId } from "@/types/api";
 import type {
   CreateEventRequest,
   Event,
+  EventImpact,
   EventExerciseSummary,
   EventJournalsSummary,
   EventListResponse,
   EventLogSummary,
   EventParticipant,
+  EventRelatedItem,
   EventReflectionSummary,
   EventTier,
+  EventTimelineSummary,
   UpdateEventRequest,
 } from "@/types/events";
 
@@ -17,12 +20,16 @@ export type EventListParams = {
   page?: number;
   page_size?: number;
   title?: string;
+  search?: string;
   event_after?: string;
   event_before?: string;
   tier?: EventTier;
+  impact?: EventImpact;
   context_category?: ApiId;
+  interaction_mode?: ApiId;
   participants?: string;
   journaled?: boolean;
+  has_mood?: boolean;
 };
 
 export const eventsApi = {
@@ -33,8 +40,28 @@ export const eventsApi = {
     return response.data;
   },
 
+  async timelineSummary(
+    params?: EventListParams,
+  ): Promise<EventTimelineSummary> {
+    const response = await api.get<EventTimelineSummary>(
+      "/api/events/timeline-summary/",
+      { params },
+    );
+    return response.data;
+  },
+
   async get(id: ApiId): Promise<Event> {
     const response = await api.get<Event>(`/api/events/${id}/`);
+    return response.data;
+  },
+
+  async getRelated(id: ApiId, limit = 2): Promise<EventRelatedItem[]> {
+    const response = await api.get<EventRelatedItem[]>(
+      `/api/events/${id}/related/`,
+      {
+        params: { limit },
+      },
+    );
     return response.data;
   },
 

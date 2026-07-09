@@ -10,6 +10,12 @@ export type Mood = {
   is_system_default: boolean;
 };
 
+export type InteractionMode = {
+  id: ApiId;
+  name: string;
+  is_system_default: boolean;
+};
+
 export type ContextCategory = {
   id: ApiId;
   name: string;

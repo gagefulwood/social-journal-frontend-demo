@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -47,40 +47,6 @@ export default function ContactDetailPage() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto w-full max-w-[1760px] px-4 py-4 sm:px-5 lg:px-4">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <Button asChild variant="outline">
-            <Link href="/contacts">Back</Link>
-          </Button>
-          {contact && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="size-4" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete contact?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This removes the contact and related contact facts and
-                    observations. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    onClick={() => void confirmDelete()}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </div>
-
         {loading && <ContactOverviewSkeleton />}
 
         {error && (
@@ -102,6 +68,42 @@ export default function ContactDetailPage() {
           <ContactDetailPanel
             contact={contact}
             facts={facts}
+            headerStart={
+              <Button asChild variant="outline">
+                <Link href="/contacts">
+                  <ArrowLeft className="size-4" />
+                  Back
+                </Link>
+              </Button>
+            }
+            headerEnd={
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="size-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete contact?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This removes the contact and related contact facts and
+                      observations. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={() => void confirmDelete()}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            }
             observations={observations}
             onCreateFact={async (data) => {
               await createFact(data);
