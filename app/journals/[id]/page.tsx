@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { journalApi } from "@/lib/api/journalApi";
 import type { Log } from "@/types/journals";
-import { SidebarSJ } from "@/components/layout/SideBarLayout";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -56,10 +54,7 @@ export default function LogDetailPage() {
   }
 
   return (
-    <SidebarProvider>
-        <div className="flex min-h-screen w-full">
-            <SidebarSJ />
-        <main className="mx-auto max-w-5xl px-6 py-10">
+    <main className="mx-auto max-w-5xl px-6 py-10">
 
             {/* button omfg*/}
         <div className="mb-6">
@@ -128,10 +123,7 @@ export default function LogDetailPage() {
             </div>
             </div>
         </section>
-        </main>
-        </div>
-    </SidebarProvider>
+    </main>
   );
 }
-
 

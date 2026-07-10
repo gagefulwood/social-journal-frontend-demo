@@ -49,11 +49,10 @@ export type RememberNextTimeItem = {
 export type StorySoFarEvent = {
   id: ApiId;
   title: string;
-  dateLabel: string;
   eventTimestamp: string;
   tier: EventTier;
   locationLabel: string;
-  journaled: boolean;
+  contextCategoryName: string;
 };
 
 export type RelationshipSnapshot = {
@@ -390,21 +389,27 @@ export function selectRememberNextTimeItems(
 export function selectStorySoFarEvents(
   events: EventListItem[],
 ): StorySoFarEvent[] {
-  return [...events]
+  const mostRecentEvents = [...events]
     .sort(
       (left, right) =>
         timestampValue(right.event_timestamp) -
         timestampValue(left.event_timestamp),
     )
-    .slice(0, 5)
+    .slice(0, 4);
+
+  return mostRecentEvents
+    .sort(
+      (left, right) =>
+        timestampValue(left.event_timestamp) -
+        timestampValue(right.event_timestamp),
+    )
     .map((event) => ({
       id: event.id,
       title: normalizeText(event.title) || "Untitled event",
-      dateLabel: formatDateLabel(event.event_timestamp),
       eventTimestamp: event.event_timestamp,
       tier: event.tier,
       locationLabel: normalizeText(event.location_label),
-      journaled: event.journaled,
+      contextCategoryName: normalizeText(event.context_category?.name ?? ""),
     }));
 }
 
@@ -520,18 +525,6 @@ function clampScore(score: number): number {
   }
 
   return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function formatDateLabel(value: string): string {
-  const normalized = normalizeText(value);
-
-  if (!normalized) {
-    return "";
-  }
-
-  const dateOnly = /^(\d{4}-\d{2}-\d{2})/.exec(normalized);
-
-  return dateOnly?.[1] ?? normalized;
 }
 
 function getContactDisplayName(contact: Contact): string {

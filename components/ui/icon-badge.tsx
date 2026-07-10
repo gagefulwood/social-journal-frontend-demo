@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
-type IconBadgeTone =
+export type IconBadgeTone =
   | "neutral"
   | "accent"
   | "success"

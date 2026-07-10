@@ -31,7 +31,7 @@ export default function NewEventPage() {
         <main className="mx-auto w-full max-w-4xl px-4 py-8">
             <div className="mb-6 flex items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-semibold">New Event</h1>
+                    <h1 className="font-display text-3xl">New Event</h1>
                     <p className="text-sm text-muted-foreground">
                         Add details about your event.
                     </p>

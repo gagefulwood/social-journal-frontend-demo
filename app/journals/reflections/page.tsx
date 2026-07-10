@@ -12,8 +12,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useLookups } from "@/hooks/useLookups";
 import { JournalFilterPopover } from "@/components/journals/JournalFilterPopover";
 import {JournalReflectionGrid} from "@/components/journals/JournalReflectionGrid";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 
 const pageSize = 24;
@@ -36,13 +34,10 @@ export default function JournalsPage() {
     });
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <SidebarSJ />
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-semibold">Journals</h1>
+          <h1 className="font-display text-3xl">Journals</h1>
           <p className="text-sm text-muted-foreground">
             Manage your logs, reflections, and exercises here.
           </p>
@@ -118,7 +113,5 @@ export default function JournalsPage() {
         onRetry={refetch}
       />
     </main>
-    </div>
-    </SidebarProvider>
   );
 }

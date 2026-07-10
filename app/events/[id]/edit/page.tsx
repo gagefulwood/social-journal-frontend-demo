@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function InProgress() {
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
-      <h1 className="text-3xl font-bold mb-8">Event Edit Form</h1>
+      <h1 className="font-display mb-8 text-3xl">Event Edit Form</h1>
 
       <p className="text-2xl text-muted-foreground mb-10">
         This page is currently under construction. Please excuse our progress!

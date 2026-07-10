@@ -1,83 +1,137 @@
 "use client";
 
-import { RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Plus, RefreshCw } from "lucide-react";
 import { ActivityStats } from "@/components/dashboard/ActivityStats";
+import { DashboardQuickCapture } from "@/components/dashboard/DashboardQuickCapture";
 import { DecayRadar } from "@/components/dashboard/DecayRadar";
 import { InteractionHeatmap } from "@/components/dashboard/InteractionHeatmap";
 import { RecentEventsWidget } from "@/components/dashboard/RecentEventsWidget";
 import { UpcomingEventsWidget } from "@/components/dashboard/UpcomingEventsWidget";
-import { SidebarSJ } from "@/components/layout/SideBarLayout";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { EmptyActionBox } from "@/components/ui/empty-action-box";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useDashboard } from "@/hooks/useDashboard";
+
+function currentDateLabel() {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  }).format(new Date());
+}
 
 export default function Dashboard() {
   const { data, loading, error, refetch } = useDashboard();
+  const isNewAccount =
+    !loading &&
+    !error &&
+    data != null &&
+    data.recent_events.length === 0 &&
+    data.upcoming_events.length === 0 &&
+    data.decay_radar.length === 0 &&
+    data.activity_stats.entries_total === 0 &&
+    data.activity_stats.events_30d === 0;
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <SidebarSJ />
-        <main className="flex-1 p-6 md:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <p className="mt-2 text-muted-foreground">
-                A current view of relationship activity and follow-up signals.
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-2 self-start"
-              onClick={() => void refetch()}
-              disabled={loading}
-            >
-              <RefreshCw className="size-4" />
-              Refresh
-            </Button>
-          </div>
+    <main className="min-w-0">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <header className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">{currentDateLabel()}</p>
+                <h1 className="font-display mt-1 text-3xl sm:text-4xl">
+                  Make space for what matters.
+                </h1>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label="Refresh dashboard"
+                      onClick={() => void refetch()}
+                      disabled={loading}
+                    >
+                      <RefreshCw
+                        className={`size-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Refresh dashboard</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </header>
 
-          <div className="mt-8 flex flex-col gap-6">
-            <ActivityStats
-              stats={data?.activity_stats ?? null}
-              loading={loading}
-              error={error}
-              onRetry={refetch}
-            />
-            <InteractionHeatmap
-              days={data?.interaction_heatmap ?? []}
-              loading={loading}
-              error={error}
-              onRetry={refetch}
-            />
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <DecayRadar
-                  contacts={data?.decay_radar ?? []}
-                  loading={loading}
-                  error={error}
-                  onRetry={refetch}
-                />
-              </div>
-              <div>
-                <UpcomingEventsWidget
-                  events={data?.upcoming_events ?? []}
-                  loading={loading}
-                  error={error}
-                  onRetry={refetch}
-                />
-              </div>
-            </div>
-            <RecentEventsWidget
-              events={data?.recent_events ?? []}
-              loading={loading}
-              error={error}
-              onRetry={refetch}
-            />
-          </div>
-        </main>
+            <DashboardQuickCapture onCreated={refetch} />
+
+            {isNewAccount ? (
+              <EmptyActionBox
+                title="Begin with a person or a shared moment"
+                copy="Add the first bit of context, then this space will help you return to it."
+                action={
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline">
+                      <Link href="/contacts/new">Add a Contact</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link href="/events/new">
+                        <Plus className="size-4" />
+                        Record a moment
+                      </Link>
+                    </Button>
+                  </div>
+                }
+              />
+            ) : (
+              <>
+                <section className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,1fr)] xl:items-start">
+                  <RecentEventsWidget
+                    events={data?.recent_events ?? []}
+                    loading={loading}
+                    error={error}
+                    onRetry={refetch}
+                  />
+                  <aside className="grid min-w-0 gap-4">
+                    <DecayRadar
+                      contacts={data?.decay_radar ?? []}
+                      loading={loading}
+                      error={error}
+                      onRetry={refetch}
+                    />
+                    <UpcomingEventsWidget
+                      events={data?.upcoming_events ?? []}
+                      loading={loading}
+                      error={error}
+                      onRetry={refetch}
+                    />
+                  </aside>
+                </section>
+
+                <section className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <InteractionHeatmap
+                    days={data?.interaction_heatmap ?? []}
+                    loading={loading}
+                    error={error}
+                    onRetry={refetch}
+                  />
+                  <ActivityStats
+                    stats={data?.activity_stats ?? null}
+                    days={data?.interaction_heatmap ?? []}
+                    loading={loading}
+                    error={error}
+                    onRetry={refetch}
+                  />
+                </section>
+              </>
+            )}
       </div>
-    </SidebarProvider>
+    </main>
   );
 }

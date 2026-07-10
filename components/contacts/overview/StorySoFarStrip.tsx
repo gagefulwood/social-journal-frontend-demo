@@ -1,19 +1,24 @@
-import type { KeyboardEvent } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
+  CalendarDays,
   Coffee,
+  Footprints,
   MapPinned,
-  MapPin,
-  MessageCircle,
+  MessageCircleMore,
   Plus,
   Star,
+  Video,
 } from "lucide-react";
-import { IconBadge } from "@/components/ui/icon-badge";
+import { formatDate } from "@/components/contacts/contact-utils";
+import { IconBadge, type IconBadgeTone } from "@/components/ui/icon-badge";
 import { SectionHeader } from "@/components/ui/section-header";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { formatDate } from "@/components/contacts/contact-utils";
-import type { ContactOverviewModel } from "./contact-overview-utils";
+import type {
+  ContactOverviewModel,
+  StorySoFarEvent,
+} from "./contact-overview-utils";
 
 type StorySoFarStripProps = {
   model: ContactOverviewModel;
@@ -21,194 +26,164 @@ type StorySoFarStripProps = {
   onViewTimeline: () => void;
 };
 
+type StoryMomentPresentation = {
+  icon: typeof CalendarDays;
+  label: string;
+  tone: IconBadgeTone;
+};
+
 export function StorySoFarStrip({
   model,
   loading = false,
   onViewTimeline,
 }: StorySoFarStripProps) {
-  const eventCount = model.storySoFarEvents.length;
+  const events = model.storySoFarEvents;
 
   return (
     <SurfaceCard asChild className="p-4">
       <section>
+        <StorySectionHeader
+          onViewTimeline={events.length > 0 ? onViewTimeline : undefined}
+        />
+
         {loading ? (
-          <div className="grid gap-2.5 sm:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-24 animate-pulse rounded-md bg-muted"
-              />
-            ))}
-          </div>
-        ) : eventCount === 1 ? (
-          <LatestSharedMoment
-            event={model.storySoFarEvents[0]}
-            onViewTimeline={onViewTimeline}
-          />
-        ) : eventCount === 2 ? (
-          <TwoMomentStrip
-            events={model.storySoFarEvents}
-            onViewTimeline={onViewTimeline}
-          />
-        ) : eventCount > 2 ? (
-          <FullStoryStrip model={model} onViewTimeline={onViewTimeline} />
+          <StoryTimelineSkeleton />
+        ) : events.length > 0 ? (
+          <StoryMiniTimeline events={events} />
         ) : (
-          <>
-            <StorySectionHeader />
-            <EmptyStoryTimeline contactId={model.contactId} />
-          </>
+          <EmptyStoryTimeline contactId={model.contactId} />
         )}
       </section>
     </SurfaceCard>
   );
 }
 
-function LatestSharedMoment({
-  event,
-  onViewTimeline,
-}: {
-  event: ContactOverviewModel["storySoFarEvents"][number] | undefined;
-  onViewTimeline: () => void;
-}) {
-  if (!event) {
-    return null;
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onViewTimeline();
-    }
-  }
-
-  return (
-    <div>
-      <StorySectionHeader onViewTimeline={onViewTimeline} />
-      <section
-        role="button"
-        tabIndex={0}
-        className="group mt-4 flex w-full flex-col gap-3 rounded-lg border border-transparent p-2 text-left outline-none transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/20 hover:shadow-sm focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-0 motion-reduce:hover:translate-y-0 sm:flex-row sm:items-center"
-        onClick={onViewTimeline}
-        onKeyDown={handleKeyDown}
-      >
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-          <MapPin className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm text-muted-foreground">
-            {formatDate(event.eventTimestamp)}
-            {event.locationLabel && (
-              <>
-                <span className="mx-2">·</span>
-                {event.locationLabel}
-              </>
-            )}
-          </p>
-          <p className="mt-1 line-clamp-2 text-base font-semibold">
-            {event.title}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {event.journaled
-              ? "Journaled moment"
-              : "A recorded moment together."}
-          </p>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function TwoMomentStrip({
+function StoryMiniTimeline({
   events,
-  onViewTimeline,
 }: {
   events: ContactOverviewModel["storySoFarEvents"];
-  onViewTimeline: () => void;
 }) {
+  // The count is data-driven so the connector ends at the actual first and last markers.
+  const timelineStyle = {
+    "--story-connector-inset": `${50 / events.length}%`,
+  } as CSSProperties;
+  const timelineGridStyle = {
+    gridTemplateColumns: `repeat(${events.length}, minmax(9rem, 1fr))`,
+  } as CSSProperties;
+
   return (
-    <div>
-      <StorySectionHeader onViewTimeline={onViewTimeline} />
-      <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-        {events.map((event) => (
-          <Link
-            key={event.id}
-            href={`/events/${event.id}`}
-            className="group flex items-start gap-3 rounded-lg border border-border/80 bg-background/70 p-3 outline-none transition-colors hover:bg-muted/20 focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-              {event.tier === "milestone" ? (
-                <Star className="size-5 text-primary-strong" />
-              ) : (
-                <MapPin className="size-5" />
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-muted-foreground">
-                {formatDate(event.eventTimestamp)}
-              </p>
-              <p className="mt-1 line-clamp-2 text-sm font-semibold group-hover:text-primary-strong">
-                {event.title}
-              </p>
-              <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                {event.locationLabel ||
-                  (event.journaled ? "Journaled" : "Not journaled")}
-              </p>
-            </div>
-          </Link>
-        ))}
+    <div
+      aria-label="Recent shared moments timeline"
+      className="mt-4 overflow-x-auto overscroll-x-contain pb-2 outline-none focus-visible:rounded-md focus-visible:ring-3 focus-visible:ring-ring/50"
+      tabIndex={0}
+    >
+      <div
+        className="relative min-w-max sm:min-w-full"
+        style={timelineStyle}
+      >
+        {events.length > 1 && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute top-5 right-[var(--story-connector-inset)] left-[var(--story-connector-inset)] h-px bg-border"
+          />
+        )}
+        <ol className="relative grid list-none p-0" style={timelineGridStyle}>
+          {events.map((event) => (
+            <li key={event.id} className="min-w-0 px-2">
+              <StoryMomentNode event={event} />
+            </li>
+          ))}
+        </ol>
       </div>
     </div>
   );
 }
 
-function FullStoryStrip({
-  model,
-  onViewTimeline,
-}: {
-  model: ContactOverviewModel;
-  onViewTimeline: () => void;
-}) {
-  const visibleEvents = model.storySoFarEvents.slice(0, 4);
+function StoryMomentNode({ event }: { event: StorySoFarEvent }) {
+  const presentation = getStoryMomentPresentation(event);
+  const EventIcon = presentation.icon;
+  const detail = [event.locationLabel, event.contextCategoryName]
+    .filter(Boolean)
+    .join(" · ");
+  const accessibleDetail = detail ? `, ${detail}` : "";
 
   return (
-    <div>
-      <StorySectionHeader onViewTimeline={onViewTimeline} />
+    <Link
+      href={`/events/${event.id}`}
+      aria-label={`View ${presentation.label}: ${event.title}, ${formatDate(event.eventTimestamp)}${accessibleDetail}`}
+      className="group relative z-10 flex min-w-0 flex-col items-center text-center outline-none focus-visible:rounded-md focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      <IconBadge
+        tone={presentation.tone}
+        size="md"
+        shape="circle"
+        className="ring-4 ring-card transition-colors group-hover:bg-accent group-hover:text-accent-foreground"
+      >
+        <EventIcon aria-hidden="true" />
+      </IconBadge>
+      <time
+        dateTime={event.eventTimestamp}
+        className="mt-2 text-xs font-medium leading-4 text-muted-foreground"
+      >
+        {formatDate(event.eventTimestamp)}
+      </time>
+      <span className="mt-0.5 line-clamp-2 max-w-full text-sm font-semibold leading-5 group-hover:text-primary">
+        {event.title}
+      </span>
+      {detail && (
+        <span className="mt-0.5 line-clamp-1 max-w-full text-xs leading-4 text-muted-foreground">
+          {detail}
+        </span>
+      )}
+    </Link>
+  );
+}
 
-      <div className="relative mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-        <div className="pointer-events-none absolute left-8 right-8 top-[1.625rem] hidden border-t border-dashed border-border md:block" />
-        {visibleEvents.map((event) => (
-          <Link
-            key={event.id}
-            href={`/events/${event.id}`}
-            className="group relative rounded-lg border border-transparent bg-transparent p-1.5 text-center outline-none transition-colors hover:bg-muted/20 focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground ring-5 ring-background">
-              {event.tier === "milestone" ? (
-                <Star className="size-4 text-primary-strong" />
-              ) : event.locationLabel ? (
-                <MapPin className="size-4" />
-              ) : event.journaled ? (
-                <MessageCircle className="size-4" />
-              ) : (
-                <Coffee className="size-4" />
-              )}
-            </div>
-            <p className="mt-2 text-xs font-medium leading-4 text-muted-foreground">
-              {event.dateLabel}
-            </p>
-            <p className="mx-auto mt-0.5 line-clamp-2 max-w-28 text-sm font-semibold leading-5 group-hover:text-primary">
-              {event.title}
-            </p>
-            <div className="mt-0.5 flex min-h-4 justify-center gap-1.5 text-xs text-muted-foreground">
-              {event.locationLabel ? (
-                <span className="truncate">{event.locationLabel}</span>
-              ) : (
-                <span>{event.journaled ? "Journaled" : "Not journaled"}</span>
-              )}
-            </div>
-          </Link>
-        ))}
-      </div>
+function getStoryMomentPresentation(
+  event: StorySoFarEvent,
+): StoryMomentPresentation {
+  if (event.tier === "milestone") {
+    return { icon: Star, label: "Milestone", tone: "violet" };
+  }
+
+  const searchable = [event.title, event.contextCategoryName]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (/(coffee|cafe|conversation|catch-up|catch up)/.test(searchable)) {
+    return { icon: Coffee, label: "Coffee or conversation", tone: "warning" };
+  }
+
+  if (/(video|remote|virtual|zoom|call)/.test(searchable)) {
+    return { icon: Video, label: "Remote moment", tone: "info" };
+  }
+
+  if (/(hike|walk|trail|park|outdoor)/.test(searchable)) {
+    return { icon: Footprints, label: "Outdoor moment", tone: "teal" };
+  }
+
+  if (/(social|friend|family)/.test(searchable)) {
+    return { icon: MessageCircleMore, label: "Shared moment", tone: "violet" };
+  }
+
+  return { icon: CalendarDays, label: "Moment", tone: "indigo" };
+}
+
+function StoryTimelineSkeleton() {
+  return (
+    <div className="relative mt-4 grid grid-cols-3">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-5 right-[16.6667%] left-[16.6667%] h-px bg-border"
+      />
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div key={index} className="relative z-10 px-2 text-center">
+          <div className="mx-auto size-10 animate-pulse rounded-full bg-muted ring-4 ring-card" />
+          <div className="mx-auto mt-2 h-3 w-14 animate-pulse rounded bg-muted" />
+          <div className="mx-auto mt-1 h-4 w-24 animate-pulse rounded bg-muted" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -220,12 +195,12 @@ function EmptyStoryTimeline({
 }) {
   return (
     <div className="relative mt-4 min-h-28 py-2">
-      <div className="pointer-events-none absolute left-8 right-8 top-[1.625rem] hidden border-t border-dashed border-border sm:block" />
+      <div className="pointer-events-none absolute top-[1.625rem] right-8 left-8 hidden border-t border-dashed border-border sm:block" />
       <div className="relative mx-auto max-w-40 text-center">
         <Link
           href={`/events/new?contact=${contactId}`}
           aria-label="Log a moment"
-          className="mx-auto flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground ring-5 ring-background outline-none transition-colors hover:bg-accent/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="mx-auto flex size-10 items-center justify-center rounded-full bg-accent text-accent-foreground ring-5 ring-card outline-none transition-colors hover:bg-accent/80 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <Plus className="size-4" />
         </Link>

@@ -11,13 +11,11 @@ import {
   Clock,
   Folder,
   Heart,
-  LayoutGrid,
   Link2,
   MapPin,
   Minus,
   NotebookTabs,
   Pencil,
-  Sparkles,
   Star,
   Smile,
   TrendingDown,
@@ -39,7 +37,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { eventsApi } from "@/lib/api/eventsApi";
 import { useEvent, useRelatedEvents } from "@/hooks/useEvent";
 import { useLookups } from "@/hooks/useLookups";
@@ -90,52 +87,17 @@ export default function EventDetailPage() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto w-full max-w-[1760px] px-3 py-3 sm:px-5 sm:py-4 lg:px-4">
-        <Tabs className="min-w-0 gap-0" value="events">
-          <header className="mb-3 grid min-w-0 grid-cols-2 items-center gap-3 border-b border-border pb-3 sm:mb-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:pb-0">
-            <div className="min-w-0 justify-self-start">
-              <Button asChild variant="outline">
-                <Link href="/events">
-                  <ArrowLeft className="size-4" />
-                  Back
-                </Link>
-              </Button>
-            </div>
+        <header className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3 sm:mb-4">
+          <div className="min-w-0">
+            <Button asChild variant="outline">
+              <Link href="/events">
+                <ArrowLeft className="size-4" />
+                Back
+              </Link>
+            </Button>
+          </div>
 
-            <TabsList
-              variant="line"
-              className="order-3 col-span-2 mx-auto h-11 max-w-full justify-start overflow-x-auto rounded-none border-b-0 px-0 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:order-none sm:col-span-1 sm:h-14 sm:justify-center sm:px-4"
-            >
-              <TabsTrigger
-                value="overview"
-                className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-4"
-              >
-                <Sparkles className="size-4" />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger
-                value="context"
-                className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-4"
-              >
-                <LayoutGrid className="size-4" />
-                Context
-              </TabsTrigger>
-              <TabsTrigger
-                value="events"
-                className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-4"
-              >
-                <CalendarDays className="size-4" />
-                Events
-              </TabsTrigger>
-              <TabsTrigger
-                value="journals"
-                className="gap-2 px-3 data-active:text-primary-strong data-active:after:bg-primary-strong sm:px-4"
-              >
-                <NotebookTabs className="size-4" />
-                Journals
-              </TabsTrigger>
-            </TabsList>
-
-            <div className="flex min-w-0 items-center justify-end gap-2 justify-self-end">
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
               <Button asChild variant="outline">
                 <Link
                   href={`/events/${params.id}/edit`}
@@ -179,8 +141,8 @@ export default function EventDetailPage() {
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            </div>
-          </header>
+          </div>
+        </header>
 
           <section className="mx-auto w-full max-w-[1350px] py-2 sm:py-3">
             {loading && (
@@ -243,7 +205,6 @@ export default function EventDetailPage() {
               </div>
             )}
           </section>
-        </Tabs>
       </div>
     </main>
   );

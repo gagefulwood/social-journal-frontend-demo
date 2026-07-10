@@ -11,8 +11,7 @@ type UpcomingEventsWidgetProps = WidgetStateProps & {
 export function UpcomingEventsWidget(props: UpcomingEventsWidgetProps) {
   return (
     <DashboardEventList
-      title="Upcoming Events"
-      description="The next events on your calendar."
+      description="Planned moments on your calendar."
       variant="upcoming"
       {...props}
     />

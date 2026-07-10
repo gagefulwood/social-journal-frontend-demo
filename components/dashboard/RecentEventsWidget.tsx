@@ -11,8 +11,7 @@ type RecentEventsWidgetProps = WidgetStateProps & {
 export function RecentEventsWidget(props: RecentEventsWidgetProps) {
   return (
     <DashboardEventList
-      title="Recent Events"
-      description="Past events from the last 30 days."
+      description="A few recent moments to pick back up from."
       variant="recent"
       {...props}
     />

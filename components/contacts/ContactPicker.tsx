@@ -15,12 +15,14 @@ type ContactPickerProps = {
   value?: ApiId | ApiId[];
   multiple?: boolean;
   onChange: (value: ApiId | ApiId[] | null) => void;
+  onContactSelect?: (contact: ContactListItem | null) => void;
 };
 
 export function ContactPicker({
   value,
   multiple = false,
   onChange,
+  onContactSelect,
 }: ContactPickerProps) {
   const [search, setSearch] = useState("");
   const [contacts, setContacts] = useState<ContactListItem[]>([]);
@@ -62,27 +64,34 @@ export function ContactPicker({
   }, [debouncedSearch]);
 
   function selectContact(id: ApiId) {
+    const contact = contacts.find((item) => idsMatch(item.id, id)) ?? null;
+
     if (!multiple) {
       onChange(id);
+      onContactSelect?.(contact);
       return;
     }
 
     if (selectedIds.some((selectedId) => idsMatch(selectedId, id))) {
       onChange(selectedIds.filter((selectedId) => !idsMatch(selectedId, id)));
+      onContactSelect?.(null);
       return;
     }
 
     onChange([...selectedIds, id]);
+    onContactSelect?.(contact);
   }
 
   function removeContact(id: ApiId) {
     if (!multiple) {
       onChange(null);
+      onContactSelect?.(null);
       return;
     }
 
     const nextIds = selectedIds.filter((selectedId) => !idsMatch(selectedId, id));
     onChange(nextIds.length ? nextIds : null);
+    onContactSelect?.(null);
   }
 
   return (
@@ -139,7 +148,7 @@ export function ContactPicker({
       </div>
 
       {!multiple && selectedIds.length > 0 && (
-        <Button type="button" variant="outline" onClick={() => onChange(null)}>
+        <Button type="button" variant="outline" onClick={() => removeContact(selectedIds[0])}>
           Clear
         </Button>
       )}

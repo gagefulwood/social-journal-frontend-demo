@@ -1,14 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useMemo } from "react";
-import { CalendarDays } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useMemo } from "react";
+import { ArrowRight, CalendarDays } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DashboardEmptyState,
   DashboardWidgetShell,
@@ -21,6 +16,12 @@ import {
 } from "@/components/dashboard/dashboard-utils";
 import { cn } from "@/lib/utils";
 import type { InteractionHeatmapDay } from "@/types/dashboard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type InteractionHeatmapProps = WidgetStateProps & {
   days: InteractionHeatmapDay[];
@@ -48,63 +49,72 @@ export function InteractionHeatmap({
   error,
   onRetry,
 }: InteractionHeatmapProps) {
+  const latestDays = useMemo(
+    () =>
+      [...days]
+        .sort((left, right) => left.date.localeCompare(right.date))
+        .slice(-7),
+    [days],
+  );
   const maxCount = useMemo(
-    () => days.reduce((max, day) => Math.max(max, day.count), 0),
-    [days]
+    () => latestDays.reduce((max, day) => Math.max(max, day.count), 0),
+    [latestDays],
   );
 
   return (
     <DashboardWidgetShell
-      title="Interaction Heatmap"
-      description="Daily event volume across the last year."
+      title="7-day rhythm"
+      description="Recorded moments over the last seven days."
+      icon={<CalendarDays aria-hidden="true" />}
       loading={loading}
       error={error}
       onRetry={onRetry}
-      skeletonClassName="h-44"
-      className="lg:col-span-8"
+      skeletonClassName="h-40"
+      action={
+        <Button asChild variant="ghost" size="sm" className="gap-1 text-primary">
+          <Link href="/events">
+            View events
+            <ArrowRight className="size-4" />
+          </Link>
+        </Button>
+      }
     >
-      {days.length === 0 ? (
+      {latestDays.length === 0 ? (
         <DashboardEmptyState
           icon={<CalendarDays className="size-5" />}
-          title="No interactions tracked yet"
-          description="Your activity pattern will appear here after events are added."
+          title="No recorded moments yet"
+          description="A simple rhythm will take shape as moments are added."
         />
       ) : (
-        <TooltipProvider>
-          <div className="overflow-x-auto pb-1">
-            <div className="min-w-[640px]">
-              <div className="grid w-full grid-flow-col grid-cols-[repeat(53,minmax(0,1fr))] grid-rows-7 gap-1">
-                {days.map((day) => (
-                  <HeatmapCell
-                    key={day.date}
-                    day={day}
-                    bucket={getHeatmapBucket(day.count, maxCount)}
-                  />
-                ))}
-              </div>
-              <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                <span>{pluralize(days.length, "day")} shown</span>
-                <div className="flex items-center gap-1">
-                  <span>Less</span>
-                  {bucketClasses.map((className, index) => (
-                    <span
-                      key={className}
-                      className={cn("size-3 rounded-sm", className)}
-                      aria-label={`Intensity ${index}`}
-                    />
-                  ))}
-                  <span>More</span>
-                </div>
-              </div>
+        <>
+          <TooltipProvider>
+            <div className="grid grid-cols-7 gap-2">
+              {latestDays.map((day) => (
+                <RhythmDay
+                  key={day.date}
+                  day={day}
+                  bucket={getHeatmapBucket(day.count, maxCount)}
+                />
+              ))}
+            </div>
+          </TooltipProvider>
+          <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+            <span>Recent activity</span>
+            <div className="flex items-center gap-1" aria-label="Rhythm intensity from less to more">
+              <span>Less</span>
+              {bucketClasses.map((className) => (
+                <span key={className} className={cn("size-2.5 rounded-sm", className)} />
+              ))}
+              <span>More</span>
             </div>
           </div>
-        </TooltipProvider>
+        </>
       )}
     </DashboardWidgetShell>
   );
 }
 
-const HeatmapCell = memo(function HeatmapCell({
+function RhythmDay({
   day,
   bucket,
 }: {
@@ -112,22 +122,39 @@ const HeatmapCell = memo(function HeatmapCell({
   bucket: number;
 }) {
   const nextDate = addDaysToDateOnly(day.date, 1);
+  const weekday = new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(
+    new Date(day.date),
+  );
+
+  const upperBucket = bucket === 0 ? 0 : Math.max(1, Math.ceil(bucket / 2));
+  const label = `${formatDate(day.date)}: ${pluralize(day.count, "event")}`;
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Link
           href={`/events?event_after=${day.date}&event_before=${nextDate}`}
-          aria-label={`${formatDate(day.date)}: ${pluralize(day.count, "event")}`}
-          className={cn(
-            "aspect-square w-full rounded-sm transition outline-none hover:ring-2 hover:ring-foreground/20 focus-visible:ring-2 focus-visible:ring-ring",
-            bucketClasses[bucket]
-          )}
-        />
+          aria-label={label}
+          className="group flex min-w-0 flex-col items-center rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="mb-2 block text-xs text-muted-foreground">{weekday}</span>
+          <span className="flex flex-col gap-1" aria-hidden="true">
+            <span
+              className={cn(
+                "size-5 rounded-[5px] border border-transparent transition-colors motion-reduce:transition-none group-hover:border-foreground/20",
+                bucketClasses[upperBucket],
+              )}
+            />
+            <span
+              className={cn(
+                "size-5 rounded-[5px] border border-transparent transition-colors motion-reduce:transition-none group-hover:border-foreground/20",
+                bucketClasses[bucket],
+              )}
+            />
+          </span>
+        </Link>
       </TooltipTrigger>
-      <TooltipContent>
-        {formatDate(day.date)} · {pluralize(day.count, "event")}
-      </TooltipContent>
+      <TooltipContent>{label}</TooltipContent>
     </Tooltip>
   );
-});
+}

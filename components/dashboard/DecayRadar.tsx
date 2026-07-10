@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Radar, Send } from "lucide-react";
+import { HeartHandshake, TrendingDown, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DashboardEmptyState,
   DashboardWidgetShell,
 } from "@/components/dashboard/DashboardWidgetShell";
-import { pluralize, type WidgetStateProps } from "@/components/dashboard/dashboard-utils";
-import { scorePercent, trendLabel } from "@/components/contacts/contact-utils";
+import {
+  pluralize,
+  type WidgetStateProps,
+} from "@/components/dashboard/dashboard-utils";
 import type { DashboardDecayContact } from "@/types/dashboard";
 
 type DecayRadarProps = WidgetStateProps & {
@@ -23,30 +25,30 @@ export function DecayRadar({
 }: DecayRadarProps) {
   return (
     <DashboardWidgetShell
-      title="Decay Radar"
-      description="Relationships that may need attention."
+      title="Follow up gently"
+      icon={<HeartHandshake aria-hidden="true" />}
       loading={loading}
       error={error}
       onRetry={onRetry}
-      skeletonClassName="h-72"
-      className="lg:col-span-4"
+      skeletonClassName="h-40"
       action={
-        <Button asChild variant="ghost" size="sm" className="gap-1">
-          <Link href="/contacts?trend=fading,dormant">
-            View all
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        <Link
+          href="/contacts"
+          className="shrink-0 rounded-sm text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          View all
+        </Link>
       }
     >
       {contacts.length === 0 ? (
         <DashboardEmptyState
-          icon={<Radar className="size-5" />}
-          title="No fading relationships"
-          description="Contacts with fading or dormant trends will appear here when they need attention."
+          icon={<HeartHandshake className="size-5" />}
+          title="Nothing needs attention here"
+          description="Fading or dormant recorded rhythms will appear here when available."
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
+          <p className="sr-only">Based on recorded moments only.</p>
           {contacts.map((contact) => (
             <DecayRadarItem key={contact.contact_id} contact={contact} />
           ))}
@@ -57,40 +59,58 @@ export function DecayRadar({
 }
 
 function DecayRadarItem({ contact }: { contact: DashboardDecayContact }) {
+  const initials = contact.name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
-    <div className="rounded-lg border border-border bg-background p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href={`/contacts/${contact.contact_id}`}
-            className="truncate text-base font-semibold hover:underline"
-          >
-            {contact.name}
-          </Link>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {pluralize(contact.days_since, "day")} since last interaction
-          </p>
-        </div>
-        <span className="shrink-0 rounded-md bg-muted px-2 py-1 text-xs capitalize text-muted-foreground">
-          {trendLabel(contact.relationship_trend)}
-        </span>
-      </div>
-
-      <div className="mt-4 rounded-md bg-muted/50 px-3 py-2">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Connection</span>
-          <span className="text-sm font-semibold text-foreground">
-            {scorePercent(contact.connection_strength)}%
-          </span>
-        </div>
-      </div>
-
-      <Button asChild variant="outline" size="sm" className="mt-3 w-full gap-2">
-        <Link href={`/events/new?contact=${contact.contact_id}`}>
-          <Send className="size-4" />
-          Reach out
+    <div className="grid min-h-[76px] grid-cols-[2.75rem_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-md border border-border/80 bg-background px-3 py-2.5">
+      <span
+        aria-hidden="true"
+        className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+      >
+        {initials}
+      </span>
+      <div className="min-w-0">
+        <Link
+          href={`/contacts/${contact.contact_id}`}
+          className="block truncate rounded-sm text-sm font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {contact.name}
         </Link>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Last shared {pluralize(contact.days_since, "day")} ago
+        </p>
+      </div>
+      <TrendBadge trend={contact.relationship_trend} />
+
+      <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5 whitespace-nowrap">
+        <Link href={`/events/new?contact=${contact.contact_id}`}>Log moment</Link>
       </Button>
     </div>
+  );
+}
+
+function TrendBadge({
+  trend,
+}: {
+  trend: DashboardDecayContact["relationship_trend"];
+}) {
+  const isDormant = trend === "dormant";
+
+  return (
+    <span
+      className={
+        isDormant
+          ? "inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-marker-rose px-2 text-xs font-medium text-marker-rose-foreground"
+          : "inline-flex h-7 shrink-0 items-center gap-1 rounded-md bg-warning-muted px-2 text-xs font-medium text-warning"
+      }
+    >
+      {isDormant ? <Wind className="size-3" /> : <TrendingDown className="size-3" />}
+      {isDormant ? "Dormant" : "Fading"}
+    </span>
   );
 }

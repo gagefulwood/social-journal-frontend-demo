@@ -3,6 +3,7 @@
 import type React from "react";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { IconBadge, type IconBadgeTone } from "@/components/ui/icon-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WidgetStateProps } from "@/components/dashboard/dashboard-utils";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,8 @@ import { cn } from "@/lib/utils";
 type DashboardWidgetShellProps = WidgetStateProps & {
   title: string;
   description?: string;
+  icon?: React.ReactNode;
+  iconTone?: IconBadgeTone;
   action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -19,6 +22,8 @@ type DashboardWidgetShellProps = WidgetStateProps & {
 export function DashboardWidgetShell({
   title,
   description,
+  icon,
+  iconTone = "violet",
   action,
   children,
   loading,
@@ -28,13 +33,16 @@ export function DashboardWidgetShell({
   skeletonClassName,
 }: DashboardWidgetShellProps) {
   return (
-    <section className={cn("rounded-lg border border-border bg-card p-5", className)}>
+    <section className={cn("rounded-lg border border-border/80 bg-card p-4 shadow-sm sm:p-5", className)}>
       <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
-          {description && (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-          )}
+        <div className="flex min-w-0 items-start gap-3">
+          {icon && <IconBadge tone={iconTone} size="sm">{icon}</IconBadge>}
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">{title}</h2>
+            {description && (
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            )}
+          </div>
         </div>
         {action}
       </div>

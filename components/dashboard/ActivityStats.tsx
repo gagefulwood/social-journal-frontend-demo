@@ -1,13 +1,28 @@
 "use client";
 
-import type React from "react";
-import { Activity, BookOpen, CalendarCheck, Flame } from "lucide-react";
+import { Flame, NotebookTabs } from "lucide-react";
 import { DashboardWidgetShell } from "@/components/dashboard/DashboardWidgetShell";
 import type { WidgetStateProps } from "@/components/dashboard/dashboard-utils";
-import type { DashboardActivityStats } from "@/types/dashboard";
+import type {
+  DashboardActivityStats,
+  InteractionHeatmapDay,
+} from "@/types/dashboard";
 
 type ActivityStatsProps = WidgetStateProps & {
   stats: DashboardActivityStats | null;
+  days: InteractionHeatmapDay[];
+};
+
+const emptyStats: DashboardActivityStats = {
+  entries_total: 0,
+  entries_30d: 0,
+  events_30d: 0,
+  current_streak_days: 0,
+  entries_by_kind_30d: {
+    log: 0,
+    reflection: 0,
+    exercise: 0,
+  },
 };
 
 export function ActivityStats({
@@ -15,120 +30,170 @@ export function ActivityStats({
   loading,
   error,
   onRetry,
+  days,
 }: ActivityStatsProps) {
-  const StreakIcon = stats && stats.current_streak_days >= 7 ? Flame : Activity;
-  const safeStats = stats ?? {
-    entries_total: 0,
-    entries_30d: 0,
-    events_30d: 0,
-    current_streak_days: 0,
-    entries_by_kind_30d: {
-      log: 0,
-      reflection: 0,
-      exercise: 0,
+  const safeStats = stats ?? emptyStats;
+
+  return (
+    <>
+      <JournalMixCard
+        stats={safeStats}
+        loading={loading}
+        error={error}
+        onRetry={onRetry}
+      />
+      <CurrentStreakCard
+        stats={safeStats}
+        loading={loading}
+        error={error}
+        onRetry={onRetry}
+        days={days}
+      />
+    </>
+  );
+}
+
+function JournalMixCard({
+  stats,
+  loading,
+  error,
+  onRetry,
+}: {
+  stats: DashboardActivityStats;
+} & WidgetStateProps) {
+  const items = [
+    { label: "Logs", value: stats.entries_by_kind_30d.log, tone: "bg-warning-solid" },
+    {
+      label: "Reflections",
+      value: stats.entries_by_kind_30d.reflection,
+      tone: "bg-info-solid",
     },
-  };
+    {
+      label: "Exercises",
+      value: stats.entries_by_kind_30d.exercise,
+      tone: "bg-success-solid",
+    },
+  ];
+  const max = Math.max(...items.map((item) => item.value), 1);
 
   return (
     <DashboardWidgetShell
-      title="Activity Stats"
-      description="Journal and event momentum."
+      title="Journal mix"
+      icon={<NotebookTabs aria-hidden="true" />}
       loading={loading}
       error={error}
       onRetry={onRetry}
-      skeletonClassName="h-24"
+      skeletonClassName="h-32"
     >
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-        <StatTile
-          label="Total entries"
-          value={safeStats.entries_total}
-          icon={<BookOpen className="size-4" />}
-        />
-        <StatTile
-          label="Entries 30d"
-          value={safeStats.entries_30d}
-          icon={<Activity className="size-4" />}
-        />
-        <StatTile
-          label="Events 30d"
-          value={safeStats.events_30d}
-          icon={<CalendarCheck className="size-4" />}
-        />
-        <StatTile
-          label="Current streak"
-          value={safeStats.current_streak_days}
-          suffix="days"
-          icon={<StreakIcon className="size-4" />}
-          emphasized={safeStats.current_streak_days >= 7}
-        />
-        <EntryMixTile
-          logs={safeStats.entries_by_kind_30d.log}
-          reflections={safeStats.entries_by_kind_30d.reflection}
-          exercises={safeStats.entries_by_kind_30d.exercise}
-        />
+      <div className="space-y-2.5">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="grid grid-cols-[5.25rem_minmax(0,1fr)_1.25rem] items-center gap-2 text-sm"
+          >
+            <span className="text-muted-foreground">{item.label}</span>
+            <div
+              className="relative h-3"
+              role="progressbar"
+              aria-label={`${item.label}: ${item.value}`}
+              aria-valuemin={0}
+              aria-valuemax={max}
+              aria-valuenow={item.value}
+            >
+              <span className="absolute left-0 right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-border/90 shadow-[inset_0_1px_0_var(--surface)]" />
+              {item.value > 0 && (
+                <span
+                  className={`absolute left-0 top-1/2 h-[7px] -translate-y-1/2 rounded-full shadow-sm ${item.tone}`}
+                  style={{ width: `${Math.max(16, (item.value / max) * 76)}%` }}
+                />
+              )}
+            </div>
+            <span className="text-right font-medium tabular-nums">{item.value}</span>
+          </div>
+        ))}
       </div>
     </DashboardWidgetShell>
   );
 }
 
-function StatTile({
-  label,
-  value,
-  suffix,
-  icon,
-  emphasized,
+function CurrentStreakCard({
+  stats,
+  loading,
+  error,
+  onRetry,
+  days,
 }: {
-  label: string;
-  value: number;
-  suffix?: string;
-  icon: React.ReactNode;
-  emphasized?: boolean;
-}) {
+  stats: DashboardActivityStats;
+  days: InteractionHeatmapDay[];
+} & WidgetStateProps) {
   return (
-    <div
-      data-dashboard-stat-tile
-      className="min-w-0 rounded-md bg-muted/50 px-4 py-2.5"
+    <DashboardWidgetShell
+      title="Current streak"
+      description="Recorded days in a row."
+      icon={<Flame aria-hidden="true" />}
+      iconTone="rose"
+      loading={loading}
+      error={error}
+      onRetry={onRetry}
+      skeletonClassName="h-40"
     >
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <p className="min-w-0 truncate text-xl font-semibold leading-none md:text-2xl">
-          {value}
-          {suffix && (
-            <span className="ml-1 text-sm font-normal text-muted-foreground">
-              {suffix}
+      <div className="flex min-h-24 items-end justify-between gap-3">
+        <div>
+          <p className="text-4xl font-semibold tabular-nums">
+            {stats.current_streak_days}
+            <span className="ml-2 text-base font-normal text-muted-foreground">
+              {stats.current_streak_days === 1 ? "day" : "days"}
             </span>
-          )}
-        </p>
-        <span className={emphasized ? "shrink-0 text-primary" : "shrink-0 text-muted-foreground"}>
-          {icon}
-        </span>
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {stats.events_30d} {stats.events_30d === 1 ? "moment" : "moments"} recorded in the past 30 days.
+          </p>
+        </div>
+        <ActivityTrace days={days} />
       </div>
-      <p className="mt-2 truncate text-xs text-muted-foreground">{label}</p>
-    </div>
+    </DashboardWidgetShell>
   );
 }
 
-function EntryMixTile({
-  logs,
-  reflections,
-  exercises,
-}: {
-  logs: number;
-  reflections: number;
-  exercises: number;
-}) {
+function ActivityTrace({ days }: { days: InteractionHeatmapDay[] }) {
+  const latestDays = [...days]
+    .sort((left, right) => left.date.localeCompare(right.date))
+    .slice(-7);
+  const maxCount = Math.max(...latestDays.map((day) => day.count), 0);
+
+  if (latestDays.length < 2 || maxCount === 0) {
+    return null;
+  }
+
+  const points = latestDays
+    .map((day, index) => {
+      const x = 4 + (index * 84) / (latestDays.length - 1);
+      const y = 26 - (day.count / maxCount) * 18;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
   return (
-    <div
-      data-dashboard-stat-tile
-      className="min-w-0 rounded-md bg-muted/50 px-4 py-2.5"
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 92 30"
+      className="mb-0.5 h-9 w-28 shrink-0 text-marker-rose-foreground"
     >
-      <p className="truncate text-xl font-semibold leading-none md:text-2xl">
-        {logs}
-        <span className="mx-1 text-muted-foreground">/</span>
-        {reflections}
-        <span className="mx-1 text-muted-foreground">/</span>
-        {exercises}
-      </p>
-      <p className="mt-2 text-xs text-muted-foreground">logs / ref / ex</p>
-    </div>
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.7"
+      />
+      <circle
+        cx={4 + 84}
+        cy={26 - (latestDays[latestDays.length - 1].count / maxCount) * 18}
+        r="2.5"
+        fill="currentColor"
+      />
+    </svg>
   );
 }

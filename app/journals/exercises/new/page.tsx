@@ -15,9 +15,9 @@ export default function NewExercisePage() {
         <main className="mx-auto w-full max-w-4xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between gap-4">
             <div>
-            <h1 className="text-3xl font-semibold">New Exercise</h1>
+            <h1 className="font-display text-3xl">New Exercise</h1>
             <p className="text-sm text-muted-foreground">
-                Let's Work Through This!
+                Let&apos;s Work Through This!
             </p>
             </div>
             <Button asChild variant="outline">

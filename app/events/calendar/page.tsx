@@ -2,16 +2,11 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { SidebarSJ } from "@/components/layout/SideBarLayout";
 
 export default function CalendarInProgress() {
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <SidebarSJ />
-        <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
-          <h1 className="text-3xl font-bold mb-8">Event Calendar</h1>
+    <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
+          <h1 className="font-display mb-8 text-3xl">Event Calendar</h1>
 
           <p className="text-2xl text-muted-foreground mb-10">
             This page is currently under construction. Please excuse our
@@ -31,8 +26,6 @@ export default function CalendarInProgress() {
               <Link href="/events">Return to Events</Link>
             </Button>
           </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    </main>
   );
 }
