@@ -1,4 +1,10 @@
 import type { ApiId } from "@/types/api";
+import {
+  mapContextFacts,
+  mapContextObservations,
+  type ContextFact,
+  type ContextObservation,
+} from "@/lib/context/context-mappers";
 import type {
   Contact,
   Fact,
@@ -38,13 +44,24 @@ export type SentimentSummaryPart = {
   percent: number;
 };
 
-export type RememberNextTimeItem = {
+type RememberNextTimeItemBase = {
   id: string;
   sourceId: ApiId;
-  source: "fact" | "observation";
+  primaryText: string;
+  supportingText: string | null;
   text: string;
   fullText: string;
 };
+
+export type RememberNextTimeItem =
+  | (RememberNextTimeItemBase & {
+      source: "fact";
+      category: ContextFact["category"];
+    })
+  | (RememberNextTimeItemBase & {
+      source: "observation";
+      observation: ContextObservation;
+    });
 
 export type StorySoFarEvent = {
   id: ApiId;
@@ -53,6 +70,7 @@ export type StorySoFarEvent = {
   tier: EventTier;
   locationLabel: string;
   contextCategoryName: string;
+  interactionModeName: string;
 };
 
 export type RelationshipSnapshot = {
@@ -66,6 +84,7 @@ export type RelationshipSnapshot = {
 export type ContactOverviewModel = {
   contactId: ApiId;
   displayName: string;
+  firstName: string;
   relationshipLabel: string | null;
   contextLine: string;
   connectionBand: ConnectionBand;
@@ -74,10 +93,7 @@ export type ContactOverviewModel = {
   diversityLabel: string;
   sentiment: SentimentSummary;
   rememberNextTimeItems: RememberNextTimeItem[];
-  rememberNextTimeEmptyState:
-    | "No facts saved yet"
-    | "No recent observations"
-    | null;
+  rememberNextTimeEmptyState: "No conversation cues yet" | null;
   storySoFarEvents: StorySoFarEvent[];
   storySoFarEmptyState: "Add events to build this story" | null;
   relationshipSnapshot: RelationshipSnapshot;
@@ -88,6 +104,7 @@ type BuildOverviewInput = {
   facts: Fact[];
   observations: Observation[];
   events: EventListItem[];
+  eventCount?: number;
 };
 
 const POSITIVE_SENTIMENT_KEYS = new Set([
@@ -341,11 +358,12 @@ export function selectRememberNextTimeItems(
   facts: Fact[],
   observations: Observation[],
 ): RememberNextTimeItem[] {
-  const factItems = facts
+  const factItems = mapContextFacts(facts)
+    .filter((fact) => fact.isConversationCue)
     .map((fact, index) => ({
       fact,
       index,
-      text: normalizeText(fact.detail_value),
+      text: normalizeText(fact.value),
     }))
     .filter((item) => item.text.length > 0)
     .sort((left, right) => {
@@ -355,16 +373,27 @@ export function selectRememberNextTimeItems(
 
       return left.index - right.index;
     })
-    .map(({ fact, text }) => ({
-      id: `fact-${String(fact.id)}`,
-      sourceId: fact.id,
-      source: "fact" as const,
-      text: truncateText(text, 96),
-      fullText: text,
-    }));
+    .map(({ fact, text }) => {
+      const label = normalizeText(fact.label ?? "");
+      return {
+        id: `fact-${String(fact.id)}`,
+        sourceId: fact.id,
+        source: "fact" as const,
+        category: fact.category,
+        primaryText: truncateText(label || text, 54),
+        supportingText: label ? text : null,
+        text: truncateText(text, 96),
+        fullText: text,
+      };
+    });
 
-  const observationItems = observations
-    .filter((observation) => observation.is_active)
+  const observationItems = mapContextObservations(observations, [])
+    .filter(
+      (observation) =>
+        observation.type === "conversation_cue" &&
+        (observation.status === "current" ||
+          observation.status === "revisit_later"),
+    )
     .map((observation) => ({
       observation,
       text: normalizeText(observation.body),
@@ -372,13 +401,20 @@ export function selectRememberNextTimeItems(
     .filter((item) => item.text.length > 0)
     .sort(
       (left, right) =>
-        timestampValue(right.observation.created_timestamp) -
-        timestampValue(left.observation.created_timestamp),
+        timestampValue(
+          right.observation.occurredAt || right.observation.recordedAt,
+        ) -
+        timestampValue(
+          left.observation.occurredAt || left.observation.recordedAt,
+        ),
     )
     .map(({ observation, text }) => ({
       id: `observation-${String(observation.id)}`,
       sourceId: observation.id,
       source: "observation" as const,
+      observation,
+      primaryText: truncateText(text, 54),
+      supportingText: null,
       text: truncateText(text, 96),
       fullText: text,
     }));
@@ -410,16 +446,18 @@ export function selectStorySoFarEvents(
       tier: event.tier,
       locationLabel: normalizeText(event.location_label),
       contextCategoryName: normalizeText(event.context_category?.name ?? ""),
+      interactionModeName: normalizeText(event.interaction_mode?.name ?? ""),
     }));
 }
 
 export function buildRelationshipSnapshot({
   contact,
   events,
+  eventCount: eventCountOverride,
 }: BuildOverviewInput): RelationshipSnapshot {
   const sortedEvents = sortRecentEvents(events);
   const latestEvent = sortedEvents[0] ?? null;
-  const eventCount = events.length;
+  const eventCount = eventCountOverride ?? events.length;
   const displayName = getContactDisplayName(contact);
   const firstName = normalizeText(contact.first_name) || displayName;
   const details: string[] = [];
@@ -462,6 +500,7 @@ export function buildContactOverviewModel({
   facts,
   observations,
   events,
+  eventCount,
 }: BuildOverviewInput): ContactOverviewModel {
   const rememberNextTimeItems = selectRememberNextTimeItems(
     facts,
@@ -472,6 +511,8 @@ export function buildContactOverviewModel({
   return {
     contactId: contact.id,
     displayName: getContactDisplayName(contact),
+    firstName:
+      normalizeText(contact.first_name) || getContactDisplayName(contact),
     relationshipLabel: contact.relation_name,
     contextLine: buildContextLine(contact),
     connectionBand: getConnectionBand(contact.connection_strength),
@@ -481,8 +522,6 @@ export function buildContactOverviewModel({
     sentiment: getSentimentSummary(contact.sentiment_profile),
     rememberNextTimeItems,
     rememberNextTimeEmptyState: getRememberNextTimeEmptyState(
-      facts,
-      observations,
       rememberNextTimeItems,
     ),
     storySoFarEvents,
@@ -493,20 +532,19 @@ export function buildContactOverviewModel({
       facts,
       observations,
       events,
+      eventCount,
     }),
   };
 }
 
 function getRememberNextTimeEmptyState(
-  facts: Fact[],
-  observations: Observation[],
   items: RememberNextTimeItem[],
 ): ContactOverviewModel["rememberNextTimeEmptyState"] {
   if (items.length > 0) {
     return null;
   }
 
-  return "No facts saved yet";
+  return "No conversation cues yet";
 }
 
 function buildContextLine(contact: Contact): string {
@@ -580,7 +618,10 @@ function sortRecentEvents(events: EventListItem[]): EventListItem[] {
   );
 }
 
-function timestampValue(value: string): number {
+function timestampValue(value: string | null | undefined): number {
+  if (!value) {
+    return 0;
+  }
   const timestamp = Date.parse(value);
 
   return Number.isNaN(timestamp) ? 0 : timestamp;

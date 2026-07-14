@@ -30,6 +30,7 @@ export type EventListParams = {
   participants?: string;
   journaled?: boolean;
   has_mood?: boolean;
+  ordering?: "event_timestamp" | "-event_timestamp";
 };
 
 export const eventsApi = {

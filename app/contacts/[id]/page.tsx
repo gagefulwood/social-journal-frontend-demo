@@ -26,16 +26,23 @@ export default function ContactDetailPage() {
   const {
     contact,
     facts,
+    factsPage,
     observations,
     loading,
     error,
+    factsError,
+    observationsError,
     deleteContact,
     createFact,
     updateFact,
     deleteFact,
+    pinFact,
+    unpinFact,
     createObservation,
     updateObservation,
     deleteObservation,
+    pinObservation,
+    unpinObservation,
   } = useContact(params.id);
 
   async function confirmDelete() {
@@ -45,8 +52,8 @@ export default function ContactDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-[1760px] px-4 py-4 sm:px-5 lg:px-4">
+    <main className="min-h-screen min-w-0 bg-background xl:h-full xl:min-h-0">
+      <div className="mx-auto w-full max-w-[1760px] px-4 py-4 sm:px-5 lg:px-4 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
         {loading && <ContactOverviewSkeleton />}
 
         {error && (
@@ -68,6 +75,8 @@ export default function ContactDetailPage() {
           <ContactDetailPanel
             contact={contact}
             facts={facts}
+            factsCount={factsPage?.count}
+            factsError={factsError}
             headerStart={
               <Button asChild variant="outline">
                 <Link href="/contacts">
@@ -105,6 +114,8 @@ export default function ContactDetailPage() {
               </AlertDialog>
             }
             observations={observations}
+            observationsError={observationsError}
+            onDeleteContact={confirmDelete}
             onCreateFact={async (data) => {
               await createFact(data);
               toast.success("Fact added.");
@@ -117,6 +128,22 @@ export default function ContactDetailPage() {
               await deleteFact(factId);
               toast.success("Fact deleted.");
             }}
+            onPinFact={async (factId) => {
+              try {
+                await pinFact(factId);
+                toast.success("Fact pinned.");
+              } catch {
+                toast.error("Unable to pin fact.");
+              }
+            }}
+            onUnpinFact={async (factId) => {
+              try {
+                await unpinFact(factId);
+                toast.success("Fact unpinned.");
+              } catch {
+                toast.error("Unable to unpin fact.");
+              }
+            }}
             onCreateObservation={async (data) => {
               await createObservation(data);
               toast.success("Observation added.");
@@ -128,6 +155,22 @@ export default function ContactDetailPage() {
             onDeleteObservation={async (observationId) => {
               await deleteObservation(observationId);
               toast.success("Observation deleted.");
+            }}
+            onPinObservation={async (observationId) => {
+              try {
+                await pinObservation(observationId);
+                toast.success("Observation pinned.");
+              } catch {
+                toast.error("Unable to pin observation.");
+              }
+            }}
+            onUnpinObservation={async (observationId) => {
+              try {
+                await unpinObservation(observationId);
+                toast.success("Observation unpinned.");
+              } catch {
+                toast.error("Unable to unpin observation.");
+              }
             }}
           />
         )}

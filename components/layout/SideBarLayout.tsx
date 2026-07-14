@@ -65,6 +65,8 @@ export function SidebarSJ({
     <TooltipProvider>
       <Sidebar
         collapsible="icon"
+        overlayOnExpand
+        className="z-40 group-data-[state=expanded]:shadow-lg"
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}
         onPointerDown={onPointerDown}
@@ -165,7 +167,9 @@ function NavigationItem({
           aria-current={active ? "page" : undefined}
         >
           <Icon className="size-5!" aria-hidden="true" />
-          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+          <span className="group-data-[collapsible=icon]:hidden">
+            {item.label}
+          </span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>

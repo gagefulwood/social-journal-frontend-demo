@@ -2,6 +2,9 @@
 
 Next.js App Router frontend for the private Social Journal relationship journal.
 
+See the canonical frontend [design system](DESIGN_SYSTEM.md) for shared visual,
+component, and composition guidance.
+
 ## Prerequisites
 
 - Node.js 20.9 or newer

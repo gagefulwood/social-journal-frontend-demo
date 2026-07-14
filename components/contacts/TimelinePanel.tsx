@@ -1,31 +1,38 @@
 "use client";
 
+import Link from "next/link";
 import {
-  type ComponentType,
+  type FocusEvent,
   type ReactNode,
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
 import {
-  CalendarCheck2,
+  ArrowRight,
+  Bookmark,
   CalendarClock,
   CalendarDays,
   Filter,
-  Heart,
   Loader2,
-  Mail,
   MapPin,
-  MessageSquare,
-  Minus,
   MoreHorizontal,
-  Phone,
+  Plus,
   Search,
-  TrendingUp,
-  Video,
 } from "lucide-react";
+import { ContactTabHeader } from "@/components/contacts/ContactTabHeader";
+import { ContactContentStack } from "@/components/contacts/surfaces/ContactContentStack";
+import { ContactHelperStack } from "@/components/contacts/surfaces/ContactHelperStack";
+import { ContactSectionCard } from "@/components/contacts/surfaces/ContactSectionCard";
+import { ContactSectionHeader } from "@/components/contacts/surfaces/ContactSectionHeader";
+import { EventIconTile } from "@/components/presentation/EventIconTile";
+import { EventSemanticChip } from "@/components/presentation/EventSemanticChip";
+import { FactCategoryIconTile } from "@/components/presentation/FactCategoryIconTile";
+import { JournalStateIndicator } from "@/components/presentation/JournalStateIndicator";
+import { ObservationIconTile } from "@/components/presentation/ObservationIconTile";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,502 +41,973 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { eventsApi, type EventListParams } from "@/lib/api/eventsApi";
-import { cn } from "@/lib/utils";
-import { useContactEvents } from "@/hooks/useContactEvents";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  useContactEvents,
+  type ContactEventListParams,
+} from "@/hooks/useContactEvents";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLookups } from "@/hooks/useLookups";
-import type { ApiId } from "@/types/api";
-import type { ApiError } from "@/types/auth";
-import type {
-  EventImpact,
-  EventListItem,
-  EventTier,
-  EventTimelineSummary,
-} from "@/types/events";
+import { getEventPresentation } from "@/lib/presentation/eventPresentation";
+import { getFactCategoryPresentation } from "@/lib/presentation/factPresentation";
+import { getJournalStatePresentation } from "@/lib/presentation/journalStatePresentation";
+import { getObservationPresentation } from "@/lib/presentation/observationPresentation";
+import { cn } from "@/lib/utils";
+import type { Contact } from "@/types/contacts";
+import type { EventListItem, EventTier } from "@/types/events";
+import type { ContactOverviewModel } from "./overview/contact-overview-utils";
+import {
+  isTimelineIndexExpanded,
+  nextExpandedWindowStart,
+  TIMELINE_EXPANDED_WINDOW_SIZE,
+} from "./timeline-window";
 
-const pageSize = 5;
+const pageSize = 8;
 
 type DateRangeFilter = "all" | "upcoming" | "past" | "this_month";
-type HasMoodFilter = "any" | "yes" | "no";
 type TierFilter = "all" | EventTier;
+type JournaledFilter = "all" | "journaled" | "not_journaled";
 
-type TimelineRow = {
-  key: string;
-  label: string;
-  showLabel: boolean;
-  event: EventListItem;
+type TimelinePanelProps = {
+  contact: Contact;
+  model: ContactOverviewModel;
+  onAddObservation: () => void;
 };
 
-type TimelineStat = {
-  label: string;
-  value: number;
-  icon: ComponentType<{ className?: string }>;
-  className: string;
+type PendingAnchor = {
+  eventId: string;
+  index: number;
+  top: number;
 };
 
-type InteractionModeKind =
-  | "plan"
-  | "phone"
-  | "video"
-  | "message"
-  | "email"
-  | "other"
-  | "unset";
+type TimelineFocusBand = {
+  bottom: number;
+  center: number;
+  top: number;
+};
 
-export function TimelinePanel() {
-  const params = useParams<{ id: string }>();
-  const contactId = params.id;
+type TimelineFocusSource = "direct" | "scroll";
+
+export function TimelinePanel({
+  contact,
+  model,
+  onAddObservation,
+}: TimelinePanelProps) {
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRangeFilter>("all");
   const [tier, setTier] = useState<TierFilter>("all");
-  const [hasMood, setHasMood] = useState<HasMoodFilter>("any");
+  const [journaled, setJournaled] = useState<JournaledFilter>("all");
   const [contextCategory, setContextCategory] = useState("all");
-  const [extraEvents, setExtraEvents] = useState<EventListItem[]>([]);
-  const [loadedPage, setLoadedPage] = useState(1);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [reachedEnd, setReachedEnd] = useState(false);
-  const [summary, setSummary] = useState<EventTimelineSummary | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(Boolean(contactId));
-  const [summaryError, setSummaryError] = useState<ApiError | null>(null);
-  const [nowMs] = useState(() => new Date().getTime());
+  const [now] = useState(() => new Date());
   const debouncedSearch = useDebounce(search, 300);
+  const isDesktop = useMediaQuery("(min-width: 1280px)");
+  const prefersReducedMotion = useMediaQuery(
+    "(prefers-reduced-motion: reduce)",
+  );
   const { contextCategories, isLoading: lookupsLoading } = useLookups();
+  const rowElements = useRef(new Map<string, HTMLElement>());
+  const nodeElements = useRef(new Map<string, HTMLSpanElement>());
+  const timelineListRef = useRef<HTMLDivElement>(null);
+  const timelineConnectorRef = useRef<HTMLSpanElement>(null);
+  const timelineScrollRootRef = useRef<HTMLDivElement>(null);
+  const pendingAnchor = useRef<PendingAnchor | null>(null);
+  const expandedStartRef = useRef(0);
+  const keyboardFocusedIndexRef = useRef<number | null>(null);
+  const activeTimelineIndexRef = useRef<number | null>(null);
+  const observedIndices = useRef(new Set<number>());
 
   const dateParams = useMemo(
-    () => buildDateRangeParams(dateRange),
-    [dateRange],
+    () => buildDateRangeParams(dateRange, now),
+    [dateRange, now],
   );
-
-  const baseQueryParams = useMemo<ContactEventQueryParams>(
+  const queryParams = useMemo<ContactEventListParams>(
     () => ({
       search: debouncedSearch || undefined,
       event_after: dateParams.event_after,
       event_before: dateParams.event_before,
       tier: tier === "all" ? undefined : tier,
-      context_category:
-        contextCategory === "all" ? undefined : contextCategory,
-      has_mood:
-        hasMood === "any" ? undefined : hasMood === "yes",
+      context_category: contextCategory === "all" ? undefined : contextCategory,
+      journaled: journaled === "all" ? undefined : journaled === "journaled",
+      page_size: pageSize,
     }),
     [
       contextCategory,
       dateParams.event_after,
       dateParams.event_before,
       debouncedSearch,
-      hasMood,
+      journaled,
       tier,
     ],
   );
-
-  const activeFilterCount = [
-    dateRange !== "all",
-    tier !== "all",
-    hasMood !== "any",
-    contextCategory !== "all",
-  ].filter(Boolean).length;
-
+  const filterKey = useMemo(() => JSON.stringify(queryParams), [queryParams]);
+  const expansionModeKey = `${filterKey}|${
+    isDesktop && !prefersReducedMotion ? "observer" : "static"
+  }`;
+  const [expandedWindow, setExpandedWindow] = useState({
+    key: expansionModeKey,
+    start: 0,
+  });
+  const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
+  const expandedStart =
+    expandedWindow.key === expansionModeKey ? expandedWindow.start : 0;
   const {
     data,
     events,
     loading,
+    loadingMore,
     error,
+    loadMoreError,
+    hasMore,
+    loadMore,
     refetch,
-  } = useContactEvents(contactId, {
-    ...baseQueryParams,
-    page: 1,
-    page_size: pageSize,
+  } = useContactEvents(contact.id, queryParams);
+  const {
+    events: upcomingEvents,
+    loading: upcomingLoading,
+    error: upcomingError,
+    refetch: refetchUpcoming,
+  } = useContactEvents(contact.id, {
+    event_after: now.toISOString(),
+    ordering: "event_timestamp",
+    page_size: 2,
   });
 
-  useEffect(() => {
-    let isActive = true;
+  const activeFilterCount = [
+    dateRange !== "all",
+    tier !== "all",
+    journaled !== "all",
+    contextCategory !== "all",
+  ].filter(Boolean).length;
+  const advancedFilterCount = [
+    tier !== "all",
+    journaled !== "all",
+    contextCategory !== "all",
+  ].filter(Boolean).length;
+  const resultCount = data?.count ?? events.length;
+  const isInitialLoading = loading && events.length === 0;
+  const hasActiveQuery = Boolean(search) || activeFilterCount > 0;
 
-    async function loadSummary() {
-      if (!contactId) {
-        setSummary(null);
-        setSummaryLoading(false);
+  const updateTimelineConnector = useCallback(() => {
+    const list = timelineListRef.current;
+    const connector = timelineConnectorRef.current;
+    const firstEvent = events[0];
+    const lastEvent = events.at(-1);
+    const firstNode = firstEvent
+      ? nodeElements.current.get(String(firstEvent.id))
+      : null;
+    const lastNode = lastEvent
+      ? nodeElements.current.get(String(lastEvent.id))
+      : null;
+
+    if (!list || !connector || !firstNode || !lastNode || events.length < 2) {
+      if (connector) {
+        connector.style.opacity = "0";
+        connector.style.height = "0px";
+      }
+      return;
+    }
+
+    const listRect = list.getBoundingClientRect();
+    const firstRect = firstNode.getBoundingClientRect();
+    const lastRect = lastNode.getBoundingClientRect();
+    const start = firstRect.top + firstRect.height / 2 - listRect.top;
+    const end = lastRect.top + lastRect.height / 2 - listRect.top;
+
+    connector.style.left = `${firstRect.left + firstRect.width / 2 - listRect.left}px`;
+    connector.style.top = `${start}px`;
+    connector.style.height = `${Math.max(0, end - start)}px`;
+    connector.style.opacity = "1";
+  }, [events]);
+
+  useLayoutEffect(() => {
+    if (events.length < 2) {
+      return;
+    }
+
+    const animationFrame = requestAnimationFrame(updateTimelineConnector);
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateTimelineConnector);
+    const list = timelineListRef.current;
+
+    if (list) {
+      resizeObserver?.observe(list);
+    }
+    for (const event of events) {
+      const node = nodeElements.current.get(String(event.id));
+      if (node) {
+        resizeObserver?.observe(node);
+      }
+    }
+    window.addEventListener("resize", updateTimelineConnector);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateTimelineConnector);
+    };
+  }, [events, expandedStart, updateTimelineConnector]);
+
+  useLayoutEffect(() => {
+    expandedStartRef.current = expandedStart;
+  }, [expandedStart]);
+
+  const commitExpandedStart = useCallback(
+    (nextStart: number, anchorIndex: number, protectFocusedEvent = true) => {
+      const maximumStart = Math.max(
+        0,
+        events.length - TIMELINE_EXPANDED_WINDOW_SIZE,
+      );
+      const clampedStart = Math.max(0, Math.min(nextStart, maximumStart));
+      const focusedIndex = keyboardFocusedIndexRef.current;
+
+      if (
+        protectFocusedEvent &&
+        focusedIndex !== null &&
+        !isTimelineIndexExpanded(focusedIndex, clampedStart, events.length)
+      ) {
+        return false;
+      }
+
+      if (clampedStart === expandedStartRef.current) {
+        return true;
+      }
+
+      const root = timelineScrollRootRef.current;
+      const anchorEvent = events[anchorIndex];
+      const anchorElement = anchorEvent
+        ? rowElements.current.get(String(anchorEvent.id))
+        : null;
+
+      if (root && anchorElement) {
+        pendingAnchor.current = {
+          eventId: String(anchorEvent.id),
+          index: anchorIndex,
+          top:
+            anchorElement.getBoundingClientRect().top -
+            root.getBoundingClientRect().top,
+        };
+      }
+
+      expandedStartRef.current = clampedStart;
+      setExpandedWindow({ key: expansionModeKey, start: clampedStart });
+      return true;
+    },
+    [events, expansionModeKey],
+  );
+
+  const getTimelineFocusBand = useCallback(
+    (root: HTMLDivElement): TimelineFocusBand => {
+      const rootRect = root.getBoundingClientRect();
+      const rootHeight = root.clientHeight;
+      // The toolbar is a sibling above this scroll root, so keep the focus
+      // band centered within the event stream rather than accounting for it.
+      const topInset = Math.max(48, Math.min(rootHeight * 0.28, 112));
+      const bottomInset = Math.max(48, Math.min(rootHeight * 0.32, 144));
+      const top = rootRect.top + topInset;
+      const bottom = Math.max(top + 1, rootRect.bottom - bottomInset);
+
+      return {
+        top,
+        bottom,
+        center: top + (bottom - top) / 2,
+      };
+    },
+    [],
+  );
+
+  const getClosestTimelineCandidate = useCallback(
+    (root: HTMLDivElement, allowedIndices?: Set<number>) => {
+      const band = getTimelineFocusBand(root);
+      let candidate:
+        | { center: number; distance: number; index: number }
+        | undefined;
+
+      for (const [index, event] of events.entries()) {
+        if (allowedIndices && !allowedIndices.has(index)) {
+          continue;
+        }
+
+        const element = rowElements.current.get(String(event.id));
+        if (!element) {
+          continue;
+        }
+
+        const rect = element.getBoundingClientRect();
+        if (rect.bottom < band.top || rect.top > band.bottom) {
+          continue;
+        }
+
+        const center = rect.top + rect.height / 2;
+        const distance = Math.abs(center - band.center);
+        if (!candidate || distance < candidate.distance) {
+          candidate = { center, distance, index };
+        }
+      }
+
+      if (!candidate) {
+        return null;
+      }
+
+      const maxOutsideDistance = (band.bottom - band.top) / 2 + 48;
+      if (
+        (candidate.center < band.top || candidate.center > band.bottom) &&
+        candidate.distance > maxOutsideDistance
+      ) {
+        return null;
+      }
+
+      return { ...candidate, band };
+    },
+    [events, getTimelineFocusBand],
+  );
+
+  const focusTimelineIndex = useCallback(
+    (index: number, source: TimelineFocusSource, band?: TimelineFocusBand) => {
+      const event = events[index];
+      if (!event) {
         return;
       }
 
-      setSummaryLoading(true);
-      setSummaryError(null);
+      const maximumStart = Math.max(
+        0,
+        events.length - TIMELINE_EXPANDED_WINDOW_SIZE,
+      );
+      const nextStart =
+        source === "direct"
+          ? Math.max(0, Math.min(index - 2, maximumStart))
+          : nextExpandedWindowStart(
+              expandedStartRef.current,
+              index,
+              events.length,
+            );
 
-      try {
-        const response = await eventsApi.timelineSummary({
-          ...baseQueryParams,
-          participants: String(contactId),
+      const activeIndex = activeTimelineIndexRef.current;
+      if (
+        source === "scroll" &&
+        band &&
+        activeIndex !== null &&
+        activeIndex !== index
+      ) {
+        const activeEvent = events[activeIndex];
+        const activeElement = activeEvent
+          ? rowElements.current.get(String(activeEvent.id))
+          : null;
+        const candidateElement = rowElements.current.get(String(event.id));
+
+        if (activeElement && candidateElement) {
+          const activeRect = activeElement.getBoundingClientRect();
+          const candidateRect = candidateElement.getBoundingClientRect();
+          const activeCenter = activeRect.top + activeRect.height / 2;
+          const candidateCenter = candidateRect.top + candidateRect.height / 2;
+          const activeDistance = Math.abs(activeCenter - band.center);
+          const candidateDistance = Math.abs(candidateCenter - band.center);
+          const activeWithinDeadZone =
+            activeCenter >= band.top - 36 && activeCenter <= band.bottom + 36;
+
+          if (
+            activeWithinDeadZone &&
+            candidateDistance + 36 >= activeDistance
+          ) {
+            return;
+          }
+        }
+      }
+
+      const committed = commitExpandedStart(
+        nextStart,
+        index,
+        source !== "direct",
+      );
+      if (!committed) {
+        return;
+      }
+
+      activeTimelineIndexRef.current = index;
+      setFocusedEventId(String(event.id));
+    },
+    [commitExpandedStart, events],
+  );
+
+  useLayoutEffect(() => {
+    let animationFrame: number | null = null;
+    const anchor = pendingAnchor.current;
+    const root = timelineScrollRootRef.current;
+    const anchorElement = anchor
+      ? rowElements.current.get(anchor.eventId)
+      : null;
+
+    if (anchor && root && anchorElement) {
+      const nextTop =
+        anchorElement.getBoundingClientRect().top -
+        root.getBoundingClientRect().top;
+      root.scrollTop += nextTop - anchor.top;
+    }
+
+    pendingAnchor.current = null;
+    if (anchor) {
+      const nextStart = nextExpandedWindowStart(
+        expandedStartRef.current,
+        anchor.index,
+        events.length,
+      );
+      if (nextStart !== expandedStartRef.current) {
+        animationFrame = requestAnimationFrame(() => {
+          focusTimelineIndex(anchor.index, "scroll");
         });
-        if (isActive) {
-          setSummary(response);
-        }
-      } catch (err) {
-        if (isActive) {
-          setSummaryError(err as ApiError);
-        }
-      } finally {
-        if (isActive) {
-          setSummaryLoading(false);
-        }
       }
     }
 
-    void loadSummary();
+    return () => {
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [expandedStart, events, focusTimelineIndex]);
+
+  useLayoutEffect(() => {
+    expandedStartRef.current = 0;
+    activeTimelineIndexRef.current = null;
+    observedIndices.current.clear();
+    const root = timelineScrollRootRef.current;
+    if (root) {
+      root.scrollTop = 0;
+    }
+  }, [filterKey]);
+
+  useEffect(() => {
+    const root = timelineScrollRootRef.current;
+    if (
+      !root ||
+      !isDesktop ||
+      prefersReducedMotion ||
+      events.length <= TIMELINE_EXPANDED_WINDOW_SIZE ||
+      typeof IntersectionObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const activeIndices = observedIndices.current;
+    activeIndices.clear();
+    const rootHeight = root.clientHeight;
+    const topInset = Math.max(48, Math.min(rootHeight * 0.28, 112));
+    const bottomInset = Math.max(48, Math.min(rootHeight * 0.32, 144));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const index = Number(
+            (entry.target as HTMLElement).dataset.timelineIndex,
+          );
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            activeIndices.add(index);
+          } else if (!entry.isIntersecting || entry.intersectionRatio <= 0.25) {
+            activeIndices.delete(index);
+          }
+        }
+
+        const candidate = getClosestTimelineCandidate(root, activeIndices);
+        if (candidate) {
+          focusTimelineIndex(candidate.index, "scroll", candidate.band);
+        }
+      },
+      {
+        root,
+        rootMargin: `${-Math.round(topInset)}px 0px ${-Math.round(
+          bottomInset,
+        )}px 0px`,
+        threshold: [0, 0.25, 0.6],
+      },
+    );
+
+    for (const event of events) {
+      const element = rowElements.current.get(String(event.id));
+      if (element) {
+        observer.observe(element);
+      }
+    }
 
     return () => {
-      isActive = false;
+      observer.disconnect();
+      activeIndices.clear();
     };
-  }, [baseQueryParams, contactId]);
+  }, [
+    events,
+    focusTimelineIndex,
+    getClosestTimelineCandidate,
+    isDesktop,
+    prefersReducedMotion,
+  ]);
 
-  const timelineEvents = useMemo(
-    () => mergeEvents(events, extraEvents),
-    [events, extraEvents],
-  );
-  const timelineRows = useMemo(
-    () => buildTimelineRows(timelineEvents),
-    [timelineEvents],
-  );
-  const resultCount = data?.count ?? summary?.total_moments ?? 0;
-  const hasResults = timelineEvents.length > 0;
-  const canLoadMore =
-    Boolean(data?.next) && !loading && !loadingMore && !reachedEnd;
-  const isInitialLoading = loading && !hasResults;
+  useEffect(() => {
+    const root = timelineScrollRootRef.current;
+    if (
+      !root ||
+      !isDesktop ||
+      prefersReducedMotion ||
+      events.length <= TIMELINE_EXPANDED_WINDOW_SIZE
+    ) {
+      return;
+    }
 
-  function resetLocalPagination() {
-    setExtraEvents([]);
-    setLoadedPage(1);
-    setReachedEnd(false);
-  }
+    let animationFrame: number | null = null;
+    const measureScrollFocus = () => {
+      animationFrame = null;
+      const candidate = getClosestTimelineCandidate(root);
+      if (candidate) {
+        focusTimelineIndex(candidate.index, "scroll", candidate.band);
+      }
+    };
+    const scheduleScrollFocus = () => {
+      if (animationFrame === null) {
+        animationFrame = requestAnimationFrame(measureScrollFocus);
+      }
+    };
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(scheduleScrollFocus);
+
+    root.addEventListener("scroll", scheduleScrollFocus, { passive: true });
+    window.addEventListener("resize", scheduleScrollFocus);
+    resizeObserver?.observe(root);
+    if (timelineListRef.current) {
+      resizeObserver?.observe(timelineListRef.current);
+    }
+    for (const event of events) {
+      const row = rowElements.current.get(String(event.id));
+      if (row) {
+        resizeObserver?.observe(row);
+      }
+    }
+    scheduleScrollFocus();
+
+    return () => {
+      if (animationFrame !== null) {
+        cancelAnimationFrame(animationFrame);
+      }
+      root.removeEventListener("scroll", scheduleScrollFocus);
+      window.removeEventListener("resize", scheduleScrollFocus);
+      resizeObserver?.disconnect();
+    };
+  }, [
+    events,
+    expandedStart,
+    focusTimelineIndex,
+    getClosestTimelineCandidate,
+    isDesktop,
+    prefersReducedMotion,
+  ]);
 
   function handleClearFilters() {
     setSearch("");
     setDateRange("all");
     setTier("all");
-    setHasMood("any");
+    setJournaled("all");
     setContextCategory("all");
-    resetLocalPagination();
   }
 
-  async function handleLoadMore() {
-    if (!contactId || loadingMore || reachedEnd) {
+  function handleRowFocus(index: number, event: FocusEvent<HTMLElement>) {
+    if (isTimelineControlTarget(event.target)) {
       return;
     }
 
-    const nextPage = loadedPage + 1;
-    setLoadingMore(true);
+    keyboardFocusedIndexRef.current = index;
+    focusTimelineIndex(index, "direct");
+  }
 
-    try {
-      const response = await eventsApi.list({
-        ...baseQueryParams,
-        page: nextPage,
-        page_size: pageSize,
-        participants: String(contactId),
-      });
-      setExtraEvents((currentEvents) =>
-        mergeEvents(currentEvents, response.results),
-      );
-      setLoadedPage(nextPage);
-      setReachedEnd(!response.next);
-    } finally {
-      setLoadingMore(false);
+  function handleRowBlur(event: FocusEvent<HTMLElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      keyboardFocusedIndexRef.current = null;
+      if (!isDesktop || prefersReducedMotion) {
+        expandedStartRef.current = 0;
+        setExpandedWindow({ key: expansionModeKey, start: 0 });
+      }
     }
   }
 
   return (
-    <div className="grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,330px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(310px,360px)]">
-      <section className="min-w-0 rounded-lg border border-border bg-card p-4 shadow-xs">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-xl font-semibold leading-7">
-              Relationship Timeline
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Shared moments recorded through events.
-            </p>
-          </div>
-
-          <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(220px,1fr)_auto] lg:w-[460px]">
-            <div className="relative min-w-0">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                placeholder="Search timeline"
-                className="h-9 pl-9"
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  resetLocalPagination();
+    <div className="grid min-w-0 max-w-full items-start gap-3 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(0,1fr)_270px] xl:grid-rows-[minmax(0,1fr)] xl:items-stretch 2xl:grid-cols-[minmax(0,1fr)_288px]">
+      <ContactContentStack className="max-w-full xl:h-full">
+        <ContactTabHeader
+          headingId="relationship-timeline-title"
+          icon={CalendarClock}
+          title="Our story, moment by moment"
+          subtitle={`${resultCount} shared ${
+            resultCount === 1 ? "moment" : "moments"
+          }`}
+          controls={
+            <div className="grid min-w-0 w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-[minmax(12rem,1fr)_6.25rem_auto]">
+              <div className="relative min-w-0">
+                <Search
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <Input
+                  aria-label="Search timeline"
+                  value={search}
+                  placeholder="Search timeline"
+                  className="h-9 bg-background pl-9"
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+              <select
+                aria-label="Timeline date range"
+                value={dateRange}
+                className="h-9 min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                onChange={(event) =>
+                  setDateRange(event.target.value as DateRangeFilter)
+                }
+              >
+                <option value="all">All time</option>
+                <option value="past">Past</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="this_month">This month</option>
+              </select>
+              <TimelineAdvancedFilters
+                activeFilterCount={advancedFilterCount}
+                contextCategory={contextCategory}
+                contextCategories={contextCategories}
+                journaled={journaled}
+                loading={lookupsLoading}
+                tier={tier}
+                onClear={() => {
+                  setTier("all");
+                  setJournaled("all");
+                  setContextCategory("all");
                 }}
+                onContextCategoryChange={setContextCategory}
+                onJournaledChange={setJournaled}
+                onTierChange={setTier}
               />
             </div>
+          }
+          actions={
             <Button
-              type="button"
-              variant="outline"
-              className="h-9 bg-background"
-              onClick={handleClearFilters}
-              disabled={
-                !search &&
-                activeFilterCount === 0 &&
-                !loading &&
-                !summaryLoading
-              }
+              asChild
+              className="h-9 w-full whitespace-nowrap bg-primary hover:bg-primary-hover sm:w-auto"
             >
-              <Filter className="size-4" />
-              Reset
+              <Link href={`/events/new?contact=${contact.id}`}>
+                <Plus className="size-4" />
+                Log moment
+              </Link>
             </Button>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="mt-4">
-          {error && (
-            <TimelineState
-              icon={CalendarClock}
-              title="Unable to load timeline"
-              message={error.message}
-              action={
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void refetch()}
+        <ContactSectionCard
+          asChild
+          density="standard"
+          className="min-w-0 max-w-full xl:min-h-0 xl:flex-1"
+        >
+          <section
+            aria-label="Shared moments"
+            className="xl:flex xl:h-full xl:min-h-0 xl:flex-col"
+          >
+            <div
+              ref={timelineScrollRootRef}
+              className="min-w-0 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:overscroll-y-contain"
+            >
+              {error && (
+                <TimelineState
+                  icon={CalendarClock}
+                  title="Unable to load this story"
+                  message={error.message}
+                  action={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void refetch()}
+                    >
+                      Try again
+                    </Button>
+                  }
+                />
+              )}
+
+              {!error && isInitialLoading && <TimelineSkeleton />}
+
+              {!error && !isInitialLoading && events.length === 0 && (
+                <TimelineState
+                  icon={CalendarDays}
+                  title={
+                    hasActiveQuery
+                      ? "No matching moments"
+                      : "No shared moments yet"
+                  }
+                  message={
+                    hasActiveQuery
+                      ? "Try a different search or clear the current filters."
+                      : "Log a moment to begin building this story."
+                  }
+                  action={
+                    hasActiveQuery ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClearFilters}
+                      >
+                        Clear filters
+                      </Button>
+                    ) : (
+                      <Button asChild variant="soft">
+                        <Link href={`/events/new?contact=${contact.id}`}>
+                          Log moment
+                        </Link>
+                      </Button>
+                    )
+                  }
+                />
+              )}
+
+              {!error && events.length > 0 && (
+                <div
+                  ref={timelineListRef}
+                  className="relative isolate min-w-0 max-w-full [overflow-anchor:none]"
                 >
-                  Try again
-                </Button>
-              }
-            />
-          )}
+                  {events.length > 1 && (
+                    <span
+                      ref={timelineConnectorRef}
+                      aria-hidden="true"
+                      className="pointer-events-none absolute z-0 w-px -translate-x-1/2 bg-border opacity-0"
+                    />
+                  )}
+                  <ol
+                    className="relative z-10"
+                    aria-label="Shared moments, newest first"
+                  >
+                    {events.map((event, index) => {
+                      const expanded = isTimelineIndexExpanded(
+                        index,
+                        expandedStart,
+                        events.length,
+                      );
 
-          {!error && isInitialLoading && <TimelineSkeleton />}
+                      return (
+                        <TimelineEventRow
+                          key={event.id}
+                          event={event}
+                          expanded={expanded}
+                          focused={focusedEventId === String(event.id)}
+                          index={index}
+                          onBlur={handleRowBlur}
+                          onFocus={(focusEvent) =>
+                            handleRowFocus(index, focusEvent)
+                          }
+                          setElement={(element) => {
+                            const key = String(event.id);
+                            if (element) {
+                              rowElements.current.set(key, element);
+                            } else {
+                              rowElements.current.delete(key);
+                            }
+                          }}
+                          setNodeElement={(element) => {
+                            const key = String(event.id);
+                            if (element) {
+                              nodeElements.current.set(key, element);
+                            } else {
+                              nodeElements.current.delete(key);
+                            }
+                          }}
+                        />
+                      );
+                    })}
+                  </ol>
+                </div>
+              )}
 
-          {!error && !isInitialLoading && !hasResults && (
-            <TimelineState
-              icon={CalendarDays}
-              title={
-                activeFilterCount > 0 || search
-                  ? "No matching moments"
-                  : "No shared moments yet"
-              }
-              message={
-                activeFilterCount > 0 || search
-                  ? "Clear the current filters to return to the full timeline."
-                  : "Log a moment to start building this story."
-              }
-              action={
-                activeFilterCount > 0 || search ? (
+              {!error && events.length > 0 && hasMore && (
+                <div className="mt-4 border-t border-border/70 pt-4">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={handleClearFilters}
+                    className="w-full bg-background"
+                    disabled={loadingMore}
+                    onClick={() => void loadMore()}
                   >
-                    Clear filters
+                    {loadingMore && (
+                      <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+                    )}
+                    Load earlier moments
                   </Button>
-                ) : undefined
-              }
-            />
-          )}
-
-          {!error && hasResults && (
-            <div className="max-h-[calc(100vh-17rem)] min-h-0 overflow-y-auto pr-2">
-              <div className="relative">
-                <div className="absolute bottom-5 left-[4.375rem] top-5 hidden w-px bg-border sm:block" />
-                <div className="space-y-2.5">
-                  {timelineRows.map((row) => (
-                    <div
-                      key={row.key}
-                      className="grid gap-2 sm:grid-cols-[4rem_0.75rem_minmax(0,1fr)] sm:gap-0"
-                    >
-                      <div className="hidden pr-2 pt-3.5 text-right sm:block">
-                        {row.showLabel && (
-                          <p className="whitespace-pre-line text-[11px] font-medium uppercase leading-4 text-muted-foreground">
-                            {row.label}
-                          </p>
-                        )}
-                      </div>
-                      <div className="relative hidden min-h-20 justify-center sm:flex">
-                        <span className="z-10 mt-[1.125rem] size-2 rounded-full bg-primary-strong ring-3 ring-card" />
-                      </div>
-                      <div className="min-w-0 sm:pl-2.5">
-                        {row.showLabel && (
-                          <p className="mb-2 whitespace-pre-line text-[11px] font-medium uppercase leading-4 text-muted-foreground sm:hidden">
-                            {row.label}
-                          </p>
-                        )}
-                        <TimelineItem event={row.event} nowMs={nowMs} />
-                      </div>
-                    </div>
-                  ))}
+                  {loadMoreError && (
+                    <p role="alert" className="mt-2 text-sm text-destructive">
+                      {loadMoreError.message}
+                    </p>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </section>
+        </ContactSectionCard>
+      </ContactContentStack>
 
-        {!error && hasResults && canLoadMore && (
-          <div className="mt-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 w-full bg-background"
-              onClick={() => void handleLoadMore()}
-            >
-              {loadingMore ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : null}
-              Load more
-            </Button>
-          </div>
-        )}
-      </section>
-
-      <aside className="grid gap-3 xl:self-start">
-        <TimelineGlance
-          loading={summaryLoading}
-          error={summaryError}
-          summary={summary}
-        />
-
-        <TimelineFilters
-          activeFilterCount={activeFilterCount}
-          contextCategory={contextCategory}
-          contextCategories={contextCategories}
-          dateRange={dateRange}
-          hasMood={hasMood}
-          loading={loading || lookupsLoading}
-          resultCount={resultCount}
-          tier={tier}
-          onClear={handleClearFilters}
-          onContextCategoryChange={(value) => {
-            setContextCategory(value);
-            resetLocalPagination();
-          }}
-          onDateRangeChange={(value) => {
-            setDateRange(value);
-            resetLocalPagination();
-          }}
-          onHasMoodChange={(value) => {
-            setHasMood(value);
-            resetLocalPagination();
-          }}
-          onTierChange={(value) => {
-            setTier(value);
-            resetLocalPagination();
-          }}
-        />
-      </aside>
+      <ContactHelperStack
+        asChild
+        className="xl:h-full xl:min-h-0 xl:overflow-y-auto xl:overscroll-y-contain"
+      >
+        <aside>
+          <RememberNextTimeCard
+            model={model}
+            onAddObservation={onAddObservation}
+          />
+          <UpcomingCard
+            events={upcomingEvents}
+            loading={upcomingLoading}
+            error={upcomingError?.message ?? null}
+            now={now}
+            onRetry={() => void refetchUpcoming()}
+          />
+        </aside>
+      </ContactHelperStack>
     </div>
   );
 }
 
-type ContactEventQueryParams = Omit<
-  EventListParams,
-  "page" | "page_size" | "participants"
->;
-
-function TimelineItem({
+function TimelineEventRow({
   event,
-  nowMs,
+  expanded,
+  focused,
+  index,
+  onBlur,
+  onFocus,
+  setElement,
+  setNodeElement,
 }: {
   event: EventListItem;
-  nowMs: number;
+  expanded: boolean;
+  focused: boolean;
+  index: number;
+  onBlur: (event: FocusEvent<HTMLElement>) => void;
+  onFocus: (event: FocusEvent<HTMLElement>) => void;
+  setElement: (element: HTMLElement | null) => void;
+  setNodeElement: (element: HTMLSpanElement | null) => void;
 }) {
-  const isUpcoming = new Date(event.event_timestamp).getTime() > nowMs;
-  const iconWellClassName = interactionModeWellClass(
-    event.interaction_mode?.name,
-  );
-  const contextText = [
-    event.context_category?.name,
-    event.location_label,
-  ]
-    .filter(Boolean)
-    .join(" / ");
-  const contextIcon = event.location_label
-    ? <MapPin className="size-3" />
-    : <CalendarDays className="size-3" />;
+  const presentation = getEventPresentation(event);
+  const journalPresentation = getJournalStatePresentation(event.journaled);
   const description = event.description?.trim();
-  const hasPastSignals =
-    !isUpcoming && (Boolean(event.mood) || Boolean(event.impact));
-  const hasRightMeta = isUpcoming || hasPastSignals;
 
   return (
-    <article className="rounded-md border border-border bg-card p-3 shadow-xs transition-colors hover:border-primary/30">
-      <div className="grid gap-2.5 md:grid-cols-[auto_minmax(0,1fr)_auto]">
-        <div
+    <li className="min-w-0">
+      {index === 0 && (
+        <TimelineSectionLabel>Recent moments</TimelineSectionLabel>
+      )}
+      {index === TIMELINE_EXPANDED_WINDOW_SIZE && (
+        <TimelineSectionLabel>Earlier moments</TimelineSectionLabel>
+      )}
+
+      <div className="grid min-w-0 grid-cols-[3.5rem_0.875rem_minmax(0,1fr)] sm:grid-cols-[3.75rem_0.875rem_minmax(0,1fr)]">
+        <time
+          dateTime={event.event_timestamp}
           className={cn(
-            "flex size-10 items-center justify-center rounded-md",
-            iconWellClassName,
+            "pr-2 pt-2.5 text-right text-[11px] leading-4 text-muted-foreground sm:text-xs",
+            expanded && "pt-4",
           )}
         >
-          {interactionModeIcon(event.interaction_mode?.name, "size-4")}
+          {formatRailDate(event.event_timestamp, expanded)}
+        </time>
+
+        <div className="relative flex justify-center">
+          <span
+            ref={setNodeElement}
+            aria-hidden="true"
+            className={cn(
+              "relative z-10 mt-[1.15rem] size-2 rounded-full bg-primary ring-[3px] ring-card",
+              expanded && "mt-[1.8rem] size-2.5",
+            )}
+          />
         </div>
 
-        <div className="min-w-0">
-          <h3 className="min-w-0 text-sm font-semibold leading-5">
-            {event.title || "Untitled event"}
-          </h3>
-
-          {contextText && (
-            <div className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
-              <span className="inline-flex items-center gap-1">
-                {contextIcon}
-                {contextText}
-              </span>
-            </div>
+        <article
+          ref={setElement}
+          data-timeline-index={index}
+          data-timeline-focused={focused || undefined}
+          className={cn(
+            "grid min-w-0 max-w-full scroll-mt-40 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-2 border-b border-border/70 bg-transparent [overflow-anchor:none] xl:grid-cols-[auto_minmax(0,1fr)_8.25rem_auto] xl:gap-x-3",
+            "transition-[padding,background-color] duration-200 ease-out motion-reduce:transition-none",
+            expanded
+              ? "min-h-32 py-4 pr-1 pl-2 sm:pl-3"
+              : "min-h-11 py-1.5 pr-1 pl-1.5 hover:bg-muted/20",
           )}
+          onFocusCapture={onFocus}
+          onBlurCapture={onBlur}
+        >
+          <EventIconTile
+            presentation={presentation.icon}
+            size={expanded ? "standard" : "compact"}
+            className={cn(
+              "row-span-2 transition-[width,height,transform] duration-200 ease-out motion-reduce:transition-none",
+              !expanded && "mt-1",
+            )}
+          />
 
-          <div className="mt-1.5">
-            <TierBadge tier={event.tier} />
+          <div className="min-w-0 self-center">
+            <Link
+              href={`/events/${event.id}`}
+              title={event.title || "Untitled event"}
+              className={cn(
+                "block min-w-0 break-words rounded-sm font-semibold text-foreground outline-none [overflow-wrap:anywhere] hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50",
+                expanded
+                  ? "line-clamp-2 text-base leading-6"
+                  : "truncate text-xs leading-5 sm:text-sm",
+              )}
+            >
+              {event.title || "Untitled event"}
+            </Link>
+
+            <div
+              aria-hidden={!expanded}
+              className={cn(
+                "grid min-w-0 transition-[grid-template-rows,opacity,transform] duration-200 ease-out motion-reduce:transition-none",
+                expanded
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] -translate-y-0.5 opacity-0",
+              )}
+            >
+              <div className="min-h-0 min-w-0 overflow-hidden">
+                {description && (
+                  <p
+                    title={description}
+                    className="mt-1 line-clamp-2 break-words text-sm leading-5 text-muted-foreground [overflow-wrap:anywhere]"
+                  >
+                    {description}
+                  </p>
+                )}
+                <MomentDetails event={event} />
+              </div>
+            </div>
           </div>
 
-          <p
+          <div
             className={cn(
-              "mt-2 text-xs leading-5 text-muted-foreground",
-              !description && "italic",
+              "col-start-2 row-start-2 mt-1 flex min-w-0 flex-wrap items-center gap-2 xl:col-start-3 xl:row-start-1 xl:mt-0 xl:flex-col xl:items-end",
+              expanded ? "xl:gap-3" : "xl:gap-1",
             )}
           >
-            {description || "No description text"}
-          </p>
-        </div>
-
-        <div className="flex items-start justify-end gap-2">
-          {hasRightMeta && (
-            <div className="grid min-w-[7rem] gap-2 justify-items-end text-right">
-              {isUpcoming && (
-                <div className="grid gap-1">
-                  <StatusBadge label="Upcoming" />
-                  <span className="text-[11px] leading-4 text-muted-foreground">
-                    {formatDateTime(event.event_timestamp)}
-                  </span>
-                </div>
-              )}
-              {hasPastSignals && (
-                <div className="grid gap-2.5 text-left sm:grid-cols-2">
-                  {event.mood && (
-                    <TimelineSignal
-                      label="Mood"
-                      value={`${event.mood.emoji_icon} ${event.mood.name}`}
-                      className="text-foreground"
-                      indicatorClassName={moodDotClass(
-                        event.mood.name,
-                        event.mood.polarity,
-                      )}
-                    />
-                  )}
-                  {event.impact && (
-                    <TimelineSignal
-                      label="Impact"
-                      value={impactLabel(event.impact)}
-                      className={impactTextClass(event.impact)}
-                      icon={impactIcon(event.impact)}
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+            <EventSemanticChip
+              presentation={presentation.semanticChip}
+              size={expanded ? "standard" : "compact"}
+            />
+            <JournalStateIndicator
+              presentation={journalPresentation}
+              size={expanded ? "standard" : "compact"}
+            />
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label={`Open actions for ${event.title || "event"}`}
-                className="flex size-7 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="col-start-3 row-start-1 flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 xl:col-start-4"
               >
                 <MoreHorizontal className="size-4" />
               </button>
@@ -538,230 +1016,375 @@ function TimelineItem({
               <DropdownMenuItem asChild>
                 <Link href={`/events/${event.id}`}>View event</Link>
               </DropdownMenuItem>
+              {!event.journaled && (
+                <DropdownMenuItem asChild>
+                  <Link href={`/journals/new?event=${event.id}`}>
+                    Add journal entry
+                  </Link>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </article>
       </div>
-    </article>
+    </li>
   );
 }
 
-function TimelineSignal({
-  className,
-  icon: Icon,
-  indicatorClassName,
-  label,
-  value,
-}: {
-  className: string;
-  icon?: ComponentType<{ className?: string }>;
-  indicatorClassName?: string;
-  label: string;
-  value: string;
-}) {
+function MomentDetails({ event }: { event: EventListItem }) {
   return (
-    <div className="min-w-0">
-      <p className="text-[10px] font-medium uppercase leading-3 text-muted-foreground">
-        {label}
-      </p>
-      <p className={cn("mt-1 inline-flex items-center gap-1 text-xs", className)}>
-        {Icon ? (
-          <Icon className="size-3.5" />
-        ) : (
-          <span
-            className={cn(
-              "size-1.5 rounded-full",
-              indicatorClassName ?? "bg-muted-foreground",
-            )}
-          />
-        )}
-        <span className="truncate">{value}</span>
-      </p>
+    <div className="mt-2 min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <ParticipantSummary event={event} />
+      {event.location_label && (
+        <span className="inline-flex min-w-0 max-w-full items-center gap-1 text-xs text-muted-foreground">
+          <MapPin className="size-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{event.location_label}</span>
+        </span>
+      )}
     </div>
   );
 }
 
-function TimelineGlance({
-  error,
-  loading,
-  summary,
-}: {
-  error: ApiError | null;
-  loading: boolean;
-  summary: EventTimelineSummary | null;
-}) {
-  const stats = buildStats(summary);
+function ParticipantSummary({ event }: { event: EventListItem }) {
+  const visibleParticipants = event.participants.slice(0, 2);
+  const total = event.participant_count || event.participants.length;
+  const names = visibleParticipants.map(
+    ({ contact }) =>
+      contact.first_name.trim() ||
+      [contact.first_name, contact.last_name].filter(Boolean).join(" ").trim(),
+  );
+  if (total === 0) {
+    return null;
+  }
+  const label =
+    total === 1
+      ? `You & ${names[0] || "1 person"}`
+      : names.length > 0
+        ? `You, ${names.join(" & ")}${total > names.length ? ` +${total - names.length}` : ""}`
+        : `You & ${total} people`;
 
   return (
-    <section className="rounded-lg border border-border bg-card p-3 shadow-xs">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold">Timeline at a Glance</h2>
-        {loading && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
-      </div>
-
-      {error ? (
-        <p className="mt-3 text-sm text-muted-foreground">{error.message}</p>
-      ) : (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="min-h-[4.25rem] rounded-md border border-border bg-background p-2.5"
-            >
-              <div className="flex items-center gap-3">
+    <span className="inline-flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+      <span className="flex shrink-0 -space-x-1.5" aria-hidden="true">
+        {visibleParticipants.length > 0
+          ? visibleParticipants.map(({ id, contact }) => {
+              const name = [contact.first_name, contact.last_name]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+              return (
                 <span
-                  className={cn(
-                    "flex size-8 items-center justify-center rounded-md",
-                    stat.className,
-                  )}
+                  key={id}
+                  className="flex size-6 items-center justify-center overflow-hidden rounded-full border-2 border-card bg-muted bg-cover bg-center text-[9px] font-semibold text-foreground"
+                  style={
+                    contact.profile_picture?.url
+                      ? {
+                          backgroundImage: `url(${contact.profile_picture.url})`,
+                        }
+                      : undefined
+                  }
                 >
-                  <stat.icon className="size-4" />
+                  {!contact.profile_picture?.url && initials(name)}
                 </span>
-                <div className="min-w-0">
-                  <p className="text-lg font-semibold leading-none text-foreground">
-                    {loading && !summary ? "-" : stat.value}
-                  </p>
-                  <p className="mt-1 text-xs leading-4 text-muted-foreground">
-                    {stat.label}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+              );
+            })
+          : null}
+      </span>
+      <span className="truncate">{label}</span>
+    </span>
   );
 }
 
-function TimelineFilters({
+function TimelineSectionLabel({ children }: { children: string }) {
+  return (
+    <div className="relative my-1 flex items-center gap-2" aria-hidden="true">
+      <span className="rounded-sm bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {children}
+      </span>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
+function RememberNextTimeCard({
+  model,
+  onAddObservation,
+}: {
+  model: ContactOverviewModel;
+  onAddObservation: () => void;
+}) {
+  return (
+    <ContactSectionCard asChild density="standard">
+      <section aria-labelledby="timeline-remember-next-time-title">
+        <ContactSectionHeader
+          headingId="timeline-remember-next-time-title"
+          icon={Bookmark}
+          iconTone="violet"
+          title="Remember next time"
+        />
+
+        {model.rememberNextTimeItems.length > 0 ? (
+          <ul className="mt-3 space-y-2">
+            {model.rememberNextTimeItems.map((item) => (
+              <li
+                key={item.id}
+                className="flex min-w-0 items-start gap-2.5 rounded-md py-1"
+              >
+                {item.source === "fact" ? (
+                  <FactCategoryIconTile
+                    presentation={getFactCategoryPresentation(item.category)}
+                  />
+                ) : (
+                  <ObservationIconTile
+                    presentation={
+                      getObservationPresentation(item.observation).primary
+                    }
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p
+                    title={item.fullText}
+                    className="truncate text-sm font-medium text-foreground"
+                  >
+                    {item.primaryText}
+                  </p>
+                  {item.supportingText && (
+                    <p
+                      title={item.supportingText}
+                      className="mt-0.5 line-clamp-2 break-words text-xs leading-4 text-muted-foreground [overflow-wrap:anywhere]"
+                    >
+                      {item.supportingText}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm leading-5 text-muted-foreground">
+            Mark a useful fact or save a conversation cue to keep it close here.
+          </p>
+        )}
+
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 w-full bg-background"
+          onClick={onAddObservation}
+        >
+          <Plus className="size-4" />
+          Add note
+        </Button>
+      </section>
+    </ContactSectionCard>
+  );
+}
+
+function UpcomingCard({
+  events,
+  loading,
+  error,
+  now,
+  onRetry,
+}: {
+  events: EventListItem[];
+  loading: boolean;
+  error: string | null;
+  now: Date;
+  onRetry: () => void;
+}) {
+  return (
+    <ContactSectionCard asChild density="standard">
+      <section aria-labelledby="timeline-upcoming-title">
+        <ContactSectionHeader
+          headingId="timeline-upcoming-title"
+          title="Upcoming"
+        />
+
+        {loading && events.length === 0 && (
+          <div className="mt-3 space-y-2" aria-label="Loading upcoming moments">
+            {Array.from({ length: 2 }, (_, index) => (
+              <div key={index} className="flex items-center gap-3 py-1.5">
+                <span className="size-9 animate-pulse rounded-md bg-muted motion-reduce:animate-none" />
+                <span className="h-8 flex-1 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && events.length === 0 && (
+          <div className="mt-3 rounded-md bg-muted/30 p-3">
+            <p className="text-xs leading-4 text-muted-foreground">
+              Upcoming moments could not be loaded.
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-1 -ml-2"
+              onClick={onRetry}
+            >
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && events.length === 0 && (
+          <p className="mt-3 text-sm leading-5 text-muted-foreground">
+            No upcoming shared moments are scheduled.
+          </p>
+        )}
+
+        {events.length > 0 && (
+          <ul className="mt-3 divide-y divide-border/70">
+            {events.slice(0, 2).map((event) => {
+              const presentation = getEventPresentation(event);
+              return (
+                <li key={event.id}>
+                  <Link
+                    href={`/events/${event.id}`}
+                    className="grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-sm py-2 outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    <EventIconTile
+                      presentation={presentation.icon}
+                      size="compact"
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {event.title || "Untitled event"}
+                      </span>
+                      <time
+                        dateTime={event.event_timestamp}
+                        className="mt-0.5 block truncate text-xs text-muted-foreground"
+                      >
+                        {formatUpcomingDate(event.event_timestamp)}
+                      </time>
+                    </span>
+                    <span className="whitespace-nowrap text-[11px] text-muted-foreground">
+                      {formatRelativeFutureDate(event.event_timestamp, now)}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <div className="mt-3 border-t border-border/70 pt-3">
+          <Link
+            href="/events/calendar"
+            className="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-primary outline-none hover:text-primary-strong focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            View calendar
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+    </ContactSectionCard>
+  );
+}
+
+function TimelineAdvancedFilters({
   activeFilterCount,
   contextCategory,
   contextCategories,
-  dateRange,
-  hasMood,
+  journaled,
   loading,
-  resultCount,
   tier,
   onClear,
   onContextCategoryChange,
-  onDateRangeChange,
-  onHasMoodChange,
+  onJournaledChange,
   onTierChange,
 }: {
   activeFilterCount: number;
   contextCategory: string;
-  contextCategories: { id: ApiId; name: string }[];
-  dateRange: DateRangeFilter;
-  hasMood: HasMoodFilter;
+  contextCategories: Array<{ id: string | number; name: string }>;
+  journaled: JournaledFilter;
   loading: boolean;
-  resultCount: number;
   tier: TierFilter;
   onClear: () => void;
   onContextCategoryChange: (value: string) => void;
-  onDateRangeChange: (value: DateRangeFilter) => void;
-  onHasMoodChange: (value: HasMoodFilter) => void;
+  onJournaledChange: (value: JournaledFilter) => void;
   onTierChange: (value: TierFilter) => void;
 }) {
   return (
-    <section className="rounded-lg border border-border bg-card p-3 shadow-xs">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold">Filters</h2>
+    <Popover>
+      <PopoverTrigger asChild>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="text-primary-strong"
-          disabled={activeFilterCount === 0 && !loading}
-          onClick={onClear}
+          variant="outline"
+          size="icon"
+          className="relative bg-background"
+          aria-label={
+            activeFilterCount > 0
+              ? `${activeFilterCount} advanced Timeline filters active`
+              : "Open advanced Timeline filters"
+          }
+          title="Timeline filters"
         >
-          Clear all
-        </Button>
-      </div>
-
-      <div className="mt-3 grid gap-3">
-        <FilterField label="Date range">
-          <select
-            aria-label="Date range"
-            value={dateRange}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            onChange={(event) =>
-              onDateRangeChange(event.target.value as DateRangeFilter)
-            }
-          >
-            <option value="all">All time</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="past">Past</option>
-            <option value="this_month">This month</option>
-          </select>
-        </FilterField>
-
-        <FilterField label="Event tier">
-          <div
-            className="grid grid-cols-3 gap-1 rounded-md border border-border bg-muted/40 p-1"
-            role="group"
-            aria-label="Event tier"
-          >
-            <FilterSegmentButton
-              active={tier === "all"}
-              label="All"
-              onClick={() => onTierChange("all")}
-            />
-            <FilterSegmentButton
-              active={tier === "routine"}
-              label="Routine"
-              onClick={() =>
-                onTierChange(tier === "routine" ? "all" : "routine")
-              }
-            />
-            <FilterSegmentButton
-              active={tier === "milestone"}
-              label="Milestone"
-              onClick={() =>
-                onTierChange(tier === "milestone" ? "all" : "milestone")
-              }
-            />
-          </div>
-        </FilterField>
-
-        <FilterField label="Has mood">
-          <select
-            aria-label="Has mood"
-            value={hasMood}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            onChange={(event) =>
-              onHasMoodChange(event.target.value as HasMoodFilter)
-            }
-          >
-            <option value="any">Any</option>
-            <option value="yes">With mood</option>
-            <option value="no">No mood</option>
-          </select>
-        </FilterField>
-
-        <FilterField label="Context category">
-          <select
-            aria-label="Context category"
-            value={contextCategory}
-            disabled={loading}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
-            onChange={(event) => onContextCategoryChange(event.target.value)}
-          >
-            <option value="all">All categories</option>
-            {contextCategories.map((category) => (
-              <option key={category.id} value={String(category.id)}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-
-        <Button type="button" variant="outline" className="h-9 bg-background">
           <Filter className="size-4" />
-          Show {resultCount} results
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] text-primary-foreground">
+              {activeFilterCount}
+            </span>
+          )}
         </Button>
-      </div>
-    </section>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-72">
+        <PopoverHeader className="flex-row items-center justify-between gap-3">
+          <PopoverTitle>Timeline filters</PopoverTitle>
+          {activeFilterCount > 0 && (
+            <Button type="button" variant="ghost" size="sm" onClick={onClear}>
+              Clear
+            </Button>
+          )}
+        </PopoverHeader>
+
+        <div className="grid gap-3">
+          <FilterField label="Moment type">
+            <select
+              value={tier}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              onChange={(event) =>
+                onTierChange(event.target.value as TierFilter)
+              }
+            >
+              <option value="all">All moments</option>
+              <option value="routine">Routine</option>
+              <option value="milestone">Milestones</option>
+            </select>
+          </FilterField>
+          <FilterField label="Context">
+            <select
+              value={contextCategory}
+              disabled={loading}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
+              onChange={(event) => onContextCategoryChange(event.target.value)}
+            >
+              <option value="all">All contexts</option>
+              {contextCategories.map((category) => (
+                <option key={category.id} value={String(category.id)}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Journal state">
+            <select
+              value={journaled}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              onChange={(event) =>
+                onJournaledChange(event.target.value as JournaledFilter)
+              }
+            >
+              <option value="all">All journal states</option>
+              <option value="journaled">Journaled</option>
+              <option value="not_journaled">Not journaled</option>
+            </select>
+          </FilterField>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -773,36 +1396,10 @@ function FilterField({
   label: string;
 }) {
   return (
-    <div className="grid gap-1.5">
-      <span className="text-xs font-medium text-foreground">{label}</span>
-      {children}
-    </div>
-  );
-}
-
-function FilterSegmentButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      className={cn(
-        "inline-flex h-8 items-center justify-center rounded-sm px-2 text-xs font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-        active
-          ? "bg-background text-primary-strong shadow-xs"
-          : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
-      )}
-      onClick={onClick}
-    >
+    <label className="grid gap-1.5 text-xs font-medium text-foreground">
       {label}
-    </button>
+      {children}
+    </label>
   );
 }
 
@@ -812,124 +1409,54 @@ function TimelineState({
   message,
   title,
 }: {
-  action?: ReactNode;
-  icon: ComponentType<{ className?: string }>;
+  action: ReactNode;
+  icon: typeof CalendarDays;
   message: string;
   title: string;
 }) {
   return (
-    <div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
-      <div className="mx-auto flex size-10 items-center justify-center rounded-md bg-background text-muted-foreground">
-        <Icon className="size-4" />
-      </div>
-      <h3 className="mt-3 text-sm font-semibold">{title}</h3>
-      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+    <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-10 text-center">
+      <span className="mx-auto flex size-10 items-center justify-center rounded-md bg-background text-muted-foreground">
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+      <h3 className="mt-3 font-semibold">{title}</h3>
+      <p className="mx-auto mt-1 max-w-sm break-words text-sm leading-5 text-muted-foreground [overflow-wrap:anywhere]">
         {message}
       </p>
-      {action && <div className="mt-3">{action}</div>}
+      <div className="mt-4">{action}</div>
     </div>
   );
 }
 
 function TimelineSkeleton() {
   return (
-    <div className="space-y-2.5">
-      {Array.from({ length: 4 }).map((_, index) => (
+    <div aria-label="Loading shared moments">
+      {Array.from({ length: TIMELINE_EXPANDED_WINDOW_SIZE }, (_, index) => (
         <div
           key={index}
-          className="rounded-md border border-border bg-background p-3"
+          className="grid grid-cols-[3.5rem_0.875rem_minmax(0,1fr)] sm:grid-cols-[3.75rem_0.875rem_minmax(0,1fr)]"
         >
-          <div className="flex gap-2.5">
-            <div className="size-10 animate-pulse rounded-md bg-muted" />
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="h-3.5 w-1/3 animate-pulse rounded bg-muted" />
-              <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
-              <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
-            </div>
+          <div className="mr-2 mt-4 h-7 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+          <div className="relative flex justify-center">
+            <span className="mt-7 size-2 animate-pulse rounded-full bg-muted motion-reduce:animate-none" />
           </div>
+          <div className="h-32 animate-pulse border-b border-border bg-muted/30 motion-reduce:animate-none" />
         </div>
       ))}
     </div>
   );
 }
 
-function TierBadge({ tier }: { tier: EventTier }) {
-  const isMilestone = tier === "milestone";
-
-  return (
-    <span
-      className={cn(
-        "rounded-full border px-1.5 py-0 text-[10px] font-semibold uppercase leading-4",
-        isMilestone
-          ? "border-marker-violet bg-marker-violet text-marker-violet-foreground"
-          : "border-marker-indigo bg-marker-indigo text-marker-indigo-foreground",
-      )}
-    >
-      {isMilestone ? "Milestone" : "Routine"}
-    </span>
-  );
-}
-
-function StatusBadge({ label }: { label: string }) {
-  return (
-    <span className="rounded-full border border-success-muted bg-success-muted px-1.5 py-0 text-[10px] font-medium leading-4 text-success">
-      {label}
-    </span>
-  );
-}
-
-function buildStats(summary: EventTimelineSummary | null): TimelineStat[] {
-  return [
-    {
-      label: "Total moments",
-      value: summary?.total_moments ?? 0,
-      icon: CalendarDays,
-      className: "bg-marker-violet text-marker-violet-foreground",
-    },
-    {
-      label: "Upcoming",
-      value: summary?.upcoming ?? 0,
-      icon: CalendarCheck2,
-      className: "bg-success-muted text-success",
-    },
-    {
-      label: "Routine",
-      value: summary?.routine ?? 0,
-      icon: CalendarCheck2,
-      className: "bg-marker-fuchsia text-marker-fuchsia-foreground",
-    },
-    {
-      label: "Milestone",
-      value: summary?.milestone ?? 0,
-      icon: CalendarClock,
-      className: "bg-marker-violet text-marker-violet-foreground",
-    },
-    {
-      label: "This month",
-      value: summary?.this_month ?? 0,
-      icon: CalendarDays,
-      className: "bg-info-muted text-info",
-    },
-    {
-      label: "With mood",
-      value: summary?.with_mood ?? 0,
-      icon: Heart,
-      className: "bg-marker-rose text-marker-rose-foreground",
-    },
-  ];
-}
-
-function buildDateRangeParams(dateRange: DateRangeFilter) {
+function buildDateRangeParams(dateRange: DateRangeFilter, now: Date) {
   if (dateRange === "upcoming") {
-    return { event_after: "now" };
+    return { event_after: now.toISOString() };
   }
 
   if (dateRange === "past") {
-    return { event_before: "now" };
+    return { event_before: now.toISOString() };
   }
 
   if (dateRange === "this_month") {
-    const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     return {
@@ -941,210 +1468,103 @@ function buildDateRangeParams(dateRange: DateRangeFilter) {
   return {};
 }
 
-function buildTimelineRows(events: EventListItem[]): TimelineRow[] {
-  let previousDateKey = "";
+function formatRailDate(value: string, expanded: boolean) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
 
-  return events.map((event) => {
-    const date = new Date(event.event_timestamp);
-    const dateKey = date.toISOString().slice(0, 10);
-    const showLabel = dateKey !== previousDateKey;
-    previousDateKey = dateKey;
-
-    return {
-      key: String(event.id),
-      label: formatRailDate(date),
-      showLabel,
-      event,
-    };
-  });
-}
-
-function formatRailDate(value: Date) {
   const monthDay = new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
-  }).format(value);
-  const year = new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-  }).format(value);
+  }).format(date);
+  if (!expanded) {
+    return `${monthDay}, ${date.getFullYear()}`;
+  }
 
-  return `${monthDay}\n${year}`;
-}
-
-function mergeEvents(
-  currentEvents: EventListItem[],
-  nextEvents: EventListItem[],
-) {
-  const seenIds = new Set(currentEvents.map((event) => String(event.id)));
-  const uniqueNextEvents = nextEvents.filter(
-    (event) => !seenIds.has(String(event.id)),
+  const weekday = new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+  }).format(date);
+  return (
+    <>
+      <span className="block font-medium text-foreground">{monthDay}</span>
+      <span className="block">{weekday}</span>
+    </>
   );
-  return [...currentEvents, ...uniqueNextEvents];
 }
 
-function formatDateTime(value: string) {
+function formatUpcomingDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "Date unavailable";
+  }
+
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
-  }).format(new Date(value));
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
-function interactionModeIcon(modeName: string | undefined, className: string) {
-  switch (interactionModeKind(modeName)) {
-    case "video":
-      return <Video className={className} />;
-    case "phone":
-      return <Phone className={className} />;
-    case "message":
-      return <MessageSquare className={className} />;
-    case "email":
-      return <Mail className={className} />;
-    case "plan":
-    case "other":
-    case "unset":
-      return <CalendarDays className={className} />;
+function formatRelativeFutureDate(value: string, now: Date) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
   }
+
+  const dayInMilliseconds = 24 * 60 * 60 * 1000;
+  const eventDay = Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+  const currentDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.max(
+    0,
+    Math.round((eventDay - currentDay) / dayInMilliseconds),
+  );
+  if (days === 0) {
+    return "Today";
+  }
+  if (days === 1) {
+    return "Tomorrow";
+  }
+  return `In ${days} days`;
 }
 
-function interactionModeWellClass(modeName: string | undefined) {
-  switch (interactionModeKind(modeName)) {
-    case "video":
-      return "bg-marker-indigo text-marker-indigo-foreground";
-    case "phone":
-      return "bg-marker-teal text-marker-teal-foreground";
-    case "message":
-      return "bg-marker-rose text-marker-rose-foreground";
-    case "email":
-      return "bg-marker-fuchsia text-marker-fuchsia-foreground";
-    case "plan":
-      return "bg-marker-violet text-marker-violet-foreground";
-    case "other":
-      return "bg-marker-indigo text-marker-indigo-foreground";
-    case "unset":
-      return "bg-muted text-muted-foreground";
-  }
+function initials(name: string) {
+  const parts = name.split(/\s+/).filter(Boolean);
+  return (
+    parts
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "?"
+  );
 }
 
-function interactionModeKind(modeName: string | undefined): InteractionModeKind {
-  const normalized = modeName?.trim().toLowerCase() ?? "";
-
-  if (!normalized) {
-    return "unset";
+function isTimelineControlTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) {
+    return false;
   }
 
-  if (normalized.includes("video")) {
-    return "video";
-  }
-
-  if (normalized.includes("phone") || normalized.includes("call")) {
-    return "phone";
-  }
-
-  if (normalized.includes("email")) {
-    return "email";
-  }
-
-  if (
-    normalized.includes("text") ||
-    normalized.includes("message") ||
-    normalized.includes("chat") ||
-    normalized.includes("dm") ||
-    normalized.includes("social")
-  ) {
-    return "message";
-  }
-
-  if (
-    normalized.includes("in person") ||
-    normalized.includes("in-person") ||
-    normalized.includes("meet") ||
-    normalized.includes("plan")
-  ) {
-    return "plan";
-  }
-
-  return "other";
+  return Boolean(
+    target.closest(
+      "button, input, select, textarea, [role='menuitem'], [data-timeline-control]",
+    ),
+  );
 }
 
-function impactLabel(impact: EventImpact) {
-  if (impact === "positive") {
-    return "Positive";
-  }
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
 
-  if (impact === "negative") {
-    return "Negative";
-  }
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, [query]);
 
-  if (impact === "neutral") {
-    return "Neutral";
-  }
-
-  return "";
-}
-
-function impactTextClass(impact: EventImpact) {
-  if (impact === "positive") {
-    return "text-success";
-  }
-
-  if (impact === "negative") {
-    return "text-destructive";
-  }
-
-  return "text-muted-foreground";
-}
-
-function impactIcon(impact: EventImpact) {
-  if (impact === "positive") {
-    return TrendingUp;
-  }
-
-  if (impact === "negative") {
-    return TrendingUp;
-  }
-
-  return Minus;
-}
-
-type MoodDotClass =
-  | "bg-mood-happy"
-  | "bg-mood-content"
-  | "bg-mood-neutral"
-  | "bg-mood-anxious"
-  | "bg-mood-sad"
-  | "bg-mood-angry";
-
-function moodDotClass(name: string, polarity: string): MoodDotClass {
-  const normalizedName = name.trim().toLowerCase();
-
-  if (normalizedName.includes("happy")) {
-    return "bg-mood-happy";
-  }
-
-  if (normalizedName.includes("content")) {
-    return "bg-mood-content";
-  }
-
-  if (normalizedName.includes("anxious")) {
-    return "bg-mood-anxious";
-  }
-
-  if (normalizedName.includes("sad")) {
-    return "bg-mood-sad";
-  }
-
-  if (normalizedName.includes("angry")) {
-    return "bg-mood-angry";
-  }
-
-  if (polarity === "positive") {
-    return "bg-mood-content";
-  }
-
-  if (polarity === "negative") {
-    return "bg-mood-sad";
-  }
-
-  return "bg-mood-neutral";
+  return matches;
 }

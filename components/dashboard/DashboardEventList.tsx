@@ -5,19 +5,13 @@ import {
   ArrowRight,
   CalendarDays,
   CalendarClock,
-  CheckCircle2,
   ChevronRight,
-  Circle,
-  Coffee,
-  Footprints,
-  MessageCircleMore,
-  NotebookPen,
-  Star,
   UsersRound,
-  Video,
 } from "lucide-react";
+import { EventIconTile } from "@/components/presentation/EventIconTile";
+import { EventSemanticChip } from "@/components/presentation/EventSemanticChip";
+import { JournalStateIndicator } from "@/components/presentation/JournalStateIndicator";
 import { Button } from "@/components/ui/button";
-import { IconBadge, type IconBadgeTone } from "@/components/ui/icon-badge";
 import {
   DashboardEmptyState,
   DashboardWidgetShell,
@@ -27,7 +21,8 @@ import {
   pluralize,
   type WidgetStateProps,
 } from "@/components/dashboard/dashboard-utils";
-import { cn } from "@/lib/utils";
+import { getEventPresentation } from "@/lib/presentation/eventPresentation";
+import { getJournalStatePresentation } from "@/lib/presentation/journalStatePresentation";
 import type { DashboardEvent } from "@/types/dashboard";
 
 type DashboardEventListProps = WidgetStateProps & {
@@ -35,33 +30,6 @@ type DashboardEventListProps = WidgetStateProps & {
   events: DashboardEvent[];
   variant: "upcoming" | "recent";
 };
-
-type MomentPresentation = {
-  icon: typeof Coffee;
-  tone: IconBadgeTone;
-  label: string;
-};
-
-function momentPresentation(event: DashboardEvent): MomentPresentation {
-  const searchable = [event.title, event.context_category?.name]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  if (/(coffee|cafe|conversation|catch-up|catch up)/.test(searchable)) {
-    return { icon: Coffee, tone: "warning", label: "Coffee or conversation" };
-  }
-  if (/(video|remote|virtual|zoom|call)/.test(searchable)) {
-    return { icon: Video, tone: "info", label: "Remote moment" };
-  }
-  if (/(hike|walk|trail|park|outdoor)/.test(searchable)) {
-    return { icon: Footprints, tone: "teal", label: "Outdoor moment" };
-  }
-  if (/(social|friend|family)/.test(searchable)) {
-    return { icon: MessageCircleMore, tone: "violet", label: "Shared moment" };
-  }
-  return { icon: CalendarDays, tone: "indigo", label: "Moment" };
-}
 
 export function DashboardEventList({
   description,
@@ -72,19 +40,31 @@ export function DashboardEventList({
   onRetry,
 }: DashboardEventListProps) {
   const isRecent = variant === "recent";
+  const visibleEvents = isRecent ? events.slice(0, 3) : events;
 
   return (
     <DashboardWidgetShell
       title={isRecent ? "Recent moments" : "Coming up"}
       description={description}
-      icon={isRecent ? <CalendarClock aria-hidden="true" /> : <CalendarDays aria-hidden="true" />}
+      icon={
+        isRecent ? (
+          <CalendarClock aria-hidden="true" />
+        ) : (
+          <CalendarDays aria-hidden="true" />
+        )
+      }
       iconTone={isRecent ? "violet" : "indigo"}
       loading={loading}
       error={error}
       onRetry={onRetry}
       skeletonClassName={isRecent ? "h-96" : "h-52"}
       action={
-        <Button asChild variant="ghost" size="sm" className="gap-1 text-primary">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="gap-1 text-primary"
+        >
           <Link href={isRecent ? "/events" : "/events/calendar"}>
             {isRecent ? "View all" : "View calendar"}
             <ArrowRight className="size-4" />
@@ -92,7 +72,7 @@ export function DashboardEventList({
         </Button>
       }
     >
-      {events.length === 0 ? (
+      {visibleEvents.length === 0 ? (
         <DashboardEmptyState
           icon={<CalendarClock className="size-5" />}
           title={isRecent ? "No recent moments" : "No upcoming events"}
@@ -104,13 +84,13 @@ export function DashboardEventList({
         />
       ) : isRecent ? (
         <div className="space-y-1">
-          {events.map((event) => (
+          {visibleEvents.map((event) => (
             <RecentMomentRow key={event.id} event={event} />
           ))}
         </div>
       ) : (
         <div className="space-y-2">
-          {events.map((event) => (
+          {visibleEvents.map((event) => (
             <UpcomingMomentRow key={event.id} event={event} />
           ))}
         </div>
@@ -125,15 +105,17 @@ function RecentMomentRow({ event }: { event: DashboardEvent }) {
     month: "short",
     day: "numeric",
   }).format(date);
-  const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(
-    date,
-  );
-  const presentation = momentPresentation(event);
-  const MomentIcon = presentation.icon;
+  const weekday = new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+  }).format(date);
+  const presentation = getEventPresentation(event);
 
   return (
     <div className="grid grid-cols-[3.6rem_minmax(0,1fr)] gap-3 py-3 first:pt-0 last:pb-0">
-      <time dateTime={event.event_timestamp} className="pt-1 text-xs text-muted-foreground">
+      <time
+        dateTime={event.event_timestamp}
+        className="pt-1 text-xs text-muted-foreground"
+      >
         <span className="block font-medium text-foreground">{monthDay}</span>
         <span>{weekday}</span>
       </time>
@@ -144,9 +126,11 @@ function RecentMomentRow({ event }: { event: DashboardEvent }) {
           className="absolute -left-1.5 top-4 size-3 rounded-full border-2 border-card bg-primary/70"
         />
         <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 sm:grid-cols-[auto_minmax(0,1fr)_8.75rem] sm:items-start">
-          <IconBadge tone={presentation.tone} size="lg" className="row-span-2">
-            <MomentIcon aria-label={presentation.label} />
-          </IconBadge>
+          <EventIconTile
+            presentation={presentation.icon}
+            size="standard"
+            className="row-span-2"
+          />
 
           <div className="min-w-0">
             <Link
@@ -165,27 +149,17 @@ function RecentMomentRow({ event }: { event: DashboardEvent }) {
               >
                 <UsersRound className="size-3" />
               </span>
-              <span className="truncate">{pluralize(event.participant_count, "participant")}</span>
+              <span className="truncate">
+                {pluralize(event.participant_count, "participant")}
+              </span>
             </div>
           </div>
 
-          <div className="col-start-2 flex min-w-0 items-start justify-between gap-2 sm:col-start-3 sm:row-span-2 sm:flex-col sm:items-end sm:justify-between sm:self-stretch">
-            <EventContextPill event={event} />
-            <JournalState event={event} />
+          <div className="col-start-2 flex min-w-0 items-start justify-between gap-2 sm:col-start-3 sm:row-span-2 sm:flex-col sm:items-end sm:justify-start sm:self-stretch">
+            <EventSemanticChip presentation={presentation.semanticChip} />
+            <DashboardJournalState event={event} />
           </div>
         </div>
-
-        {!event.journaled && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2 sm:ml-14">
-            <p className="text-sm text-muted-foreground">Add a note while the moment is still clear.</p>
-            <Button asChild size="sm" variant="outline" className="shrink-0">
-              <Link href={`/journals/new?event=${event.id}`}>
-                <NotebookPen className="size-4" />
-                Add entry
-              </Link>
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -193,13 +167,18 @@ function RecentMomentRow({ event }: { event: DashboardEvent }) {
 
 function UpcomingMomentRow({ event }: { event: DashboardEvent }) {
   const date = new Date(event.event_timestamp);
-  const month = new Intl.DateTimeFormat(undefined, { month: "short" }).format(date);
-  const day = new Intl.DateTimeFormat(undefined, { day: "numeric" }).format(date);
+  const month = new Intl.DateTimeFormat(undefined, { month: "short" }).format(
+    date,
+  );
+  const day = new Intl.DateTimeFormat(undefined, { day: "numeric" }).format(
+    date,
+  );
   const detail = new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+  const presentation = getEventPresentation(event);
 
   return (
     <Link
@@ -215,58 +194,39 @@ function UpcomingMomentRow({ event }: { event: DashboardEvent }) {
       </time>
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold">{event.title}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{detail}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {detail}
+        </p>
         <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
           <UsersRound className="size-3" />
           {pluralize(event.participant_count, "participant")}
         </p>
       </div>
       <div className="flex min-w-0 items-center gap-2">
-        <EventContextPill event={event} compact />
+        <EventSemanticChip
+          presentation={presentation.semanticChip}
+          size="compact"
+        />
         <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
       </div>
     </Link>
   );
 }
 
-function EventContextPill({
-  event,
-  compact = false,
-}: {
-  event: DashboardEvent;
-  compact?: boolean;
-}) {
-  const label = event.tier === "milestone" ? "Milestone" : event.context_category?.name;
+function DashboardJournalState({ event }: { event: DashboardEvent }) {
+  const presentation = getJournalStatePresentation(event.journaled);
 
-  if (!label) {
-    return <span className="sr-only">No context category recorded</span>;
+  if (!event.journaled) {
+    return (
+      <Link
+        href={`/journals/new?event=${event.id}`}
+        aria-label={presentation.accessibleLabel}
+        className="inline-flex max-w-full rounded-sm outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <JournalStateIndicator presentation={presentation} />
+      </Link>
+    );
   }
 
-  return (
-    <span
-      className={cn(
-        "inline-flex max-w-full items-center gap-1 rounded-md px-2 py-1 text-xs font-medium",
-        event.tier === "milestone"
-          ? "bg-warning-muted text-warning"
-          : "bg-accent text-accent-foreground",
-        compact && "max-w-24 truncate",
-      )}
-    >
-      {event.tier === "milestone" && <Star className="size-3" />}
-      <span className="truncate">{label}</span>
-    </span>
-  );
-}
-
-function JournalState({ event }: { event: DashboardEvent }) {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-      {event.journaled ? (
-        <CheckCircle2 className="size-4 text-success" aria-hidden="true" />
-      ) : (
-        <Circle className="size-4" aria-hidden="true" />
-      )}
-      {event.journaled ? "Journaled" : "No journal entry"}
-    </span>
-  );
+  return <JournalStateIndicator presentation={presentation} />;
 }

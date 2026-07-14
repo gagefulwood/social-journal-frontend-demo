@@ -11,33 +11,34 @@ import { useExercises } from "@/hooks/useJournal";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLookups } from "@/hooks/useLookups";
 import { JournalFilterPopover } from "@/components/journals/JournalFilterPopover";
-import {JournalExerciseGrid} from "@/components/journals/JournalExerciseGrid";
-
+import { JournalExerciseGrid } from "@/components/journals/JournalExerciseGrid";
 
 const pageSize = 24;
 
 export default function JournalsPage() {
-    const router = useRouter();
-    const [search, setSearch] = useState("");
-    const [entryTag, setEntryTag] = useState("");
-    const [mood, setMood] = useState("");
-    const [page, setPage] = useState(1);
-    const debouncedSearch = useDebounce(search, 300);
-    const { entryTags, moods, isLoading: lookupsLoading } = useLookups();
-    const activeFilterCount = [mood, entryTag].filter(Boolean).length;
-    const { exercises, data, loading, error, refetch } = useExercises({
-        page,
-        page_size: pageSize,
-        title: debouncedSearch,
-        entry_tag: entryTag || undefined,
-        mood: mood || undefined,
-    });
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [entryTag, setEntryTag] = useState("");
+  const [mood, setMood] = useState("");
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(search, 300);
+  const { entryTags, moods, isLoading: lookupsLoading } = useLookups();
+  const activeFilterCount = [mood, entryTag].filter(Boolean).length;
+  const { exercises, data, loading, error, refetch } = useExercises({
+    page,
+    page_size: pageSize,
+    title: debouncedSearch,
+    entry_tag: entryTag || undefined,
+    mood: mood || undefined,
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl">Journals</h1>
+          <h1 className="font-sans text-3xl font-semibold leading-tight">
+            Journals
+          </h1>
           <p className="text-sm text-muted-foreground">
             Manage your logs, reflections, and exercises here.
           </p>
@@ -61,7 +62,7 @@ export default function JournalsPage() {
               router.push("/journals/logs");
             }
             if (value === "reflections") {
-                router.push("/journals/reflections");
+              router.push("/journals/reflections");
             }
           }}
         >
@@ -81,21 +82,21 @@ export default function JournalsPage() {
           }}
         />
         <JournalFilterPopover
-            mood={mood}
-            entryTag={entryTag}
-            moods={moods}
-            entryTags={entryTags}
-            isLoading={lookupsLoading}
-            activeFilterCount={activeFilterCount}
-            onMoodChange={(value) => {
+          mood={mood}
+          entryTag={entryTag}
+          moods={moods}
+          entryTags={entryTags}
+          isLoading={lookupsLoading}
+          activeFilterCount={activeFilterCount}
+          onMoodChange={(value) => {
             setMood(value);
             setPage(1);
           }}
-            onTagChange={(value) => {
+          onTagChange={(value) => {
             setEntryTag(value);
             setPage(1);
           }}
-            onClearFilters={() => {
+          onClearFilters={() => {
             setMood("");
             setEntryTag("");
             setPage(1);

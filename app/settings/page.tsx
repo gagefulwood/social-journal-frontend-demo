@@ -91,13 +91,17 @@ export default function SettingsPage() {
   }
 
   function updateValue(field: keyof ProfileValues, value: string) {
-    setValues((current) => (current ? { ...current, [field]: value } : current));
+    setValues((current) =>
+      current ? { ...current, [field]: value } : current,
+    );
   }
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
       <header>
-        <h1 className="font-display text-3xl">Settings</h1>
+        <h1 className="font-sans text-3xl font-semibold leading-tight">
+          Settings
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Keep your profile and account security details current.
         </p>
@@ -113,7 +117,11 @@ export default function SettingsPage() {
         <section className="rounded-lg border border-border bg-card p-6">
           <p className="font-medium">Unable to load settings</p>
           <p className="mt-1 text-sm text-muted-foreground">{error}</p>
-          <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+          <Button
+            className="mt-4"
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
             Retry
           </Button>
         </section>
@@ -123,7 +131,10 @@ export default function SettingsPage() {
         <>
           <section className="rounded-lg border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Profile</h2>
-            <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={saveProfile}>
+            <form
+              className="mt-5 grid gap-4 sm:grid-cols-2"
+              onSubmit={saveProfile}
+            >
               <Field
                 id="first_name"
                 label="First name"
@@ -159,7 +170,10 @@ export default function SettingsPage() {
                 />
               </div>
               {error && (
-                <p className="sm:col-span-2 text-sm text-destructive" role="alert">
+                <p
+                  className="sm:col-span-2 text-sm text-destructive"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
@@ -177,7 +191,9 @@ export default function SettingsPage() {
                 <ShieldCheck className="size-5" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold">Multi-factor authentication</h2>
+                <h2 className="text-lg font-semibold">
+                  Multi-factor authentication
+                </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {profile?.is_mfa_enabled
                     ? "Multi-factor authentication is enabled for this account."

@@ -95,6 +95,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider
+      className="xl:h-full xl:min-h-0"
       open={expanded}
       onOpenChange={updatePinned}
       onToggleSidebar={togglePinned}
@@ -114,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         onFocusCapture={handleSidebarFocus}
         onBlurCapture={handleSidebarBlur}
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
         <div className="flex h-12 items-center border-b border-border px-3 lg:hidden">
           <SidebarTrigger aria-label="Open navigation" />
         </div>

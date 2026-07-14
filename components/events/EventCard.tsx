@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { EventIconTile } from "@/components/presentation/EventIconTile";
+import { EventSemanticChip } from "@/components/presentation/EventSemanticChip";
+import { JournalStateIndicator } from "@/components/presentation/JournalStateIndicator";
+import { getEventPresentation } from "@/lib/presentation/eventPresentation";
+import { getJournalStatePresentation } from "@/lib/presentation/journalStatePresentation";
 import type { EventListItem } from "@/types/events";
-import {
-  eventContextName,
-  eventDate,
-  eventTierLabel,
-  eventTitle,
-} from "@/components/events/event-utils";
+import { eventDate, eventTitle } from "@/components/events/event-utils";
 
 type EventCardProps = {
   event: EventListItem;
@@ -16,8 +16,8 @@ type EventCardProps = {
 export function EventCard({ event }: EventCardProps) {
   const title = eventTitle(event);
   const date = eventDate(event);
-  const context = eventContextName(event);
-  const tier = eventTierLabel(event);
+  const presentation = getEventPresentation(event);
+  const journalPresentation = getJournalStatePresentation(event.journaled);
 
   return (
     <Link
@@ -27,12 +27,16 @@ export function EventCard({ event }: EventCardProps) {
       <div className="flex min-h-36 flex-col justify-between gap-4">
         <div className="min-w-0 space-y-2">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 truncate text-base font-semibold">
-              {title}
-            </h2>
-            <span className="shrink-0 rounded-md border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              {tier}
-            </span>
+            <div className="flex min-w-0 items-center gap-2">
+              <EventIconTile presentation={presentation.icon} size="compact" />
+              <h2 className="min-w-0 truncate text-base font-semibold">
+                {title}
+              </h2>
+            </div>
+            <EventSemanticChip
+              presentation={presentation.semanticChip}
+              size="compact"
+            />
           </div>
 
           {date && (
@@ -40,7 +44,6 @@ export function EventCard({ event }: EventCardProps) {
           )}
 
           <div className="space-y-1 text-sm text-muted-foreground">
-            {context && <p className="truncate">{context}</p>}
             {event.location_label && (
               <p className="truncate">{event.location_label}</p>
             )}
@@ -52,18 +55,12 @@ export function EventCard({ event }: EventCardProps) {
             {event.participant_count}{" "}
             {event.participant_count === 1 ? "participant" : "participants"}
           </span>
-          <span
-            className={
-              event.journaled
-                ? "rounded-md bg-foreground px-2 py-0.5 font-medium text-background"
-                : "rounded-md bg-muted px-2 py-0.5 font-medium text-muted-foreground"
-            }
-          >
-            {event.journaled ? "Journaled" : "Unjournaled"}
-          </span>
+          <JournalStateIndicator
+            presentation={journalPresentation}
+            size="compact"
+          />
         </div>
       </div>
     </Link>
   );
 }
-

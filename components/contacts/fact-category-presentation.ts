@@ -2,6 +2,7 @@ import {
   AlertCircle,
   BookOpen,
   BriefcaseBusiness,
+  CalendarDays,
   Clock,
   ClipboardList,
   Coffee,
@@ -24,6 +25,11 @@ import {
 } from "lucide-react";
 import type { FactCategory } from "@/types/lookups";
 
+type FactCategoryLike = Pick<FactCategory, "name"> & {
+  icon?: string | null;
+  icon_reference?: string | null;
+};
+
 export type FactCategoryPresentation = {
   badge: string;
   border: string;
@@ -38,7 +44,11 @@ const FACT_ICON_MAP: Record<string, LucideIcon> = {
   FiAlertCircle: AlertCircle,
   FiBookOpen: BookOpen,
   FiBriefcase: BriefcaseBusiness,
+  FiCalendar: CalendarDays,
+  FiCalendarDays: CalendarDays,
+  FiClipboard: ClipboardList,
   FiCoffee: Coffee,
+  FiCompass: Compass,
   FiFileText: ClipboardList,
   FiGraduationCap: GraduationCap,
   FiHeart: Heart,
@@ -117,6 +127,10 @@ const CATEGORY_NAME_PRESENTATION_MAP: Record<string, FactCategoryPresentation> =
       ...FACT_CATEGORY_TONES.rose,
       icon: HeartHandshake,
     },
+    familyrelationships: {
+      ...FACT_CATEGORY_TONES.rose,
+      icon: HeartHandshake,
+    },
     health: {
       ...FACT_CATEGORY_TONES.indigo,
       icon: HeartPulse,
@@ -145,6 +159,14 @@ const CATEGORY_NAME_PRESENTATION_MAP: Record<string, FactCategoryPresentation> =
       ...FACT_CATEGORY_TONES.rose,
       icon: Heart,
     },
+    practicaldetails: {
+      ...FACT_CATEGORY_TONES.teal,
+      icon: ClipboardList,
+    },
+    routinesgoals: {
+      ...FACT_CATEGORY_TONES.fuchsia,
+      icon: Compass,
+    },
     values: {
       ...FACT_CATEGORY_TONES.fuchsia,
       icon: Compass,
@@ -157,6 +179,14 @@ const CATEGORY_NAME_PRESENTATION_MAP: Record<string, FactCategoryPresentation> =
       ...FACT_CATEGORY_TONES.indigo,
       icon: BriefcaseBusiness,
     },
+    workschool: {
+      ...FACT_CATEGORY_TONES.teal,
+      icon: BriefcaseBusiness,
+    },
+    importantdates: {
+      ...FACT_CATEGORY_TONES.indigo,
+      icon: CalendarDays,
+    },
     workeducation: {
       ...FACT_CATEGORY_TONES.indigo,
       icon: GraduationCap,
@@ -164,7 +194,7 @@ const CATEGORY_NAME_PRESENTATION_MAP: Record<string, FactCategoryPresentation> =
   };
 
 export function getFactCategoryPresentation(
-  category: FactCategory | undefined,
+  category: FactCategoryLike | undefined,
 ): FactCategoryPresentation {
   if (!category) {
     return DEFAULT_FACT_CATEGORY_PRESENTATION;
@@ -179,9 +209,11 @@ export function getFactCategoryPresentation(
 
   return {
     ...DEFAULT_FACT_CATEGORY_PRESENTATION,
-    icon: category.icon_reference
-      ? (FACT_ICON_MAP[category.icon_reference] ?? BookOpen)
-      : BookOpen,
+    icon:
+      category.icon_reference || category.icon
+        ? (FACT_ICON_MAP[category.icon_reference || category.icon || ""] ??
+          BookOpen)
+        : BookOpen,
   };
 }
 

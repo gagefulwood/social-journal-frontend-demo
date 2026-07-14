@@ -13,32 +13,30 @@ import { useLookups } from "@/hooks/useLookups";
 import { EventFilterPopover } from "@/components/events/EventFilterPopover";
 import { EventGrid } from "@/components/events/EventGrid";
 
-
 const pageSize = 24;
 
 export default function EventsPage() {
-    const router = useRouter();
-    const [search, setSearch] = useState("");
-    const [page, setPage] = useState(1);
-    const [context_category, setContextCategory] = useState("");
-    const debouncedSearch = useDebounce(search, 300);
-    const {
-      contextCategories,
-      isLoading: lookupsLoading,
-    } = useLookups();
-    const activeFilterCount = [context_category].filter(Boolean).length;
-    const { events, data, loading, error, refetch } = useEvents({
-        page,
-        page_size: pageSize,
-        title: debouncedSearch,
-        context_category: context_category || undefined,
-    });
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [context_category, setContextCategory] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+  const { contextCategories, isLoading: lookupsLoading } = useLookups();
+  const activeFilterCount = [context_category].filter(Boolean).length;
+  const { events, data, loading, error, refetch } = useEvents({
+    page,
+    page_size: pageSize,
+    title: debouncedSearch,
+    context_category: context_category || undefined,
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl">Events</h1>
+          <h1 className="font-sans text-3xl font-semibold leading-tight">
+            Events
+          </h1>
           <p className="text-sm text-muted-foreground">
             Manage your events here.
           </p>
@@ -59,7 +57,7 @@ export default function EventsPage() {
               router.push("/events/timeline");
             }
             if (value === "calendar") {
-                router.push("/events/calendar");
+              router.push("/events/calendar");
             }
           }}
         >
@@ -102,7 +100,6 @@ export default function EventsPage() {
         onPageChange={setPage}
         onRetry={refetch}
       />
-
     </main>
   );
 }

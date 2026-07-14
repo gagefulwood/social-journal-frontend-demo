@@ -7,13 +7,15 @@ import type {
   CreateFactRequest,
   CreateObservationRequest,
   Fact,
+  FactListParams,
+  FactListResponse,
   Observation,
+  ObservationListParams,
+  ObservationListResponse,
   UpdateContactRequest,
   UpdateFactRequest,
   UpdateObservationRequest,
 } from "@/types/contacts";
-
-type MaybePaginated<TItem> = TItem[] | { results: TItem[] };
 
 export type ContactListParams = {
   page?: number;
@@ -22,14 +24,6 @@ export type ContactListParams = {
   occupation?: ApiId;
   relation?: ApiId;
 };
-
-function normalizeList<TItem>(data: MaybePaginated<TItem>): TItem[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  return Array.isArray(data.results) ? data.results : [];
-}
 
 export const contactsApi = {
   async list(params?: ContactListParams): Promise<ContactListResponse> {
@@ -58,36 +52,37 @@ export const contactsApi = {
     await api.delete(`/api/contacts/${id}/`);
   },
 
-  async listFacts(contactId: ApiId): Promise<Fact[]> {
-    const res = await api.get<MaybePaginated<Fact>>(
-      `/api/contacts/${contactId}/facts/`
+  async listFacts(
+    contactId: ApiId,
+    params?: FactListParams,
+  ): Promise<FactListResponse> {
+    const res = await api.get<FactListResponse>(
+      `/api/contacts/${contactId}/facts/`,
+      { params },
     );
-    return normalizeList(res.data);
+    return res.data;
   },
 
   async getFact(contactId: ApiId, factId: ApiId): Promise<Fact> {
     const res = await api.get<Fact>(
-      `/api/contacts/${contactId}/facts/${factId}/`
+      `/api/contacts/${contactId}/facts/${factId}/`,
     );
     return res.data;
   },
 
   async createFact(contactId: ApiId, data: CreateFactRequest): Promise<Fact> {
-    const res = await api.post<Fact>(
-      `/api/contacts/${contactId}/facts/`,
-      data
-    );
+    const res = await api.post<Fact>(`/api/contacts/${contactId}/facts/`, data);
     return res.data;
   },
 
   async patchFact(
     contactId: ApiId,
     factId: ApiId,
-    data: UpdateFactRequest
+    data: UpdateFactRequest,
   ): Promise<Fact> {
     const res = await api.patch<Fact>(
       `/api/contacts/${contactId}/facts/${factId}/`,
-      data
+      data,
     );
     return res.data;
   },
@@ -96,30 +91,48 @@ export const contactsApi = {
     await api.delete(`/api/contacts/${contactId}/facts/${factId}/`);
   },
 
-  async listObservations(contactId: ApiId): Promise<Observation[]> {
-    const res = await api.get<MaybePaginated<Observation>>(
-      `/api/contacts/${contactId}/observations/`
+  async pinFact(contactId: ApiId, factId: ApiId): Promise<Fact> {
+    const res = await api.post<Fact>(
+      `/api/contacts/${contactId}/facts/${factId}/pin/`,
     );
-    return normalizeList(res.data);
+    return res.data;
+  },
+
+  async unpinFact(contactId: ApiId, factId: ApiId): Promise<Fact> {
+    const res = await api.post<Fact>(
+      `/api/contacts/${contactId}/facts/${factId}/unpin/`,
+    );
+    return res.data;
+  },
+
+  async listObservations(
+    contactId: ApiId,
+    params?: ObservationListParams,
+  ): Promise<ObservationListResponse> {
+    const res = await api.get<ObservationListResponse>(
+      `/api/contacts/${contactId}/observations/`,
+      { params },
+    );
+    return res.data;
   },
 
   async getObservation(
     contactId: ApiId,
-    observationId: ApiId
+    observationId: ApiId,
   ): Promise<Observation> {
     const res = await api.get<Observation>(
-      `/api/contacts/${contactId}/observations/${observationId}/`
+      `/api/contacts/${contactId}/observations/${observationId}/`,
     );
     return res.data;
   },
 
   async createObservation(
     contactId: ApiId,
-    data: CreateObservationRequest
+    data: CreateObservationRequest,
   ): Promise<Observation> {
     const res = await api.post<Observation>(
       `/api/contacts/${contactId}/observations/`,
-      data
+      data,
     );
     return res.data;
   },
@@ -127,21 +140,41 @@ export const contactsApi = {
   async patchObservation(
     contactId: ApiId,
     observationId: ApiId,
-    data: UpdateObservationRequest
+    data: UpdateObservationRequest,
   ): Promise<Observation> {
     const res = await api.patch<Observation>(
       `/api/contacts/${contactId}/observations/${observationId}/`,
-      data
+      data,
     );
     return res.data;
   },
 
   async removeObservation(
     contactId: ApiId,
-    observationId: ApiId
+    observationId: ApiId,
   ): Promise<void> {
     await api.delete(
-      `/api/contacts/${contactId}/observations/${observationId}/`
+      `/api/contacts/${contactId}/observations/${observationId}/`,
     );
+  },
+
+  async pinObservation(
+    contactId: ApiId,
+    observationId: ApiId,
+  ): Promise<Observation> {
+    const res = await api.post<Observation>(
+      `/api/contacts/${contactId}/observations/${observationId}/pin/`,
+    );
+    return res.data;
+  },
+
+  async unpinObservation(
+    contactId: ApiId,
+    observationId: ApiId,
+  ): Promise<Observation> {
+    const res = await api.post<Observation>(
+      `/api/contacts/${contactId}/observations/${observationId}/unpin/`,
+    );
+    return res.data;
   },
 };

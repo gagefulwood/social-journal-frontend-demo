@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
-  Check,
   ChevronRight,
   Clock,
   Folder,
@@ -25,6 +24,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { EventIconTile } from "@/components/presentation/EventIconTile";
+import { EventSemanticChip } from "@/components/presentation/EventSemanticChip";
+import { JournalStateIndicator } from "@/components/presentation/JournalStateIndicator";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -41,6 +43,8 @@ import { eventsApi } from "@/lib/api/eventsApi";
 import { useEvent, useRelatedEvents } from "@/hooks/useEvent";
 import { useLookups } from "@/hooks/useLookups";
 import { contactInitials, contactName } from "@/components/contacts/contact-utils";
+import { getEventPresentation } from "@/lib/presentation/eventPresentation";
+import { getJournalStatePresentation } from "@/lib/presentation/journalStatePresentation";
 import { cn } from "@/lib/utils";
 import type { ApiError } from "@/types/auth";
 import type {
@@ -56,7 +60,7 @@ export default function EventDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { event, loading, error, refetch } = useEvent(params.id);
-  const { contextCategories } = useLookups();
+  const { getContextCategoryById } = useLookups();
   const [relatedLimit, setRelatedLimit] = useState(2);
   const {
     relatedEvents,
@@ -64,6 +68,10 @@ export default function EventDetailPage() {
     error: relatedError,
   } = useRelatedEvents(event?.id, relatedLimit);
   const [isDeleting, setIsDeleting] = useState(false);
+  const contextCategory =
+    event?.context_category != null
+      ? (getContextCategoryById(event.context_category) ?? null)
+      : null;
 
   async function confirmDelete() {
     if (!event || isDeleting) {
@@ -178,7 +186,10 @@ export default function EventDetailPage() {
             {event && (
               <div className="grid gap-2.5 lg:gap-3 xl:grid-cols-[minmax(0,1fr)_324px] xl:items-start">
                 <div className="min-w-0 space-y-2.5 lg:space-y-3">
-                  <EventAnchorHeader event={event} />
+                  <EventAnchorHeader
+                    event={event}
+                    contextCategory={contextCategory}
+                  />
                   <EventMetadataStrip event={event} />
                   <EventMomentBand event={event} />
                   <EventParticipantsBand event={event} />
@@ -189,10 +200,7 @@ export default function EventDetailPage() {
                   <EventAtAGlanceRail event={event} />
                   <EventQuickFactsRail
                     event={event}
-                    contextCategoryName={resolveContextCategoryName(
-                      event,
-                      contextCategories,
-                    )}
+                    contextCategoryName={contextCategory?.name ?? null}
                   />
                   <EventRelatedMomentsRail
                     events={relatedEvents}
@@ -226,6 +234,25 @@ function EventAtAGlanceRail({ event }: { event: Event }) {
 
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {glanceItems.map((item) => {
+          if (item.kind === "journal") {
+            return (
+              <div
+                key={item.label}
+                className="flex min-h-18 flex-col justify-center rounded-md border border-border bg-card p-2.5 sm:min-h-20"
+              >
+                <p className="text-sm font-medium text-foreground">
+                  {item.label}
+                </p>
+                <div className="mt-1">
+                  <JournalStateIndicator
+                    presentation={item.presentation}
+                    size="standard"
+                  />
+                </div>
+              </div>
+            );
+          }
+
           const Icon = item.icon;
 
           return (
@@ -377,14 +404,14 @@ function EventRelatedMomentsRail({
 }
 
 function RelatedMomentRow({ event }: { event: EventRelatedItem }) {
+  const presentation = getEventPresentation(event);
+
   return (
     <Link
       href={`/events/${event.id}`}
       className="grid min-h-18 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-border bg-card p-2.5 transition-colors hover:border-primary/30 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted/60 text-primary-strong">
-        <CalendarDays className="size-4" />
-      </div>
+      <EventIconTile presentation={presentation.icon} size="compact" />
 
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-foreground">
@@ -631,11 +658,22 @@ function EventMomentBand({ event }: { event: Event }) {
   );
 }
 
-function EventAnchorHeader({ event }: { event: Event }) {
+function EventAnchorHeader({
+  event,
+  contextCategory,
+}: {
+  event: Event;
+  contextCategory: ContextCategory | null;
+}) {
   const timestamp = formatEventDateTimeRange(
     event.event_timestamp,
     event.end_timestamp,
   );
+  const presentation = getEventPresentation({
+    ...event,
+    context_category: contextCategory ?? event.context_category,
+  });
+  const journalPresentation = getJournalStatePresentation(event.journaled);
   const description = event.description.trim();
   const visibleParticipants = event.participants.slice(0, 5);
   const overflowCount = Math.max(
@@ -647,9 +685,7 @@ function EventAnchorHeader({ event }: { event: Event }) {
   return (
     <section className="grid gap-4 rounded-lg border border-border bg-card p-4 shadow-xs sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(270px,0.58fr)] lg:items-center">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-accent text-primary-strong sm:size-14">
-          <CalendarDays className="size-6 sm:size-7" />
-        </div>
+        <EventIconTile presentation={presentation.icon} size="standard" />
 
         <div className="min-w-0">
           <h1 className="truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
@@ -662,8 +698,8 @@ function EventAnchorHeader({ event }: { event: Event }) {
           </div>
 
           <div className="mt-2.5 flex flex-wrap gap-2">
-            <TierBadge tier={event.tier} />
-            <JournaledBadge journaled={event.journaled} />
+            <EventSemanticChip presentation={presentation.semanticChip} />
+            <JournalStateIndicator presentation={journalPresentation} />
           </div>
 
           {event.location_label && (
@@ -723,42 +759,8 @@ function EventAnchorHeader({ event }: { event: Event }) {
   );
 }
 
-function TierBadge({ tier }: { tier: EventTier }) {
-  const label = tierLabel(tier);
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
-        tier === "milestone"
-          ? "border-primary/20 bg-accent text-primary-strong"
-          : "border-border bg-muted text-muted-foreground",
-      )}
-    >
-      <Star className="size-3.5" />
-      {label}
-    </span>
-  );
-}
-
 function tierLabel(tier: EventTier) {
   return tier === "milestone" ? "Milestone" : "Routine";
-}
-
-function JournaledBadge({ journaled }: { journaled: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium",
-        journaled
-          ? "border-success/20 bg-success-muted text-success"
-          : "border-border bg-muted text-muted-foreground",
-      )}
-    >
-      <Check className="size-3.5" />
-      {journaled ? "Journaled" : "Unjournaled"}
-    </span>
-  );
 }
 
 type MetadataItem = {
@@ -769,12 +771,19 @@ type MetadataItem = {
   valueClassName?: string;
 };
 
-type AtAGlanceItem = {
-  icon: LucideIcon;
-  iconClassName: string;
-  label: string;
-  value: string;
-};
+type AtAGlanceItem =
+  | {
+      kind: "detail";
+      icon: LucideIcon;
+      iconClassName: string;
+      label: string;
+      value: string;
+    }
+  | {
+      kind: "journal";
+      label: string;
+      presentation: ReturnType<typeof getJournalStatePresentation>;
+    };
 
 type QuickFactItem = {
   icon: LucideIcon;
@@ -791,12 +800,14 @@ function buildAtAGlanceItems(event: Event): AtAGlanceItem[] {
 
   if (hasValidStartDate) {
     items.push({
+      kind: "detail",
       icon: CalendarDays,
       iconClassName: "text-primary-strong",
       label: "Date",
       value: formatShortDate(startDate),
     });
     items.push({
+      kind: "detail",
       icon: Clock,
       iconClassName: "text-warning",
       label: "Time",
@@ -805,18 +816,19 @@ function buildAtAGlanceItems(event: Event): AtAGlanceItem[] {
   }
 
   items.push({
+    kind: "detail",
     icon: Star,
     iconClassName: "text-primary-strong",
     label: "Tier",
     value: tierLabel(event.tier),
   });
   items.push({
-    icon: Check,
-    iconClassName: event.journaled ? "text-success" : "text-muted-foreground",
-    label: "Journaled",
-    value: event.journaled ? "Yes" : "No",
+    kind: "journal",
+    label: "Journal",
+    presentation: getJournalStatePresentation(event.journaled),
   });
   items.push({
+    kind: "detail",
     icon: UsersRound,
     iconClassName: "text-info",
     label: "Participants",
@@ -825,6 +837,7 @@ function buildAtAGlanceItems(event: Event): AtAGlanceItem[] {
 
   if (event.interaction_mode) {
     items.push({
+      kind: "detail",
       icon: UsersRound,
       iconClassName: "text-info",
       label: "Mode",
@@ -874,21 +887,6 @@ function buildQuickFactItems(
   }
 
   return items;
-}
-
-function resolveContextCategoryName(
-  event: Event,
-  contextCategories: ContextCategory[],
-) {
-  if (!event.context_category) {
-    return null;
-  }
-
-  return (
-    contextCategories.find(
-      (category) => String(category.id) === String(event.context_category),
-    )?.name ?? null
-  );
 }
 
 function buildMetadataItems(event: Event): MetadataItem[] {

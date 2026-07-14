@@ -9,19 +9,23 @@ import {
   MessageCircle,
   TrendingUp,
 } from "lucide-react";
+import { ContactSectionCard } from "@/components/contacts/surfaces/ContactSectionCard";
+import { ContactSectionHeader } from "@/components/contacts/surfaces/ContactSectionHeader";
 import { IconBadge } from "@/components/ui/icon-badge";
-import { SectionHeader } from "@/components/ui/section-header";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { useLookups } from "@/hooks/useLookups";
 import { cn } from "@/lib/utils";
-import type { Contact } from "@/types/contacts";
+import type { Contact, RelationshipTrend } from "@/types/contacts";
 import type { Mood } from "@/types/lookups";
 import type { ContactOverviewModel } from "./contact-overview-utils";
 
 type RelationshipPulsePanelProps = {
   contact: Contact;
   model: ContactOverviewModel;
+  variant?: "content" | "rail";
 };
+
+type PulseLayout = NonNullable<RelationshipPulsePanelProps["variant"]>;
 
 type MicroMetricTone = "success" | "info" | "warning" | "muted";
 
@@ -33,6 +37,7 @@ type MicroMetricCardProps = {
   children: ReactNode;
   detail?: ReactNode;
   className?: string;
+  layout: PulseLayout;
 };
 
 const microMetricValueClasses: Record<MicroMetricTone, string> = {
@@ -52,47 +57,74 @@ const microMetricBorderClasses: Record<MicroMetricTone, string> = {
 export function RelationshipPulsePanel({
   contact,
   model,
+  variant = "content",
 }: RelationshipPulsePanelProps) {
   const hasRecordedMoments = model.relationshipSnapshot.eventCount > 0;
+  const isRail = variant === "rail";
 
   return (
-    <SurfaceCard className="p-3 sm:p-4">
-      <SectionHeader
-        title="Pulse Details"
-        description="A quick read of your relationship signals."
-        icon={
-          <IconBadge tone="accent" size="lg" shape="circle">
-            <Activity className="size-5" />
-          </IconBadge>
-        }
-      />
+    <ContactSectionCard
+      asChild
+      density={isRail ? "compact" : "standard"}
+      className={cn(
+        isRail
+          ? "xl:flex xl:h-full xl:min-h-0 xl:flex-col"
+          : "xl:flex xl:flex-1 xl:flex-col",
+      )}
+    >
+      <section aria-labelledby="overview-relationship-pulse-title">
+        <ContactSectionHeader
+          headingId="overview-relationship-pulse-title"
+          title="Relationship pulse"
+          subtitle="A quick read of your relationship signals."
+          icon={Activity}
+          iconTone="violet"
+        />
 
-      <div className="mt-4 flex snap-x gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-5">
-        <ConnectionGauge
-          value={contact.connection_strength}
-          summary={model.connectionBand.label}
-        />
-        <TrendSignal
-          summary={model.trend.label}
-          isGrowing={model.trend.tone === "positive"}
-          hasRecordedMoments={hasRecordedMoments}
-        />
-        <FrequencyBars
-          value={contact.interaction_frequency_score}
-          summary={model.frequencyLabel}
-        />
-        <DiversityScore
-          value={contact.interaction_diversity_score}
-          summary={model.diversityLabel}
-        />
-        <SentimentMeter model={model} />
-      </div>
+        <div
+          className={cn(
+            "mt-4 grid grid-cols-2 items-stretch gap-2 [&>*:last-child]:col-span-2",
+            isRail
+              ? "xl:flex xl:min-h-0 xl:flex-1 xl:flex-col xl:justify-between xl:gap-4 xl:divide-y xl:divide-border xl:[&>*:last-child]:col-span-1"
+              : "xl:grid-cols-5 xl:[&>*:last-child]:col-span-1",
+          )}
+        >
+          <ConnectionGauge
+            value={contact.connection_strength}
+            summary={model.connectionBand.label}
+            layout={variant}
+          />
+          <TrendSignal
+            summary={model.trend.label}
+            trend={model.trend.value}
+            hasRecordedMoments={hasRecordedMoments}
+            layout={variant}
+          />
+          <FrequencyBars
+            value={contact.interaction_frequency_score}
+            summary={model.frequencyLabel}
+            layout={variant}
+          />
+          <DiversityScore
+            value={contact.interaction_diversity_score}
+            summary={model.diversityLabel}
+            layout={variant}
+          />
+          <SentimentMeter model={model} layout={variant} />
+        </div>
 
-      <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs leading-4 text-muted-foreground">
-        <Lightbulb className="mt-0.5 size-3.5 shrink-0" />
-        <p>Signals reflect recorded moments only.</p>
-      </div>
-    </SurfaceCard>
+        <div
+          className={cn(
+            "mt-3 flex items-start gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-xs leading-4 text-muted-foreground",
+            !isRail && "xl:mt-auto",
+            isRail && "xl:mt-4 xl:shrink-0",
+          )}
+        >
+          <Lightbulb className="mt-0.5 size-3.5 shrink-0" />
+          <p>Signals reflect recorded moments only.</p>
+        </div>
+      </section>
+    </ContactSectionCard>
   );
 }
 
@@ -104,14 +136,18 @@ function MicroMetricCard({
   children,
   detail,
   className,
+  layout,
 }: MicroMetricCardProps) {
+  const isRail = layout === "rail";
+
   return (
     <SurfaceCard
       data-pulse-micro-card
       className={cn(
         "flex h-full min-w-0 flex-col gap-2 overflow-hidden rounded-lg p-2.5",
-        "min-h-[8rem] min-w-[11rem] snap-start sm:min-w-0 lg:min-h-[8rem]",
         microMetricBorderClasses[tone],
+        isRail &&
+          "xl:grid xl:h-auto xl:shrink-0 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center xl:gap-x-3 xl:gap-y-1 xl:rounded-none xl:border-0 xl:bg-transparent xl:px-0 xl:py-4 xl:shadow-none",
         className,
       )}
     >
@@ -130,7 +166,7 @@ function MicroMetricCard({
           </p>
           <p
             className={cn(
-              "break-words text-sm font-semibold leading-5",
+              "break-words text-sm font-semibold leading-5 [overflow-wrap:anywhere]",
               microMetricValueClasses[tone],
             )}
           >
@@ -138,9 +174,16 @@ function MicroMetricCard({
           </p>
         </div>
       </div>
-      <div className="min-w-0">{children}</div>
+      <div className={cn("min-w-0", isRail && "xl:col-start-2 xl:row-span-2")}>
+        {children}
+      </div>
       {detail && (
-        <div className="mt-auto min-w-0 text-xs leading-4 text-muted-foreground">
+        <div
+          className={cn(
+            "mt-auto min-w-0 text-xs leading-4 text-muted-foreground",
+            isRail && "xl:col-start-1 xl:mt-0",
+          )}
+        >
           {detail}
         </div>
       )}
@@ -148,9 +191,21 @@ function MicroMetricCard({
   );
 }
 
-function PulseGraphicFrame({ children }: { children: ReactNode }) {
+function PulseGraphicFrame({
+  children,
+  layout,
+}: {
+  children: ReactNode;
+  layout: PulseLayout;
+}) {
   return (
-    <div data-pulse-graphic className="flex h-14 min-w-0 items-center justify-center">
+    <div
+      data-pulse-graphic
+      className={cn(
+        "flex h-14 min-w-0 items-center justify-center",
+        layout === "rail" && "xl:w-24 xl:shrink-0",
+      )}
+    >
       {children}
     </div>
   );
@@ -159,9 +214,11 @@ function PulseGraphicFrame({ children }: { children: ReactNode }) {
 function ConnectionGauge({
   value,
   summary,
+  layout,
 }: {
   value: number;
   summary: string;
+  layout: PulseLayout;
 }) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
   const hasSignal = percent > 0;
@@ -173,30 +230,31 @@ function ConnectionGauge({
       value={summary}
       tone={hasSignal ? "success" : "muted"}
       icon={<HeartPulse />}
+      layout={layout}
       detail={
         <span className="text-xs leading-4">
           {hasSignal ? "Room to grow" : "Needs recorded moments"}
         </span>
       }
     >
-      <PulseGraphicFrame>
+      <PulseGraphicFrame layout={layout}>
         <div className="relative flex items-center justify-center">
-        <div className="relative mx-auto flex size-14 items-center justify-center rounded-full bg-muted shadow-sm ring-3 ring-background">
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: `conic-gradient(${accent} ${percent * 3.6}deg, var(--muted) 0deg)`,
-            }}
-          />
-          <div className="relative flex size-9 flex-col items-center justify-center rounded-full bg-card shadow-sm">
-            <span className="text-base font-semibold leading-none text-foreground">
-              {percent}
-            </span>
-            <span className="text-[0.65rem] leading-none text-muted-foreground">
-              /100
-            </span>
+          <div className="relative mx-auto flex size-14 items-center justify-center rounded-full bg-muted shadow-sm ring-3 ring-background">
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(${accent} ${percent * 3.6}deg, var(--muted) 0deg)`,
+              }}
+            />
+            <div className="relative flex size-9 flex-col items-center justify-center rounded-full bg-card shadow-sm">
+              <span className="text-base font-semibold leading-none text-foreground">
+                {percent}
+              </span>
+              <span className="text-[0.65rem] leading-none text-muted-foreground">
+                /100
+              </span>
+            </div>
           </div>
-        </div>
         </div>
       </PulseGraphicFrame>
     </MicroMetricCard>
@@ -205,14 +263,17 @@ function ConnectionGauge({
 
 function TrendSignal({
   summary,
-  isGrowing,
+  trend,
   hasRecordedMoments,
+  layout,
 }: {
   summary: string;
-  isGrowing: boolean;
+  trend: RelationshipTrend;
   hasRecordedMoments: boolean;
+  layout: PulseLayout;
 }) {
-  const tone = isGrowing ? "success" : "muted";
+  const tone: MicroMetricTone =
+    trend === "growing" ? "success" : trend === "fading" ? "warning" : "muted";
 
   return (
     <MicroMetricCard
@@ -220,23 +281,73 @@ function TrendSignal({
       value={summary}
       tone={tone}
       icon={<TrendingUp />}
+      layout={layout}
       detail={hasRecordedMoments ? "Recorded pattern" : "No pattern yet"}
     >
-      <PulseGraphicFrame>
-        <IconBadge
-          tone={isGrowing ? "success" : "neutral"}
-          shape="circle"
-          size="md"
-          className="size-10 [&_svg]:size-4"
+      <PulseGraphicFrame layout={layout}>
+        <span className="sr-only">
+          Recorded trend: {summary}. The sparkline represents categorical
+          direction, not measured numerical history.
+        </span>
+        <svg
+          viewBox="0 0 96 40"
+          preserveAspectRatio="xMidYMid meet"
+          className={cn(
+            "h-10 w-full max-w-24",
+            tone === "success"
+              ? "text-success"
+              : tone === "warning"
+                ? "text-warning"
+                : "text-muted-foreground",
+          )}
+          aria-hidden="true"
+          focusable="false"
         >
-          <TrendingUp />
-        </IconBadge>
+          <path
+            d={categoricalTrendPath(trend)}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </PulseGraphicFrame>
     </MicroMetricCard>
   );
 }
 
-function FrequencyBars({ value, summary }: { value: number; summary: string }) {
+// The API exposes direction only, not time buckets. These paths are categorical
+// glyphs and must not be interpreted as measured historical values.
+function categoricalTrendPath(trend: RelationshipTrend): string {
+  if (trend === "growing") {
+    return "M4 30 L18 24 L32 27 L47 18 L62 21 L78 10 L92 13";
+  }
+
+  if (trend === "fading") {
+    return "M4 11 L18 15 L32 13 L47 22 L62 19 L78 30 L92 27";
+  }
+
+  if (trend === "stable") {
+    return "M4 21 L19 18 L34 22 L49 19 L64 21 L79 18 L92 20";
+  }
+
+  if (trend === "dormant") {
+    return "M4 26 L19 25 L34 27 L49 26 L64 27 L79 25 L92 26";
+  }
+
+  return "M4 22 L92 22";
+}
+
+function FrequencyBars({
+  value,
+  summary,
+  layout,
+}: {
+  value: number;
+  summary: string;
+  layout: PulseLayout;
+}) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
   const filledBars = Math.round((percent / 100) * 8);
   const hasSignal = percent > 0;
@@ -247,23 +358,22 @@ function FrequencyBars({ value, summary }: { value: number; summary: string }) {
       value={summary}
       tone={summary === "No rhythm yet" ? "muted" : "info"}
       icon={<Activity />}
-      detail={
-        hasSignal ? `(30 days) · ${percent}/100` : "No recent moments"
-      }
+      layout={layout}
+      detail={hasSignal ? `(30 days) · ${percent}/100` : "No recent moments"}
     >
-      <PulseGraphicFrame>
+      <PulseGraphicFrame layout={layout}>
         <div className="flex h-9 items-end justify-center gap-1">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div
-            key={index}
-            className={cn(
-              "w-1.5 rounded-full bg-muted",
-              hasSignal && "bg-info-muted",
-              hasSignal && index < filledBars && "bg-info-solid",
-            )}
-            style={{ height: `${8 + index * 3}px` }}
-          />
-        ))}
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div
+              key={index}
+              className={cn(
+                "w-1.5 rounded-full bg-muted",
+                hasSignal && "bg-info-muted",
+                hasSignal && index < filledBars && "bg-info-solid",
+              )}
+              style={{ height: `${8 + index * 3}px` }}
+            />
+          ))}
         </div>
       </PulseGraphicFrame>
     </MicroMetricCard>
@@ -273,9 +383,11 @@ function FrequencyBars({ value, summary }: { value: number; summary: string }) {
 function DiversityScore({
   value,
   summary,
+  layout,
 }: {
   value: number;
   summary: string;
+  layout: PulseLayout;
 }) {
   const percent = Math.max(0, Math.min(100, Math.round(value)));
 
@@ -285,31 +397,38 @@ function DiversityScore({
       value={summary}
       tone={percent > 0 ? "info" : "muted"}
       icon={<LayoutGrid />}
+      layout={layout}
       detail={
         <span>{percent > 0 ? "Recorded contexts" : "Needs more context"}</span>
       }
     >
-      <PulseGraphicFrame>
+      <PulseGraphicFrame layout={layout}>
         <div className="w-full">
-        <p className="text-center text-xl font-semibold leading-none text-foreground">
-          {percent}
-          <span className="ml-1 text-xs font-normal text-muted-foreground">
-            /100
-          </span>
-        </p>
-        <div className="mx-auto mt-2 h-1.5 max-w-24 rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-info-solid"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
+          <p className="text-center text-xl font-semibold leading-none text-foreground">
+            {percent}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
+              /100
+            </span>
+          </p>
+          <div className="mx-auto mt-2 h-1.5 max-w-24 rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-info-solid"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
         </div>
       </PulseGraphicFrame>
     </MicroMetricCard>
   );
 }
 
-function SentimentMeter({ model }: { model: ContactOverviewModel }) {
+function SentimentMeter({
+  model,
+  layout,
+}: {
+  model: ContactOverviewModel;
+  layout: PulseLayout;
+}) {
   const { moods } = useLookups();
   const tone = sentimentMetricTone(model);
 
@@ -319,34 +438,33 @@ function SentimentMeter({ model }: { model: ContactOverviewModel }) {
       value={model.sentiment.label}
       tone={tone}
       icon={<MessageCircle />}
+      layout={layout}
       detail={
-        model.sentiment.parts.length > 0
-          ? `${model.sentiment.total} mood signals`
-          : (
-              <span className="text-xs leading-4">
-                No mood data yet.
-              </span>
-            )
+        model.sentiment.parts.length > 0 ? (
+          `${model.sentiment.total} mood signals`
+        ) : (
+          <span className="text-xs leading-4">No mood data yet.</span>
+        )
       }
     >
       {model.sentiment.parts.length > 0 ? (
-        <PulseGraphicFrame>
+        <PulseGraphicFrame layout={layout}>
           <div className="mx-auto flex h-5 w-full max-w-28 items-center rounded-full bg-muted px-1">
-          {model.sentiment.parts.map((part) => (
-            <div
-              key={part.label}
-              className={cn(
-                "h-2.5 rounded-full",
-                moodSegmentColorClass(part.label, moods),
-              )}
-              style={{ width: `${part.percent}%` }}
-              title={`${part.label}: ${part.count}`}
-            />
-          ))}
+            {model.sentiment.parts.map((part) => (
+              <div
+                key={part.label}
+                className={cn(
+                  "h-2.5 rounded-full",
+                  moodSegmentColorClass(part.label, moods),
+                )}
+                style={{ width: `${part.percent}%` }}
+                title={`${part.label}: ${part.count}`}
+              />
+            ))}
           </div>
         </PulseGraphicFrame>
       ) : (
-        <PulseGraphicFrame>
+        <PulseGraphicFrame layout={layout}>
           <div className="mx-auto h-5 w-full max-w-28 rounded-full bg-muted" />
         </PulseGraphicFrame>
       )}

@@ -12,6 +12,7 @@ import type { Fact, CreateFactRequest } from "@/types/contacts";
 
 const factSchema = z.object({
   category: z.string().optional(),
+  label: z.string().max(120).optional(),
   detail_value: z.string().min(1, "Fact detail is required"),
 });
 
@@ -34,6 +35,7 @@ export function FactForm({ fact, onSubmit, onCancel }: FactFormProps) {
     resolver: zodResolver(factSchema),
     defaultValues: {
       category: fact?.category == null ? "" : String(fact.category),
+      label: fact?.label ?? "",
       detail_value: fact?.detail_value ?? "",
     },
   });
@@ -44,6 +46,7 @@ export function FactForm({ fact, onSubmit, onCancel }: FactFormProps) {
       onSubmit={handleSubmit(async (values) => {
         await onSubmit({
           category: values.category || null,
+          label: values.label?.trim() || null,
           detail_value: values.detail_value,
         });
       })}
@@ -64,8 +67,15 @@ export function FactForm({ fact, onSubmit, onCancel }: FactFormProps) {
         </select>
       </div>
       <div>
-        <Label htmlFor="fact-detail">Detail</Label>
-        <Input id="fact-detail" {...register("detail_value")} />
+        <Label htmlFor="fact-label">Label</Label>
+        <Input id="fact-label" placeholder="Coffee" {...register("label")} />
+        {errors.label?.message && (
+          <p className="mt-1 text-sm text-destructive">{errors.label.message}</p>
+        )}
+      </div>
+      <div>
+        <Label htmlFor="fact-detail">Value</Label>
+        <Input id="fact-detail" placeholder="Oat milk" {...register("detail_value")} />
         {errors.detail_value?.message && (
           <p className="mt-1 text-sm text-destructive">
             {errors.detail_value.message}

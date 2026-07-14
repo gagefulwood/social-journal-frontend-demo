@@ -11,8 +11,10 @@ type ProfilePictureSelectorProps = {
   current?: MediaAssetListItem | null;
   error?: string;
   fallbackInitials?: string;
-  onChange: (mediaId: string | number | null, asset?: MediaAssetListItem | null) => void;
-  variant?: "default" | "create";
+  onChange: (
+    mediaId: string | number | null,
+    asset?: MediaAssetListItem | null,
+  ) => void;
 };
 
 export function ProfilePictureSelector({
@@ -20,7 +22,6 @@ export function ProfilePictureSelector({
   error: fieldError,
   fallbackInitials = "",
   onChange,
-  variant = "default",
 }: ProfilePictureSelectorProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [preview, setPreview] = useState(current ?? null);
@@ -35,98 +36,58 @@ export function ProfilePictureSelector({
 
   return (
     <div className="space-y-3">
-      {variant === "create" ? (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <button
+      <div className="flex flex-col items-center gap-3 text-center">
+        <button
+          type="button"
+          aria-label={
+            preview ? "Change profile photo" : "Upload a profile photo"
+          }
+          aria-describedby={error ? "profile-picture-error" : undefined}
+          disabled={uploading}
+          onClick={openFilePicker}
+          className="group relative flex size-20 items-center justify-center overflow-hidden rounded-full border border-primary-soft bg-accent text-accent-foreground outline-none transition-colors hover:bg-primary-soft focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+        >
+          {preview?.url ? (
+            <div
+              role="img"
+              aria-label={preview.alt_text || "Selected profile photo"}
+              className="size-full bg-cover bg-center"
+              style={{ backgroundImage: `url(${preview.url})` }}
+            />
+          ) : hasInitials ? (
+            <span className="text-xl font-semibold" aria-hidden="true">
+              {fallbackInitials}
+            </span>
+          ) : (
+            <Camera className="size-6" aria-hidden="true" />
+          )}
+        </button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
             type="button"
-            aria-label={preview ? "Change profile photo" : "Upload a profile photo"}
-            aria-describedby={error ? "profile-picture-error" : undefined}
+            variant="outline"
+            size="sm"
             disabled={uploading}
             onClick={openFilePicker}
-            className="group relative flex size-20 items-center justify-center overflow-hidden rounded-full border border-primary-soft bg-accent text-accent-foreground outline-none transition-colors hover:bg-primary-soft focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
           >
-            {preview?.url ? (
-              <div
-                role="img"
-                aria-label={preview.alt_text || "Selected profile photo"}
-                className="size-full bg-cover bg-center"
-                style={{ backgroundImage: `url(${preview.url})` }}
-              />
-            ) : hasInitials ? (
-              <span className="text-xl font-semibold" aria-hidden="true">
-                {fallbackInitials}
-              </span>
-            ) : (
-              <Camera className="size-6" aria-hidden="true" />
-            )}
-          </button>
-          <div className="flex flex-wrap justify-center gap-2">
+            <Upload className="size-4" />
+            {uploading ? "Uploading..." : "Upload photo"}
+          </Button>
+          {preview && (
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
-              disabled={uploading}
-              onClick={openFilePicker}
+              onClick={() => {
+                setPreview(null);
+                onChange(null, null);
+              }}
             >
-              <Upload className="size-4" />
-              {uploading ? "Uploading..." : "Upload photo"}
+              Remove
             </Button>
-            {preview && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setPreview(null);
-                  onChange(null, null);
-                }}
-              >
-                Remove
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-      ) : (
-        <div className="flex items-center gap-4">
-          <div className="size-20 overflow-hidden rounded-lg bg-muted">
-            {preview?.url ? (
-              <div
-                role="img"
-                aria-label={preview.alt_text || "Profile picture"}
-                className="size-full bg-cover bg-center"
-                style={{ backgroundImage: `url(${preview.url})` }}
-              />
-            ) : (
-              <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
-                Photo
-              </div>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={uploading}
-              onClick={openFilePicker}
-            >
-              <Upload className="size-4" />
-              {uploading ? "Uploading..." : "Upload"}
-            </Button>
-            {preview && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  setPreview(null);
-                  onChange(null, null);
-                }}
-              >
-                Remove
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
       <input
         ref={inputRef}
         type="file"

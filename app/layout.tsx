@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Newsreader } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const instrumentSans = Instrument_Sans({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-instrument-sans",
+  variable: "--font-dm-sans",
   display: "swap",
-});
-
-const newsreader = Newsreader({
-  subsets: ["latin"],
-  variable: "--font-newsreader",
-  display: "swap",
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
   title: "Social Journal",
-  description: "A private place to remember the people and moments that matter.",
+  description:
+    "A private place to remember the people and moments that matter.",
 };
 
 export default function RootLayout({
@@ -27,11 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${instrumentSans.variable} ${newsreader.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className={`${dmSans.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col xl:h-full xl:min-h-0">
         <AppShell>{children}</AppShell>
         <Toaster />
       </body>

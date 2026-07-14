@@ -8,6 +8,11 @@ import {
 } from "lucide-react";
 import type { ObservationMarker } from "@/types/lookups";
 
+type ObservationMarkerLike = Pick<ObservationMarker, "name"> & {
+  icon?: string | null;
+  icon_reference?: string | null;
+};
+
 export type ObservationMarkerPresentation = {
   badge: string;
   border: string;
@@ -124,7 +129,7 @@ const DEFAULT_MARKER_PRESENTATION: ObservationMarkerPresentation = {
 };
 
 export function getObservationMarkerPresentation(
-  marker: ObservationMarker | undefined,
+  marker: ObservationMarkerLike | undefined,
 ): ObservationMarkerPresentation {
   if (!marker) {
     return DEFAULT_MARKER_PRESENTATION;
@@ -132,7 +137,7 @@ export function getObservationMarkerPresentation(
 
   return (
     MARKER_PRESENTATIONS[normalizeMarkerName(marker.name)] ??
-    getIconReferencePresentation(marker.icon_reference) ??
+    getIconReferencePresentation(marker.icon_reference || marker.icon || "") ??
     DEFAULT_MARKER_PRESENTATION
   );
 }

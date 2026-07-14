@@ -1,56 +1,61 @@
-import { Heart } from "lucide-react";
-import { IconBadge } from "@/components/ui/icon-badge";
-import { SectionHeader } from "@/components/ui/section-header";
-import { SurfaceCard } from "@/components/ui/surface-card";
+import { ContactContentStack } from "@/components/contacts/surfaces/ContactContentStack";
 import type { Fact, Observation } from "@/types/contacts";
 import { FactsPreviewCard } from "./FactsPreviewCard";
 import { RecentObservationsPreviewCard } from "./RecentObservationsPreviewCard";
-import type { ContactOverviewModel } from "./contact-overview-utils";
 
 type ContactKnowledgePreviewProps = {
   facts: Fact[];
-  model: ContactOverviewModel;
+  factsCount?: number;
+  factsError?: string | null;
+  factsLoading?: boolean;
   observations: Observation[];
+  pinnedObservations: Observation[];
+  observationsError?: string | null;
+  observationsLoading?: boolean;
+  pinnedObservationsError?: string | null;
+  pinnedObservationsLoading?: boolean;
+  onRetryPinnedObservations?: () => void;
   onViewFactsAndObservations: () => void;
 };
 
 export function ContactKnowledgePreview({
   facts,
-  model,
+  factsCount,
+  factsError = null,
+  factsLoading = false,
   observations,
+  observationsError = null,
+  observationsLoading = false,
+  pinnedObservations,
+  pinnedObservationsError = null,
+  pinnedObservationsLoading = false,
+  onRetryPinnedObservations,
   onViewFactsAndObservations,
 }: ContactKnowledgePreviewProps) {
-  const rememberedFactIds = model.rememberNextTimeItems
-    .filter((item) => item.source === "fact")
-    .map((item) => item.sourceId);
-
   return (
-    <SurfaceCard asChild className="flex h-full flex-col p-4">
-      <aside>
-        <SectionHeader
-          title="Context Clues"
-          icon={
-            <IconBadge tone="violet" size="lg">
-              <Heart className="size-5" />
-            </IconBadge>
-          }
+    <section
+      aria-label="Contact knowledge and observations"
+      className="min-w-0 max-w-full"
+    >
+      <ContactContentStack>
+        <FactsPreviewCard
+          facts={facts}
+          totalCount={factsCount}
+          loading={factsLoading}
+          error={factsError}
+          onViewAll={onViewFactsAndObservations}
         />
-        <div className="mt-4 divide-y divide-border/70 border-t border-border/70 pt-4">
-          <div className="pb-4">
-            <FactsPreviewCard
-              excludedFactIds={rememberedFactIds}
-              facts={facts}
-              onViewAll={onViewFactsAndObservations}
-            />
-          </div>
-          <div className="pt-4">
-            <RecentObservationsPreviewCard
-              observations={observations}
-              onViewAll={onViewFactsAndObservations}
-            />
-          </div>
-        </div>
-      </aside>
-    </SurfaceCard>
+        <RecentObservationsPreviewCard
+          observations={observations}
+          pinnedObservations={pinnedObservations}
+          loading={observationsLoading}
+          error={observationsError}
+          pinnedError={pinnedObservationsError}
+          pinnedLoading={pinnedObservationsLoading}
+          onRetryPinned={onRetryPinnedObservations}
+          onViewAll={onViewFactsAndObservations}
+        />
+      </ContactContentStack>
+    </section>
   );
 }

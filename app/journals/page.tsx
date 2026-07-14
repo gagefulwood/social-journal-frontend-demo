@@ -11,25 +11,26 @@ import { useJournalFeed } from "@/hooks/useJournal";
 import { useDebounce } from "@/hooks/useDebounce";
 import { JournalFeedGrid } from "@/components/journals/JournalFeedGrid";
 
-
 const pageSize = 24;
 
 export default function JournalsPage() {
-    const router = useRouter();
-    const [search, setSearch] = useState("");
-    const [page, setPage] = useState(1);
-    const debouncedSearch = useDebounce(search, 300);
-    const { entries, data, loading, error, refetch } = useJournalFeed({
-        page,
-        page_size: pageSize,
-        title: debouncedSearch,
-    });
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(search, 300);
+  const { entries, data, loading, error, refetch } = useJournalFeed({
+    page,
+    page_size: pageSize,
+    title: debouncedSearch,
+  });
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl">Journals</h1>
+          <h1 className="font-sans text-3xl font-semibold leading-tight">
+            Journals
+          </h1>
           <p className="text-sm text-muted-foreground">
             Manage your logs, reflections, and exercises here.
           </p>
@@ -53,7 +54,7 @@ export default function JournalsPage() {
               router.push("/journals/reflections");
             }
             if (value === "exercises") {
-                router.push("/journals/exercises");
+              router.push("/journals/exercises");
             }
           }}
         >

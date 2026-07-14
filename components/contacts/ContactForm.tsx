@@ -1,31 +1,43 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useWatch } from "react-hook-form";
 import {
-  BriefcaseBusiness,
-  CalendarDays,
-  CheckCircle2,
-  Circle,
-  Eye,
-  Heart,
-  Info,
-  Mail,
-  ShieldCheck,
-  Sparkles,
-  UserRound,
-  UsersRound,
-} from "lucide-react";
+  useFieldArray,
+  useForm,
+  useWatch,
+  type FieldErrors,
+} from "react-hook-form";
+import { ShieldCheck } from "lucide-react";
 import { z } from "zod";
-import { ProfilePictureSelector } from "@/components/contacts/ProfilePictureSelector";
 import { toDateInputValue } from "@/components/contacts/contact-utils";
+import { AddressesFormSection } from "@/components/contacts/form/AddressesFormSection";
+import {
+  ContactFormLayout,
+  ContactFormMain,
+  ContactFormRail,
+} from "@/components/contacts/form/ContactFormLayout";
+import { ContactDraftProfilePreview } from "@/components/contacts/form/ContactDraftProfilePreview";
+import { ContactFormProfileProgress } from "@/components/contacts/form/ContactFormProfileProgress";
+import { ContactMethodsFormSection } from "@/components/contacts/form/ContactMethodsFormSection";
+import { EducationFormSection } from "@/components/contacts/form/EducationFormSection";
+import { EmploymentFormSection } from "@/components/contacts/form/EmploymentFormSection";
+import { PersonFormSection } from "@/components/contacts/form/PersonFormSection";
+import { ProfileEssentialsFormSection } from "@/components/contacts/form/ProfileEssentialsFormSection";
+import { RelationshipContextFormSection } from "@/components/contacts/form/RelationshipContextFormSection";
+import { WorkEducationFormSection } from "@/components/contacts/form/WorkEducationFormSection";
 import { Button } from "@/components/ui/button";
-import { IconBadge } from "@/components/ui/icon-badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useLookups } from "@/hooks/useLookups";
+import {
+  getContactFormCollapsedSummaries,
+  getContactFormDraftPresentation,
+  getContactFormProgress,
+} from "@/lib/presentation/contactFormDraftPresentation";
+import {
+  contactProfileSchema,
+  validateContactProfileCollections,
+} from "@/lib/validation/contactProfile";
 import type { ApiError } from "@/types/auth";
 import type {
   Contact,
@@ -34,28 +46,85 @@ import type {
 } from "@/types/contacts";
 import type { MediaAssetListItem } from "@/types/media";
 
-const contactSchema = z.object({
-  first_name: z.string().min(1, "First name is required"),
-  middle_name: z.string().optional(),
-  last_name: z.string().min(1, "Last name is required"),
-  email: z.string().email("Enter a valid email").or(z.literal("")),
-  phone_number: z.string().optional(),
-  address: z.string().optional(),
-  birthday: z.string().optional(),
-  first_met_date: z.string().optional(),
-  relation: z.string().optional(),
-  occupation: z.string().optional(),
-  custom_occupation: z.string().optional(),
-  company: z.string().optional(),
-  education_level: z.string().optional(),
-  custom_education_level: z.string().optional(),
-  school: z.string().optional(),
-  profile_picture_id: z.union([z.string(), z.number()]).nullable().optional(),
-});
+const contactSchema = z
+  .object({
+    ...contactProfileSchema.shape,
+    first_name: z.string().min(1, "First name is required"),
+    middle_name: z.string().optional(),
+    last_name: z.string().min(1, "Last name is required"),
+    email: z.string().email("Enter a valid email").or(z.literal("")),
+    phone_number: z.string().optional(),
+    address: z.string().optional(),
+    birthday: z.string().optional(),
+    first_met_date: z.string().optional(),
+    relation: z.string().optional(),
+    occupation: z.string().optional(),
+    custom_occupation: z.string().optional(),
+    company: z.string().optional(),
+    education_level: z.string().optional(),
+    custom_education_level: z.string().optional(),
+    school: z.string().optional(),
+    profile_picture_id: z.union([z.string(), z.number()]).nullable().optional(),
+  })
+  .superRefine(validateContactProfileCollections);
 
 type ContactFormValues = z.infer<typeof contactSchema>;
-type ContactFormVariant = "default" | "create";
-type DetailStatus = "Not set" | "Partial" | "Complete";
+
+function getInitialContactMethods(
+  contact?: Contact | null,
+): ContactFormValues["contact_methods"] {
+  const methods: ContactFormValues["contact_methods"] = (
+    contact?.contact_methods ?? []
+  ).map((method) => ({ ...method }));
+
+  function includeLegacyMethod(
+    kind: "email" | "phone",
+    value: string | null | undefined,
+  ) {
+    const normalizedValue = value?.trim();
+    if (!normalizedValue) {
+      return;
+    }
+
+    const matchingMethod = methods.find(
+      (method) =>
+        method.kind === kind && method.value.trim() === normalizedValue,
+    );
+    const hasPrimaryMethod = methods.some(
+      (method) => method.kind === kind && method.is_primary,
+    );
+
+    if (matchingMethod) {
+      if (!hasPrimaryMethod) {
+        matchingMethod.is_primary = true;
+      }
+      return;
+    }
+
+    methods.push({
+      kind,
+      label: "",
+      value: normalizedValue,
+      is_primary: !hasPrimaryMethod,
+    });
+  }
+
+  includeLegacyMethod("email", contact?.email);
+  includeLegacyMethod("phone", contact?.phone_number);
+
+  return methods;
+}
+
+function getLegacyContactMethodValue(
+  methods: ContactFormValues["contact_methods"],
+  kind: "email" | "phone",
+) {
+  return (
+    methods
+      .find((method) => method.kind === kind && method.is_primary)
+      ?.value.trim() || undefined
+  );
+}
 
 type ContactFormProps = {
   contact?: Contact | null;
@@ -63,7 +132,6 @@ type ContactFormProps = {
     data: CreateContactRequest | UpdateContactRequest,
   ) => Promise<void>;
   submitLabel: string;
-  variant?: ContactFormVariant;
 };
 
 const fieldNames: Array<keyof ContactFormValues> = [
@@ -75,6 +143,14 @@ const fieldNames: Array<keyof ContactFormValues> = [
   "address",
   "birthday",
   "first_met_date",
+  "preferred_name",
+  "gender_identity",
+  "pronouns",
+  "birth_date",
+  "timezone",
+  "first_met_on",
+  "met_through",
+  "met_location",
   "relation",
   "occupation",
   "custom_occupation",
@@ -85,8 +161,34 @@ const fieldNames: Array<keyof ContactFormValues> = [
   "profile_picture_id",
 ];
 
-const selectClassName =
-  "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 text-sm shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20";
+const validationFocusOrder: Array<keyof ContactFormValues> = [
+  "first_name",
+  "last_name",
+  "middle_name",
+  "relation",
+  "preferred_name",
+  "profile_picture_id",
+  "gender_identity",
+  "pronouns",
+  "birth_date",
+  "timezone",
+  "contact_methods",
+  "email",
+  "phone_number",
+  "addresses",
+  "address",
+  "first_met_on",
+  "met_through",
+  "met_location",
+  "employment",
+  "occupation",
+  "custom_occupation",
+  "company",
+  "education",
+  "education_level",
+  "custom_education_level",
+  "school",
+];
 
 function emptyToUndefined(value?: string) {
   return value?.trim() ? value : undefined;
@@ -100,9 +202,8 @@ export function ContactForm({
   contact,
   onSubmit,
   submitLabel,
-  variant = "default",
 }: ContactFormProps) {
-  const { occupations, relations, educationLevels, isLoading } = useLookups();
+  const { relations, educationLevels, isLoading } = useLookups();
   const [selectedProfilePicture, setSelectedProfilePicture] =
     useState<MediaAssetListItem | null>(contact?.profile_picture ?? null);
   const {
@@ -123,6 +224,30 @@ export function ContactForm({
       address: contact?.address ?? "",
       birthday: toDateInputValue(contact?.birthday),
       first_met_date: toDateInputValue(contact?.first_met_date),
+      preferred_name: contact?.preferred_name ?? "",
+      gender_identity: contact?.gender_identity ?? "",
+      pronouns: contact?.pronouns ?? "",
+      birth_date: toDateInputValue(contact?.birth_date ?? contact?.birthday),
+      timezone: contact?.timezone ?? "",
+      first_met_on: toDateInputValue(
+        contact?.first_met_on ?? contact?.first_met_date,
+      ),
+      met_through: contact?.met_through ?? "",
+      met_location: contact?.met_location ?? "",
+      contact_methods: getInitialContactMethods(contact),
+      addresses: contact?.addresses ?? [],
+      employment:
+        contact?.employment.map((entry) => ({
+          ...entry,
+          start_date: toDateInputValue(entry.start_date),
+          end_date: toDateInputValue(entry.end_date),
+        })) ?? [],
+      education:
+        contact?.education.map((entry) => ({
+          ...entry,
+          start_date: toDateInputValue(entry.start_date),
+          end_date: toDateInputValue(entry.end_date),
+        })) ?? [],
       relation: contact?.relation == null ? "" : String(contact.relation),
       occupation: contact?.occupation == null ? "" : String(contact.occupation),
       custom_occupation: contact?.custom_occupation ?? "",
@@ -134,6 +259,26 @@ export function ContactForm({
       profile_picture_id: contact?.profile_picture?.id ?? null,
     },
   });
+  const contactMethods = useFieldArray({
+    control,
+    name: "contact_methods",
+    keyName: "_formKey",
+  });
+  const addresses = useFieldArray({
+    control,
+    name: "addresses",
+    keyName: "_formKey",
+  });
+  const employment = useFieldArray({
+    control,
+    name: "employment",
+    keyName: "_formKey",
+  });
+  const education = useFieldArray({
+    control,
+    name: "education",
+    keyName: "_formKey",
+  });
   const values = useWatch({ control });
 
   async function submit(nextValues: ContactFormValues) {
@@ -141,17 +286,57 @@ export function ContactForm({
       first_name: nextValues.first_name,
       middle_name: emptyToUndefined(nextValues.middle_name),
       last_name: nextValues.last_name,
-      email: emptyToUndefined(nextValues.email),
-      phone_number: emptyToUndefined(nextValues.phone_number),
+      email:
+        getLegacyContactMethodValue(nextValues.contact_methods, "email") ??
+        (contact ? "" : undefined),
+      phone_number:
+        getLegacyContactMethodValue(nextValues.contact_methods, "phone") ??
+        (contact ? "" : undefined),
       address: emptyToUndefined(nextValues.address),
-      birthday: emptyToNull(nextValues.birthday) as string | null,
-      first_met_date: emptyToNull(nextValues.first_met_date) as string | null,
+      preferred_name: emptyToUndefined(nextValues.preferred_name),
+      gender_identity: emptyToUndefined(nextValues.gender_identity),
+      pronouns: emptyToUndefined(nextValues.pronouns),
+      birth_date: emptyToNull(nextValues.birth_date) as string | null,
+      timezone: emptyToUndefined(nextValues.timezone),
+      first_met_on: emptyToNull(nextValues.first_met_on) as string | null,
+      met_through: emptyToUndefined(nextValues.met_through),
+      met_location: emptyToUndefined(nextValues.met_location),
+      contact_methods: nextValues.contact_methods.map((method) => ({
+        ...method,
+        label: method.label?.trim() ?? "",
+        value: method.value.trim(),
+      })),
+      addresses: nextValues.addresses.map((address) => ({
+        ...address,
+        label: address.label?.trim() ?? "",
+        line_1: address.line_1.trim(),
+        line_2: address.line_2?.trim() ?? "",
+        city: address.city?.trim() ?? "",
+        region: address.region?.trim() ?? "",
+        postal_code: address.postal_code?.trim() ?? "",
+        country_code: address.country_code?.trim().toUpperCase() ?? "",
+      })),
+      employment: nextValues.employment.map((entry) => ({
+        ...entry,
+        organization: entry.organization?.trim() ?? "",
+        start_date: emptyToNull(entry.start_date) as string | null,
+        end_date: emptyToNull(entry.end_date) as string | null,
+      })),
+      education: nextValues.education.map((entry) => ({
+        ...entry,
+        credential: entry.credential?.trim() ?? "",
+        field_of_study: entry.field_of_study?.trim() ?? "",
+        start_date: emptyToNull(entry.start_date) as string | null,
+        end_date: emptyToNull(entry.end_date) as string | null,
+      })),
       relation: emptyToNull(nextValues.relation),
       occupation: emptyToNull(nextValues.occupation),
       custom_occupation: emptyToUndefined(nextValues.custom_occupation),
       company: emptyToUndefined(nextValues.company),
       education_level: emptyToNull(nextValues.education_level),
-      custom_education_level: emptyToUndefined(nextValues.custom_education_level),
+      custom_education_level: emptyToUndefined(
+        nextValues.custom_education_level,
+      ),
       school: emptyToUndefined(nextValues.school),
       profile_picture_id: emptyToNull(nextValues.profile_picture_id),
     };
@@ -162,11 +347,19 @@ export function ContactForm({
       const apiError = err as ApiError;
 
       if (apiError.fieldErrors) {
+        let handledFieldError = false;
         for (const fieldName of fieldNames) {
           const fieldError = apiError.fieldErrors[fieldName]?.[0];
           if (fieldError) {
             setError(fieldName, { message: fieldError });
+            handledFieldError = true;
           }
+        }
+        if (!handledFieldError) {
+          setError("root", {
+            message:
+              apiError.message || "Check the profile details and try again.",
+          });
         }
       }
 
@@ -178,58 +371,66 @@ export function ContactForm({
     }
   }
 
-  const isCreateExperience = variant === "create";
-  const firstName = values?.first_name ?? "";
-  const middleName = values?.middle_name ?? "";
-  const lastName = values?.last_name ?? "";
-  const displayName = [firstName, middleName, lastName]
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .join(" ");
-  const initials = getInitials(firstName, lastName);
-  const relationName =
+  function handleInvalidSubmit(invalidErrors: FieldErrors<ContactFormValues>) {
+    const fieldPath = findFirstInvalidFieldPath(invalidErrors);
+    if (!fieldPath) return;
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const controls = Array.from(
+          document
+            .getElementById("contact-form")
+            ?.querySelectorAll<HTMLElement>("[name]") ?? [],
+        );
+        const pathParts = fieldPath.split(".");
+        const candidatePaths = pathParts.map((_, index) =>
+          pathParts.slice(0, pathParts.length - index).join("."),
+        );
+        const field = candidatePaths
+          .map((candidatePath) =>
+            controls.find((control) => {
+              const name = control.getAttribute("name");
+              return (
+                (name === candidatePath ||
+                  name?.startsWith(`${candidatePath}.`)) &&
+                control.getAttribute("type") !== "hidden" &&
+                !control.hasAttribute("disabled")
+              );
+            }),
+          )
+          .find(Boolean);
+
+        if (!field) return;
+        field.scrollIntoView({ block: "center", inline: "nearest" });
+        field.focus({ preventScroll: true });
+      });
+    });
+  }
+
+  const relationshipLabel =
     relations.find((relation) => String(relation.id) === values?.relation)
       ?.name ??
     (values?.relation && String(contact?.relation) === values.relation
       ? contact?.relation_name
       : null) ??
-    "No relation";
-  const statuses = {
-    identity: getDetailStatus(
-      [firstName, lastName, values?.relation ?? ""],
-      hasValue(firstName) && hasValue(lastName),
-    ),
-    contact: getDetailStatus(
-      [values?.email ?? "", values?.phone_number ?? "", values?.address ?? ""],
-      hasValue(values?.email) &&
-        hasValue(values?.phone_number) &&
-        hasValue(values?.address),
-    ),
-    dates: getDetailStatus(
-      [values?.birthday ?? "", values?.first_met_date ?? ""],
-      hasValue(values?.birthday) && hasValue(values?.first_met_date),
-    ),
-    background: getDetailStatus(
-      [
-        values?.occupation ?? "",
-        values?.custom_occupation ?? "",
-        values?.company ?? "",
-        values?.education_level ?? "",
-        values?.custom_education_level ?? "",
-        values?.school ?? "",
-      ],
-      (hasValue(values?.occupation) || hasValue(values?.custom_occupation)) &&
-        hasValue(values?.company) &&
-        (hasValue(values?.education_level) ||
-          hasValue(values?.custom_education_level)) &&
-        hasValue(values?.school),
-    ),
-  };
+    null;
+  const legacyEducationLabel = educationLevels.find(
+    (level) => String(level.id) === values?.education_level,
+  )?.name;
+  const draftPresentation = getContactFormDraftPresentation(values ?? {}, {
+    relationshipLabel,
+    legacyOccupationLabel: contact?.occupation_name,
+    legacyEducationLabel,
+  });
+  const progressItems = getContactFormProgress(values ?? {}, errors);
+  const collapsedSummaries = getContactFormCollapsedSummaries(values ?? {});
 
   return (
     <form
-      onSubmit={handleSubmit(submit)}
-      className={isCreateExperience ? "space-y-4 pb-24" : "space-y-6"}
+      id="contact-form"
+      onSubmit={handleSubmit(submit, handleInvalidSubmit)}
+      aria-busy={isSubmitting}
+      className="min-w-0 space-y-4 pb-[env(safe-area-inset-bottom)] [&_button]:scroll-mt-6 [&_button]:scroll-mb-32 [&_input]:scroll-mt-6 [&_input]:scroll-mb-32 [&_select]:scroll-mt-6 [&_select]:scroll-mb-32"
     >
       {errors.root?.message && (
         <p
@@ -240,744 +441,434 @@ export function ContactForm({
         </p>
       )}
 
-      {isCreateExperience ? (
-        <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_17rem] xl:items-start">
-          <div className="min-w-0 space-y-4">
-            <CreateSection
-              title="Who they are"
-              description=""
-              icon={<UserRound className="size-5" />}
-            >
-              <div className="mt-4 grid gap-5 lg:grid-cols-[10rem_minmax(0,1fr)] lg:items-center">
-                <div className="flex flex-col items-center text-center">
-                  <ProfilePictureSelector
-                    current={contact?.profile_picture}
-                    error={errors.profile_picture_id?.message}
-                    fallbackInitials={initials}
-                    variant="create"
-                    onChange={(mediaId, asset) => {
-                      setValue("profile_picture_id", mediaId, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                      setSelectedProfilePicture(asset ?? null);
-                    }}
-                  />
-                  <p className="mt-2 max-w-32 text-xs leading-5 text-muted-foreground">
-                    A friendly photo helps you remember.
-                  </p>
-                </div>
+      <ContactFormLayout>
+        <ContactFormMain>
+          <PersonFormSection
+            currentPhoto={contact?.profile_picture}
+            fallbackInitials={draftPresentation.initials}
+            onPhotoChange={(mediaId, asset) => {
+              setValue("profile_picture_id", mediaId, {
+                shouldDirty: true,
+                shouldValidate: true,
+              });
+              setSelectedProfilePicture(asset ?? null);
+            }}
+            firstNameRegistration={register("first_name")}
+            middleNameRegistration={register("middle_name")}
+            lastNameRegistration={register("last_name")}
+            preferredNameRegistration={register("preferred_name")}
+            relationshipRegistration={register("relation")}
+            relationships={relations}
+            isLoadingRelationships={isLoading}
+            showMiddleNameInitially={Boolean(contact?.middle_name?.trim())}
+            errors={{
+              firstName: errors.first_name?.message,
+              middleName: errors.middle_name?.message,
+              lastName: errors.last_name?.message,
+              preferredName: errors.preferred_name?.message,
+              relationship: errors.relation?.message,
+              photo: errors.profile_picture_id?.message,
+            }}
+          />
 
-                <div className="min-w-0">
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                    <FormField
-                      id="first_name"
-                      label="First Name"
-                      required
-                      error={errors.first_name?.message}
-                    >
-                      <Input
-                        id="first_name"
-                        placeholder="Enter first name"
-                        required
-                        aria-describedby={errorId("first_name", errors.first_name?.message)}
-                        aria-invalid={Boolean(errors.first_name)}
-                        {...register("first_name")}
-                      />
-                    </FormField>
-                    <FormField
-                      id="middle_name"
-                      label="Middle Name"
-                      error={errors.middle_name?.message}
-                    >
-                      <Input
-                        id="middle_name"
-                        placeholder="Enter middle name"
-                        aria-describedby={errorId("middle_name", errors.middle_name?.message)}
-                        aria-invalid={Boolean(errors.middle_name)}
-                        {...register("middle_name")}
-                      />
-                    </FormField>
-                    <FormField
-                      id="last_name"
-                      label="Last Name"
-                      required
-                      error={errors.last_name?.message}
-                    >
-                      <Input
-                        id="last_name"
-                        placeholder="Enter last name"
-                        required
-                        aria-describedby={errorId("last_name", errors.last_name?.message)}
-                        aria-invalid={Boolean(errors.last_name)}
-                        {...register("last_name")}
-                      />
-                    </FormField>
-                    <FormField
-                      id="relation"
-                      label="Relation"
-                      error={errors.relation?.message}
-                    >
-                      <select
-                        id="relation"
-                        className={selectClassName}
-                        disabled={isLoading}
-                        aria-describedby={errorId("relation", errors.relation?.message)}
-                        aria-invalid={Boolean(errors.relation)}
-                        {...register("relation")}
-                      >
-                        <option value="">
-                          {isLoading ? "Loading relations..." : "No relation"}
-                        </option>
-                        {relations.map((relation) => (
-                          <option key={relation.id} value={String(relation.id)}>
-                            {relation.name}
-                          </option>
-                        ))}
-                      </select>
-                    </FormField>
-                  </div>
+          <ProfileEssentialsFormSection
+            genderRegistration={register("gender_identity")}
+            pronounsRegistration={register("pronouns")}
+            birthdayRegistration={register("birth_date")}
+            timezoneRegistration={register("timezone")}
+            errors={{
+              gender: errors.gender_identity?.message,
+              pronouns: errors.pronouns?.message,
+              birthday: errors.birth_date?.message,
+              timezone: errors.timezone?.message,
+            }}
+          />
 
-                  <HelperNotice
-                    tone="accent"
-                    icon={<Heart className="size-4" aria-hidden="true" />}
-                    className="mt-4"
-                  >
-                    Names matter. Getting them right helps you honor the person and your relationship.
-                  </HelperNotice>
-                </div>
-              </div>
-            </CreateSection>
-
-            <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
-              <CreateSection
-                title="Contact details"
-                description="How to reach them."
-                icon={<Mail className="size-5" />}
-                className="h-full"
-              >
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <FormField id="email" label="Email" error={errors.email?.message}>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="email@example.com"
-                      aria-describedby={errorId("email", errors.email?.message)}
-                      aria-invalid={Boolean(errors.email)}
-                      {...register("email")}
-                    />
-                  </FormField>
-                  <FormField
-                    id="phone_number"
-                    label="Phone"
-                    error={errors.phone_number?.message}
-                  >
-                    <Input
-                      id="phone_number"
-                      type="tel"
-                      placeholder="(555) 123-4567"
-                      aria-describedby={errorId("phone_number", errors.phone_number?.message)}
-                      aria-invalid={Boolean(errors.phone_number)}
-                      {...register("phone_number")}
-                    />
-                  </FormField>
-                  <FormField
-                    id="address"
-                    label="Address"
-                    error={errors.address?.message}
-                    className="sm:col-span-2"
-                  >
-                    <Input
-                      id="address"
-                      placeholder=""
-                      aria-describedby={errorId("address", errors.address?.message)}
-                      aria-invalid={Boolean(errors.address)}
-                      {...register("address")}
-                    />
-                  </FormField>
-                </div>
-                <HelperNotice
-                  tone="info"
-                  icon={<Info className="size-4" aria-hidden="true" />}
-                  className="mt-4"
-                >
-                  Add the best ways to reach them so you can stay in touch.
-                </HelperNotice>
-              </CreateSection>
-
-              <CreateSection
-                title="Important dates"
-                description="Dates that help tell their story."
-                icon={<CalendarDays className="size-5" />}
-                className="h-full"
-              >
-                <div className="mt-4 grid gap-3">
-                  <FormField
-                    id="birthday"
-                    label="Birthday"
-                    error={errors.birthday?.message}
-                  >
-                    <Input
-                      id="birthday"
-                      type="date"
-                      aria-describedby={errorId("birthday", errors.birthday?.message)}
-                      aria-invalid={Boolean(errors.birthday)}
-                      {...register("birthday")}
-                    />
-                  </FormField>
-                  <FormField
-                    id="first_met_date"
-                    label="First Met"
-                    error={errors.first_met_date?.message}
-                  >
-                    <Input
-                      id="first_met_date"
-                      type="date"
-                      aria-describedby={errorId("first_met_date", errors.first_met_date?.message)}
-                      aria-invalid={Boolean(errors.first_met_date)}
-                      {...register("first_met_date")}
-                    />
-                  </FormField>
-                </div>
-                <HelperNotice
-                  tone="warning"
-                  icon={<Sparkles className="size-4" aria-hidden="true" />}
-                  className="mt-4"
-                >
-                  These milestones help you celebrate what matters.
-                </HelperNotice>
-              </CreateSection>
-            </div>
-
-            <CreateSection
-              title="Background / Work & education"
-              description="A few details about their work and education."
-              icon={<BriefcaseBusiness className="size-5" />}
-            >
-              <div className="mt-4 grid gap-x-4 gap-y-3 md:grid-cols-2">
-                <FormField
-                  id="occupation"
-                  label="Occupation"
-                  error={errors.occupation?.message}
-                >
-                  <select
-                    id="occupation"
-                    className={selectClassName}
-                    disabled={isLoading}
-                    aria-describedby={errorId("occupation", errors.occupation?.message)}
-                    aria-invalid={Boolean(errors.occupation)}
-                    {...register("occupation")}
-                  >
-                    <option value="">
-                      {isLoading ? "Loading occupations..." : "No occupation"}
-                    </option>
-                    {occupations.map((occupation) => (
-                      <option key={occupation.id} value={String(occupation.id)}>
-                        {occupation.name}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField
-                  id="custom_occupation"
-                  label="Custom Occupation"
-                  error={errors.custom_occupation?.message}
-                >
-                  <Input
-                    id="custom_occupation"
-                    placeholder="Enter custom occupation"
-                    aria-describedby={errorId(
-                      "custom_occupation",
-                      errors.custom_occupation?.message,
-                    )}
-                    aria-invalid={Boolean(errors.custom_occupation)}
-                    {...register("custom_occupation")}
-                  />
-                </FormField>
-                <FormField id="company" label="Company" error={errors.company?.message}>
-                  <Input
-                    id="company"
-                    placeholder="Enter company"
-                    aria-describedby={errorId("company", errors.company?.message)}
-                    aria-invalid={Boolean(errors.company)}
-                    {...register("company")}
-                  />
-                </FormField>
-                <FormField
-                  id="education_level"
-                  label="Education Level"
-                  error={errors.education_level?.message}
-                >
-                  <select
-                    id="education_level"
-                    className={selectClassName}
-                    disabled={isLoading}
-                    aria-describedby={errorId(
-                      "education_level",
-                      errors.education_level?.message,
-                    )}
-                    aria-invalid={Boolean(errors.education_level)}
-                    {...register("education_level")}
-                  >
-                    <option value="">
-                      {isLoading ? "Loading education levels..." : "No education level"}
-                    </option>
-                    {educationLevels.map((level) => (
-                      <option key={level.id} value={String(level.id)}>
-                        {level.name}
-                      </option>
-                    ))}
-                  </select>
-                </FormField>
-                <FormField
-                  id="custom_education_level"
-                  label="Custom Education"
-                  error={errors.custom_education_level?.message}
-                >
-                  <Input
-                    id="custom_education_level"
-                    placeholder="Enter custom education"
-                    aria-describedby={errorId(
-                      "custom_education_level",
-                      errors.custom_education_level?.message,
-                    )}
-                    aria-invalid={Boolean(errors.custom_education_level)}
-                    {...register("custom_education_level")}
-                  />
-                </FormField>
-                <FormField id="school" label="School" error={errors.school?.message}>
-                  <Input
-                    id="school"
-                    placeholder="Enter school"
-                    aria-describedby={errorId("school", errors.school?.message)}
-                    aria-invalid={Boolean(errors.school)}
-                    {...register("school")}
-                  />
-                </FormField>
-              </div>
-              <HelperNotice
-                tone="success"
-                icon={<BriefcaseBusiness className="size-4" aria-hidden="true" />}
-                className="mt-4"
-              >
-                This context helps you understand their world and find common ground.
-              </HelperNotice>
-            </CreateSection>
-          </div>
-
-          <aside className="grid min-w-0 gap-4 xl:sticky xl:top-4">
-            <LiveProfilePreview
-              displayName={displayName}
-              initials={initials}
-              profilePicture={selectedProfilePicture}
-              relationName={relationName}
-              hasContactDetails={
-                hasValue(values?.email) ||
-                hasValue(values?.phone_number) ||
-                hasValue(values?.address)
+          <ContactMethodsFormSection
+            collapsedSummary={collapsedSummaries.contact}
+            entries={contactMethods.fields.map((field, index) => {
+              const method = values?.contact_methods?.[index];
+              return {
+                key: field._formKey,
+                index,
+                kind: method?.kind ?? field.kind,
+                label: method?.label ?? field.label ?? "",
+                isPrimary: Boolean(method?.is_primary),
+                kindRegistration: register(`contact_methods.${index}.kind`),
+                labelRegistration: register(`contact_methods.${index}.label`),
+                valueRegistration: register(`contact_methods.${index}.value`),
+                primaryRegistration: register(
+                  `contact_methods.${index}.is_primary`,
+                ),
+                labelError: errors.contact_methods?.[index]?.label?.message,
+                valueError: errors.contact_methods?.[index]?.value?.message,
+              };
+            })}
+            rootError={errors.contact_methods?.root?.message}
+            onAdd={(kind) =>
+              contactMethods.append({
+                kind,
+                label: "",
+                value: "",
+                is_primary: false,
+              })
+            }
+            onRemove={(index) => contactMethods.remove(index)}
+            onPrimaryChange={(index, kind, isPrimary) => {
+              if (!isPrimary) {
+                setValue(`contact_methods.${index}.is_primary`, false, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                return;
               }
-            />
-            <DetailsAdded statuses={statuses} />
-          </aside>
-        </div>
-      ) : (
-        <DefaultContactFormFields
-          contact={contact}
-          errors={errors}
-          isLoading={isLoading}
-          occupations={occupations}
-          relations={relations}
-          educationLevels={educationLevels}
-          register={register}
-          setValue={setValue}
-        />
-      )}
 
-      {isCreateExperience ? (
-        <footer className="sticky bottom-3 z-20 flex flex-col gap-3 rounded-lg border border-border bg-card/95 p-3 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            Your entries are private and only visible to you.
-          </p>
-          <div className="flex shrink-0 justify-end gap-2">
-            <Button asChild variant="outline">
-              <Link href="/contacts">Cancel</Link>
-            </Button>
-            <Button type="submit" disabled={isSubmitting} className="min-w-32">
-              {isSubmitting ? "Creating..." : submitLabel}
-            </Button>
-          </div>
-        </footer>
-      ) : (
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : submitLabel}
+              values?.contact_methods?.forEach((method, methodIndex) => {
+                if (method?.kind === kind) {
+                  setValue(
+                    `contact_methods.${methodIndex}.is_primary`,
+                    methodIndex === index,
+                    {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    },
+                  );
+                }
+              });
+            }}
+          />
+
+          <AddressesFormSection
+            collapsedSummary={collapsedSummaries.location}
+            entries={addresses.fields.map((field, index) => {
+              const address = values?.addresses?.[index];
+              return {
+                key: field._formKey,
+                index,
+                label: address?.label ?? field.label ?? "",
+                isPrimary: Boolean(address?.is_primary),
+                labelRegistration: register(`addresses.${index}.label`),
+                line1Registration: register(`addresses.${index}.line_1`),
+                line2Registration: register(`addresses.${index}.line_2`),
+                cityRegistration: register(`addresses.${index}.city`),
+                regionRegistration: register(`addresses.${index}.region`),
+                postalCodeRegistration: register(
+                  `addresses.${index}.postal_code`,
+                ),
+                countryCodeRegistration: register(
+                  `addresses.${index}.country_code`,
+                ),
+                primaryRegistration: register(`addresses.${index}.is_primary`),
+                errors: {
+                  label: errors.addresses?.[index]?.label?.message,
+                  line1: errors.addresses?.[index]?.line_1?.message,
+                  line2: errors.addresses?.[index]?.line_2?.message,
+                  city: errors.addresses?.[index]?.city?.message,
+                  region: errors.addresses?.[index]?.region?.message,
+                  postalCode: errors.addresses?.[index]?.postal_code?.message,
+                  countryCode: errors.addresses?.[index]?.country_code?.message,
+                },
+              };
+            })}
+            legacyAddress={values?.address ?? ""}
+            legacyAddressRegistration={register("address")}
+            legacyAddressError={errors.address?.message}
+            rootError={errors.addresses?.root?.message}
+            onAdd={() =>
+              addresses.append({
+                label: "",
+                line_1: "",
+                line_2: "",
+                city: "",
+                region: "",
+                postal_code: "",
+                country_code: "",
+                is_primary: false,
+              })
+            }
+            onRemove={(index) => addresses.remove(index)}
+            onPrimaryChange={(index, isPrimary) => {
+              if (!isPrimary) {
+                setValue(`addresses.${index}.is_primary`, false, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                return;
+              }
+
+              values?.addresses?.forEach((_address, addressIndex) => {
+                setValue(
+                  `addresses.${addressIndex}.is_primary`,
+                  addressIndex === index,
+                  {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  },
+                );
+              });
+            }}
+          />
+
+          <RelationshipContextFormSection
+            collapsedSummary={collapsedSummaries.relationship}
+            firstMet={values?.first_met_on ?? ""}
+            metThrough={values?.met_through ?? ""}
+            metLocation={values?.met_location ?? ""}
+            firstMetRegistration={register("first_met_on")}
+            metThroughRegistration={register("met_through")}
+            metLocationRegistration={register("met_location")}
+            errors={{
+              firstMet: errors.first_met_on?.message,
+              metThrough: errors.met_through?.message,
+              metLocation: errors.met_location?.message,
+            }}
+          />
+
+          <WorkEducationFormSection
+            collapsedSummary={collapsedSummaries.workEducation}
+            hasWorkDetails={Boolean(
+              employment.fields.length ||
+              values?.occupation ||
+              values?.custom_occupation?.trim() ||
+              values?.company?.trim(),
+            )}
+            hasEducationDetails={Boolean(
+              education.fields.length ||
+              values?.education_level ||
+              values?.custom_education_level?.trim() ||
+              values?.school?.trim(),
+            )}
+            hasWorkErrors={Boolean(errors.employment)}
+            hasEducationErrors={Boolean(
+              errors.education ||
+              errors.education_level ||
+              errors.custom_education_level ||
+              errors.school,
+            )}
+            onAddWork={() =>
+              employment.append({
+                title: "",
+                organization: "",
+                start_date: "",
+                end_date: "",
+                is_current: false,
+              })
+            }
+            onAddEducation={() =>
+              education.append({
+                credential: "",
+                field_of_study: "",
+                institution: "",
+                start_date: "",
+                end_date: "",
+                is_current: false,
+              })
+            }
+          >
+            <EmploymentFormSection
+              entries={employment.fields.map((field, index) => {
+                const entry = values?.employment?.[index];
+                return {
+                  key: field._formKey,
+                  index,
+                  title: entry?.title ?? field.title,
+                  isCurrent: Boolean(entry?.is_current),
+                  titleRegistration: register(`employment.${index}.title`),
+                  organizationRegistration: register(
+                    `employment.${index}.organization`,
+                  ),
+                  startDateRegistration: register(
+                    `employment.${index}.start_date`,
+                  ),
+                  endDateRegistration: register(`employment.${index}.end_date`),
+                  currentRegistration: register(
+                    `employment.${index}.is_current`,
+                  ),
+                  errors: {
+                    title: errors.employment?.[index]?.title?.message,
+                    organization:
+                      errors.employment?.[index]?.organization?.message,
+                    startDate: errors.employment?.[index]?.start_date?.message,
+                    endDate: errors.employment?.[index]?.end_date?.message,
+                  },
+                };
+              })}
+              legacyTitle={
+                (values?.custom_occupation ?? "").trim() ||
+                contact?.occupation_name ||
+                ""
+              }
+              legacyOrganization={values?.company ?? ""}
+              legacyOccupationRegistration={register("occupation")}
+              legacyCustomOccupationRegistration={register("custom_occupation")}
+              legacyCompanyRegistration={register("company")}
+              rootError={errors.employment?.root?.message}
+              onAdd={() =>
+                employment.append({
+                  title: "",
+                  organization: "",
+                  start_date: "",
+                  end_date: "",
+                  is_current: false,
+                })
+              }
+              onRemove={(index) => employment.remove(index)}
+              onCurrentChange={(index, isCurrent) => {
+                if (isCurrent) {
+                  setValue(`employment.${index}.end_date`, "", {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }
+              }}
+            />
+
+            <EducationFormSection
+              entries={education.fields.map((field, index) => {
+                const entry = values?.education?.[index];
+                return {
+                  key: field._formKey,
+                  index,
+                  credential: entry?.credential ?? field.credential ?? "",
+                  fieldOfStudy:
+                    entry?.field_of_study ?? field.field_of_study ?? "",
+                  institution: entry?.institution ?? field.institution,
+                  isCurrent: Boolean(entry?.is_current),
+                  credentialRegistration: register(
+                    `education.${index}.credential`,
+                  ),
+                  fieldOfStudyRegistration: register(
+                    `education.${index}.field_of_study`,
+                  ),
+                  institutionRegistration: register(
+                    `education.${index}.institution`,
+                  ),
+                  startDateRegistration: register(
+                    `education.${index}.start_date`,
+                  ),
+                  endDateRegistration: register(`education.${index}.end_date`),
+                  currentRegistration: register(
+                    `education.${index}.is_current`,
+                  ),
+                  errors: {
+                    credential: errors.education?.[index]?.credential?.message,
+                    fieldOfStudy:
+                      errors.education?.[index]?.field_of_study?.message,
+                    institution:
+                      errors.education?.[index]?.institution?.message,
+                    startDate: errors.education?.[index]?.start_date?.message,
+                    endDate: errors.education?.[index]?.end_date?.message,
+                  },
+                };
+              })}
+              legacyCredential={
+                (values?.custom_education_level ?? "").trim() ||
+                educationLevels.find(
+                  (level) => String(level.id) === values?.education_level,
+                )?.name ||
+                (values?.education_level ? "Saved education level" : "")
+              }
+              legacyInstitution={values?.school ?? ""}
+              legacyEducationLevelRegistration={register("education_level")}
+              legacyCustomEducationRegistration={register(
+                "custom_education_level",
+              )}
+              legacySchoolRegistration={register("school")}
+              rootError={
+                errors.education?.root?.message ||
+                errors.education_level?.message ||
+                errors.custom_education_level?.message ||
+                errors.school?.message
+              }
+              onAdd={() =>
+                education.append({
+                  credential: "",
+                  field_of_study: "",
+                  institution: "",
+                  start_date: "",
+                  end_date: "",
+                  is_current: false,
+                })
+              }
+              onRemove={(index) => education.remove(index)}
+              onCurrentChange={(index, isCurrent) => {
+                if (isCurrent) {
+                  setValue(`education.${index}.end_date`, "", {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }
+              }}
+            />
+          </WorkEducationFormSection>
+        </ContactFormMain>
+
+        <ContactFormRail>
+          <ContactDraftProfilePreview
+            presentation={draftPresentation}
+            profilePicture={selectedProfilePicture}
+          />
+          <ContactFormProfileProgress items={progressItems} />
+        </ContactFormRail>
+      </ContactFormLayout>
+
+      <footer className="relative z-20 flex min-w-0 flex-col gap-3 rounded-xl border border-primary/15 bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-sm md:sticky md:bottom-3 md:flex-row md:items-center md:justify-between">
+        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck
+            className="size-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
+          Your entries are private and only visible to you.
+        </p>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-2 sm:flex sm:shrink-0 sm:justify-end">
+          <Button asChild variant="outline">
+            <Link href={contact ? `/contacts/${contact.id}` : "/contacts"}>
+              Cancel
+            </Link>
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full sm:min-w-32"
+          >
+            {isSubmitting
+              ? contact
+                ? "Saving..."
+                : "Creating..."
+              : submitLabel}
           </Button>
         </div>
-      )}
+      </footer>
     </form>
   );
 }
 
-function CreateSection({
-  title,
-  description,
-  icon,
-  className = "",
-  children,
-}: {
-  title: string;
-  description: string;
-  icon: ReactNode;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className={`rounded-lg border border-border/80 bg-card p-4 shadow-sm sm:p-5 ${className}`}>
-      <div className="flex items-start gap-3">
-        <IconBadge tone="accent" size="md" className="rounded-md">
-          {icon}
-        </IconBadge>
-        <div className="min-w-0">
-          <h2 className="text-base font-semibold leading-5">{title}</h2>
-          {description && (
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              {description}
-            </p>
-          )}
-        </div>
-      </div>
-      {children}
-    </section>
-  );
+function findFirstInvalidFieldPath(errors: FieldErrors<ContactFormValues>) {
+  for (const fieldName of validationFocusOrder) {
+    const error = errors[fieldName];
+    if (!error) continue;
+    return findNestedErrorPath(error, String(fieldName)) ?? String(fieldName);
+  }
+  return null;
 }
 
-function HelperNotice({
-  tone,
-  icon,
-  className = "",
-  children,
-}: {
-  tone: "accent" | "info" | "warning" | "success";
-  icon?: ReactNode;
-  className?: string;
-  children: ReactNode;
-}) {
-  const toneClassName = {
-    accent: "bg-accent/70 text-accent-foreground",
-    info: "bg-info-muted text-info",
-    warning: "bg-warning-muted text-warning",
-    success: "bg-success-muted text-success",
-  }[tone];
-
-  return (
-    <p className={`flex items-start gap-2 rounded-md px-3 py-2 text-xs leading-5 ${toneClassName} ${className}`}>
-      {icon && <span className="mt-0.5 shrink-0">{icon}</span>}
-      <span>{children}</span>
-    </p>
-  );
-}
-
-function LiveProfilePreview({
-  displayName,
-  initials,
-  profilePicture,
-  relationName,
-  hasContactDetails,
-}: {
-  displayName: string;
-  initials: string;
-  profilePicture: MediaAssetListItem | null;
-  relationName: string;
-  hasContactDetails: boolean;
-}) {
-  return (
-    <section className="rounded-lg border border-border/80 bg-card p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <IconBadge tone="accent" size="sm" className="rounded-md">
-          <Eye className="size-4" />
-        </IconBadge>
-        <h2 className="text-sm font-semibold">Live profile preview</h2>
-      </div>
-
-      <div className="mt-5 text-center">
-        <div className="mx-auto flex size-24 items-center justify-center overflow-hidden rounded-full border border-primary-soft bg-accent text-accent-foreground">
-          {profilePicture?.url ? (
-            <div
-              role="img"
-              aria-label={profilePicture.alt_text || "Selected profile photo"}
-              className="size-full bg-cover bg-center"
-              style={{ backgroundImage: `url(${profilePicture.url})` }}
-            />
-          ) : initials ? (
-            <span className="text-2xl font-semibold">{initials}</span>
-          ) : (
-            <UserRound className="size-7" aria-hidden="true" />
-          )}
-        </div>
-        <p
-          className="mt-3 truncate text-lg font-semibold"
-          title={displayName || "Name not added yet"}
-          aria-label={displayName || "Name not added yet"}
-        >
-          {displayName || <span aria-hidden="true">---</span>}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">{relationName}</p>
-        <p className="mt-4 text-xs leading-5 text-muted-foreground">
-          {hasContactDetails
-            ? "Contact details added"
-            : "No contact details added yet"}
-        </p>
-      </div>
-
-      <HelperNotice
-        tone="accent"
-        icon={<Heart className="size-4" aria-hidden="true" />}
-        className="mt-4 text-left"
-      >
-        This preview reflects the details you add on the left.
-      </HelperNotice>
-    </section>
-  );
-}
-
-function DetailsAdded({
-  statuses,
-}: {
-  statuses: {
-    identity: DetailStatus;
-    contact: DetailStatus;
-    dates: DetailStatus;
-    background: DetailStatus;
-  };
-}) {
-  return (
-    <section className="rounded-lg border border-border/80 bg-card p-4 shadow-sm">
-      <h2 className="text-sm font-semibold">Details added</h2>
-      <div className="mt-3 divide-y divide-border">
-        <DetailStatusRow
-          icon={<UserRound className="size-4" />}
-          label="Who they are"
-          status={statuses.identity}
-        />
-        <DetailStatusRow
-          icon={<UsersRound className="size-4" />}
-          label="Contact details"
-          status={statuses.contact}
-        />
-        <DetailStatusRow
-          icon={<CalendarDays className="size-4" />}
-          label="Important dates"
-          status={statuses.dates}
-        />
-        <DetailStatusRow
-          icon={<BriefcaseBusiness className="size-4" />}
-          label="Background"
-          status={statuses.background}
-        />
-      </div>
-      <HelperNotice
-        tone="warning"
-        icon={<Sparkles className="size-4" aria-hidden="true" />}
-        className="mt-4"
-      >
-        Add a few details to build a complete, meaningful profile.
-      </HelperNotice>
-    </section>
-  );
-}
-
-function DetailStatusRow({
-  icon,
-  label,
-  status,
-}: {
-  icon: ReactNode;
-  label: string;
-  status: DetailStatus;
-}) {
-  const tone =
-    status === "Complete"
-      ? "success"
-      : status === "Partial"
-        ? "info"
-        : "neutral";
-  const StatusIcon = status === "Complete" ? CheckCircle2 : Circle;
-
-  return (
-    <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-      <div className="flex min-w-0 items-center gap-2">
-        <IconBadge tone={tone} size="sm" className="rounded-md">
-          {icon}
-        </IconBadge>
-        <span className="truncate text-sm">{label}</span>
-      </div>
-      <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-        <StatusIcon className="size-3" aria-hidden="true" />
-        {status}
-      </span>
-    </div>
-  );
-}
-
-function DefaultContactFormFields({
-  contact,
-  errors,
-  isLoading,
-  occupations,
-  relations,
-  educationLevels,
-  register,
-  setValue,
-}: {
-  contact?: Contact | null;
-  errors: ReturnType<typeof useForm<ContactFormValues>>["formState"]["errors"];
-  isLoading: boolean;
-  occupations: ReturnType<typeof useLookups>["occupations"];
-  relations: ReturnType<typeof useLookups>["relations"];
-  educationLevels: ReturnType<typeof useLookups>["educationLevels"];
-  register: ReturnType<typeof useForm<ContactFormValues>>["register"];
-  setValue: ReturnType<typeof useForm<ContactFormValues>>["setValue"];
-}) {
-  return (
-    <>
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-lg font-semibold">Identity</h2>
-        <div className="mt-4">
-          <Label>Profile Picture</Label>
-          <div className="mt-2">
-            <ProfilePictureSelector
-              current={contact?.profile_picture}
-              error={errors.profile_picture_id?.message}
-              onChange={(mediaId) => setValue("profile_picture_id", mediaId)}
-            />
-          </div>
-        </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <FormField id="first_name" label="First Name" required error={errors.first_name?.message}>
-            <Input id="first_name" required aria-invalid={Boolean(errors.first_name)} {...register("first_name")} />
-          </FormField>
-          <FormField id="middle_name" label="Middle Name" error={errors.middle_name?.message}>
-            <Input id="middle_name" aria-invalid={Boolean(errors.middle_name)} {...register("middle_name")} />
-          </FormField>
-          <FormField id="last_name" label="Last Name" required error={errors.last_name?.message}>
-            <Input id="last_name" required aria-invalid={Boolean(errors.last_name)} {...register("last_name")} />
-          </FormField>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-lg font-semibold">Contact</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <FormField id="email" label="Email" error={errors.email?.message}>
-            <Input id="email" type="email" aria-invalid={Boolean(errors.email)} {...register("email")} />
-          </FormField>
-          <FormField id="phone_number" label="Phone" error={errors.phone_number?.message}>
-            <Input id="phone_number" aria-invalid={Boolean(errors.phone_number)} {...register("phone_number")} />
-          </FormField>
-          <FormField id="address" label="Address" error={errors.address?.message}>
-            <Input id="address" aria-invalid={Boolean(errors.address)} {...register("address")} />
-          </FormField>
-          <FormField id="birthday" label="Birthday" error={errors.birthday?.message}>
-            <Input id="birthday" type="date" aria-invalid={Boolean(errors.birthday)} {...register("birthday")} />
-          </FormField>
-          <FormField id="first_met_date" label="First Met" error={errors.first_met_date?.message}>
-            <Input id="first_met_date" type="date" aria-invalid={Boolean(errors.first_met_date)} {...register("first_met_date")} />
-          </FormField>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-lg font-semibold">Work and Education</h2>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <FormField id="relation" label="Relation" error={errors.relation?.message}>
-            <select id="relation" className={selectClassName} disabled={isLoading} {...register("relation")}>
-              <option value="">No relation</option>
-              {relations.map((relation) => <option key={relation.id} value={String(relation.id)}>{relation.name}</option>)}
-            </select>
-          </FormField>
-          <FormField id="occupation" label="Occupation" error={errors.occupation?.message}>
-            <select id="occupation" className={selectClassName} disabled={isLoading} {...register("occupation")}>
-              <option value="">No occupation</option>
-              {occupations.map((occupation) => <option key={occupation.id} value={String(occupation.id)}>{occupation.name}</option>)}
-            </select>
-          </FormField>
-          <FormField id="custom_occupation" label="Custom Occupation" error={errors.custom_occupation?.message}>
-            <Input id="custom_occupation" {...register("custom_occupation")} />
-          </FormField>
-          <FormField id="company" label="Company" error={errors.company?.message}>
-            <Input id="company" {...register("company")} />
-          </FormField>
-          <FormField id="education_level" label="Education Level" error={errors.education_level?.message}>
-            <select id="education_level" className={selectClassName} disabled={isLoading} {...register("education_level")}>
-              <option value="">No education level</option>
-              {educationLevels.map((level) => <option key={level.id} value={String(level.id)}>{level.name}</option>)}
-            </select>
-          </FormField>
-          <FormField id="custom_education_level" label="Custom Education" error={errors.custom_education_level?.message}>
-            <Input id="custom_education_level" {...register("custom_education_level")} />
-          </FormField>
-          <FormField id="school" label="School" error={errors.school?.message}>
-            <Input id="school" {...register("school")} />
-          </FormField>
-        </div>
-      </section>
-    </>
-  );
-}
-
-function FormField({
-  id,
-  label,
-  required = false,
-  error,
-  className = "",
-  children,
-}: {
-  id: string;
-  label: string;
-  required?: boolean;
-  error?: string;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className={`min-w-0 space-y-1.5 ${className}`}>
-      <Label htmlFor={id}>
-        {label}
-        {required && (
-          <>
-            <span className="text-destructive" aria-hidden="true">*</span>
-            <span className="sr-only">required</span>
-          </>
-        )}
-      </Label>
-      {children}
-      {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function getInitials(firstName: string, lastName: string) {
-  return `${firstName.trim().charAt(0)}${lastName.trim().charAt(0)}`.toUpperCase();
-}
-
-function hasValue(value: unknown) {
-  return typeof value === "string" ? value.trim().length > 0 : value != null;
-}
-
-function getDetailStatus(values: unknown[], isComplete: boolean): DetailStatus {
-  if (!values.some(hasValue)) {
-    return "Not set";
+function findNestedErrorPath(value: unknown, path: string): string | null {
+  if (!value || typeof value !== "object") return null;
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const nested = findNestedErrorPath(value[index], `${path}.${index}`);
+      if (nested) return nested;
+    }
+    return null;
   }
 
-  return isComplete ? "Complete" : "Partial";
-}
+  const record = value as Record<string, unknown>;
+  if (typeof record.message === "string") return path;
 
-function errorId(id: string, error?: string) {
-  return error ? `${id}-error` : undefined;
+  for (const [key, nestedValue] of Object.entries(record)) {
+    if (["ref", "type", "types", "message"].includes(key)) continue;
+    const nested = findNestedErrorPath(nestedValue, `${path}.${key}`);
+    if (nested) return nested;
+  }
+  return null;
 }

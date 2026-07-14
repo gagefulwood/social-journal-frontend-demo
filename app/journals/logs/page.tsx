@@ -34,83 +34,85 @@ export default function JournalLogsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h1 className="font-display text-3xl">Journals</h1>
-              <p className="text-sm text-muted-foreground">
-                Manage your logs, reflections, and exercises here.
-              </p>
-            </div>
-            <Button asChild>
-              <Link href="/journals/new">
-                <Plus className="size-4" />
-                New Log
-              </Link>
-            </Button>
-          </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-sans text-3xl font-semibold leading-tight">
+            Journals
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your logs, reflections, and exercises here.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/journals/new">
+            <Plus className="size-4" />
+            New Log
+          </Link>
+        </Button>
+      </div>
 
-          <section className="grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[auto_1fr_auto] md:items-center">
-            <Tabs
-              value="logs"
-              onValueChange={(value) => {
-                if (value === "all") {
-                  router.push("/journals");
-                }
-                if (value === "reflections") {
-                  router.push("/journals/reflections");
-                }
-                if (value === "exercises") {
-                  router.push("/journals/exercises");
-                }
-              }}
-            >
-              <TabsList className="w-full md:w-fit">
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="logs">Logs</TabsTrigger>
-                <TabsTrigger value="reflections">Reflections</TabsTrigger>
-                <TabsTrigger value="exercises">Exercises</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <Input
-              value={search}
-              placeholder="Search by title"
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-            <JournalFilterPopover
-              mood={mood}
-              entryTag={entryTag}
-              moods={moods}
-              entryTags={entryTags}
-              isLoading={lookupsLoading}
-              activeFilterCount={activeFilterCount}
-              onMoodChange={(value) => {
-                setMood(value);
-                setPage(1);
-              }}
-              onTagChange={(value) => {
-                setEntryTag(value);
-                setPage(1);
-              }}
-              onClearFilters={() => {
-                setMood("");
-                setEntryTag("");
-                setPage(1);
-              }}
-            />
-          </section>
+      <section className="grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[auto_1fr_auto] md:items-center">
+        <Tabs
+          value="logs"
+          onValueChange={(value) => {
+            if (value === "all") {
+              router.push("/journals");
+            }
+            if (value === "reflections") {
+              router.push("/journals/reflections");
+            }
+            if (value === "exercises") {
+              router.push("/journals/exercises");
+            }
+          }}
+        >
+          <TabsList className="w-full md:w-fit">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="logs">Logs</TabsTrigger>
+            <TabsTrigger value="reflections">Reflections</TabsTrigger>
+            <TabsTrigger value="exercises">Exercises</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <Input
+          value={search}
+          placeholder="Search by title"
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+        />
+        <JournalFilterPopover
+          mood={mood}
+          entryTag={entryTag}
+          moods={moods}
+          entryTags={entryTags}
+          isLoading={lookupsLoading}
+          activeFilterCount={activeFilterCount}
+          onMoodChange={(value) => {
+            setMood(value);
+            setPage(1);
+          }}
+          onTagChange={(value) => {
+            setEntryTag(value);
+            setPage(1);
+          }}
+          onClearFilters={() => {
+            setMood("");
+            setEntryTag("");
+            setPage(1);
+          }}
+        />
+      </section>
 
-          <JournalLogGrid
-            logs={logs}
-            loading={loading}
-            error={error}
-            page={page}
-            totalCount={data?.count ?? 0}
-            onPageChange={setPage}
-            onRetry={refetch}
-          />
+      <JournalLogGrid
+        logs={logs}
+        loading={loading}
+        error={error}
+        page={page}
+        totalCount={data?.count ?? 0}
+        onPageChange={setPage}
+        onRetry={refetch}
+      />
     </main>
   );
 }

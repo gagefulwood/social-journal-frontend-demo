@@ -55,7 +55,7 @@ export function RelationshipStatChips({ model }: RelationshipStatChipsProps) {
   }>;
 
   return (
-    <div className="grid gap-2.5 lg:grid-cols-5">
+    <div className="grid min-w-0 max-w-full gap-2.5 sm:grid-cols-2 2xl:grid-cols-5">
       {chips.map((chip) => (
         <MetricChip
           key={chip.eyebrow}

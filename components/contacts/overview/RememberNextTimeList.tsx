@@ -11,8 +11,8 @@ export function RememberNextTimeList({ model }: RememberNextTimeListProps) {
     return (
       <ContactOverviewEmptyState
         icon={<Bookmark className="size-4" />}
-        title="No remembered context yet"
-        copy="Short facts and recent observations will appear here when there is context to remember."
+        title="No conversation cues yet"
+        copy="Mark a useful Fact or save a conversation cue to see it here."
       />
     );
   }

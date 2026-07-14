@@ -41,7 +41,9 @@ export default function ContactsPage() {
     <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl sm:text-4xl">Your people</h1>
+          <h1 className="font-sans text-3xl font-semibold leading-tight sm:text-4xl">
+            Your people
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             The relationships and context you have chosen to remember.
           </p>

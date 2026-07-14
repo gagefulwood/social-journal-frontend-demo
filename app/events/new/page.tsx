@@ -12,45 +12,47 @@ import { useEffect, useState } from "react";
 import { lookupsApi } from "@/lib/api/lookups";
 
 export default function NewEventPage() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const initialContactId = searchParams.get("contact");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialContactId = searchParams.get("contact");
 
-    const [categories, setCategories] = useState<ContextCategory[]>([]);
+  const [categories, setCategories] = useState<ContextCategory[]>([]);
 
-    useEffect(() => {
-        async function load() {
-            const data = await lookupsApi.listContextCategories();
-            setCategories(data);
-        }
+  useEffect(() => {
+    async function load() {
+      const data = await lookupsApi.listContextCategories();
+      setCategories(data);
+    }
 
-        load();
-    }, []);
+    load();
+  }, []);
 
-    return (
-        <main className="mx-auto w-full max-w-4xl px-4 py-8">
-            <div className="mb-6 flex items-center justify-between gap-4">
-                <div>
-                    <h1 className="font-display text-3xl">New Event</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Add details about your event.
-                    </p>
-                </div>
-                <Button asChild variant="outline">
-                    <Link href="/events">Cancel</Link>
-                </Button>
-            </div>
+  return (
+    <main className="mx-auto w-full max-w-4xl px-4 py-8">
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="font-sans text-3xl font-semibold leading-tight">
+            New Event
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Add details about your event.
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/events">Cancel</Link>
+        </Button>
+      </div>
 
-            <EventsForm
-                submitLabel="Create Event"
-                categories={categories}
-                initialContactId={initialContactId}
-                onSubmit={async (data: CreateEventRequest | UpdateEventRequest) => {
-                    await eventsApi.create(data as CreateEventRequest);
-                    toast.success("Event created.");
-                    router.push(`/events`);
-                }}
-            />
-        </main>
-    );
+      <EventsForm
+        submitLabel="Create Event"
+        categories={categories}
+        initialContactId={initialContactId}
+        onSubmit={async (data: CreateEventRequest | UpdateEventRequest) => {
+          await eventsApi.create(data as CreateEventRequest);
+          toast.success("Event created.");
+          router.push(`/events`);
+        }}
+      />
+    </main>
+  );
 }

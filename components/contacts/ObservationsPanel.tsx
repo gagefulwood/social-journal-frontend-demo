@@ -165,9 +165,9 @@ export function ObservationsPanel({
                         >
                           {marker?.name ?? "Observation"}
                         </span>
-                        {!observation.is_active && (
+                        {observation.status === "archived" && (
                           <span className="rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
-                            Inactive
+                            Archived
                           </span>
                         )}
                       </div>
@@ -357,7 +357,7 @@ function ObservationEditorFields({
       };
 
       if (mode === "create") {
-        payload.is_active = true;
+        payload.status = "current";
       }
 
       await onSubmit({

@@ -14,7 +14,7 @@ import type {
 const observationSchema = z.object({
   marker: z.string().optional(),
   body: z.string().min(1, "Observation is required"),
-  is_active: z.boolean(),
+  status: z.enum(["current", "revisit_later", "archived"]),
 });
 
 type ObservationFormValues = z.infer<typeof observationSchema>;
@@ -40,7 +40,7 @@ export function ObservationForm({
     defaultValues: {
       marker: observation?.marker == null ? "" : String(observation.marker),
       body: observation?.body ?? "",
-      is_active: observation?.is_active ?? true,
+      status: observation?.status ?? "current",
     },
   });
 
@@ -51,7 +51,7 @@ export function ObservationForm({
         await onSubmit({
           marker: values.marker || null,
           body: values.body,
-          is_active: values.is_active,
+          status: values.status,
         });
       })}
     >
@@ -85,12 +85,18 @@ export function ObservationForm({
           </p>
         )}
       </div>
-      {observation && (
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" {...register("is_active")} />
-          Active
-        </label>
-      )}
+      <div>
+        <Label htmlFor="observation-status">Status</Label>
+        <select
+          id="observation-status"
+          className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          {...register("status")}
+        >
+          <option value="current">Current</option>
+          <option value="revisit_later">Revisit later</option>
+          <option value="archived">Archived</option>
+        </select>
+      </div>
       <div className="flex gap-2">
         <Button type="submit" disabled={isSubmitting}>
           {observation ? "Save Observation" : "Add Observation"}

@@ -28,7 +28,7 @@ export function ContactMethodsCompact({
           </IconBadge>
         }
         title="No contact methods yet"
-        copy="Use More details to edit contact info."
+        copy="Use the contact actions menu, then Edit contact, to add contact info."
         className="text-left"
       />
     );
@@ -39,37 +39,37 @@ export function ContactMethodsCompact({
       label: "Email",
       href: email ? `mailto:${email}` : null,
       disabledLabel: "Email address not set",
-      icon: <Mail className="size-4" />,
+      icon: <Mail className="size-4 shrink-0" />,
     },
     {
       label: "Call",
       href: phoneNumber ? `tel:${phoneNumber}` : null,
       disabledLabel: "Phone number not set",
-      icon: <Phone className="size-4" />,
+      icon: <Phone className="size-4 shrink-0" />,
     },
   ];
 
   return (
     <TooltipProvider>
-      <div className="mx-auto grid w-full max-w-36 grid-cols-2 justify-items-center gap-3">
+      <div className="grid w-full grid-cols-2 gap-2">
         {methods.map((method) =>
           method.href ? (
             <Button
               key={method.label}
               asChild
               variant="outline"
-              size="icon"
-              className="size-14 bg-background/80 text-primary-strong transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/20 hover:shadow-sm active:translate-y-0 motion-reduce:hover:translate-y-0"
+              className="h-10 min-w-0 bg-background/80 text-primary-strong"
             >
               <a href={method.href} aria-label={method.label}>
                 {method.icon}
+                <span>{method.label}</span>
               </a>
             </Button>
           ) : (
             <Tooltip key={method.label}>
               <TooltipTrigger asChild>
                 <span
-                  className="inline-flex cursor-not-allowed rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="inline-flex w-full cursor-not-allowed rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   role="button"
                   tabIndex={0}
                   aria-label={method.disabledLabel}
@@ -78,14 +78,14 @@ export function ContactMethodsCompact({
                   <Button
                     type="button"
                     variant="outline"
-                    size="icon"
                     disabled
                     className={cn(
-                      "size-14 border-dashed bg-background/60 text-muted-foreground opacity-45",
+                      "h-10 w-full border-dashed bg-background/60 text-muted-foreground opacity-45",
                     )}
                     aria-hidden="true"
                   >
                     {method.icon}
+                    <span>{method.label}</span>
                   </Button>
                 </span>
               </TooltipTrigger>
