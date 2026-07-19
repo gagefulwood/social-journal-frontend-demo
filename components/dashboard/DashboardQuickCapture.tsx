@@ -5,6 +5,10 @@ import { CalendarDays, PenLine, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { ContactPicker } from "@/components/contacts/ContactPicker";
 import { contactName } from "@/components/contacts/contact-utils";
+import {
+  NewJournalChooser,
+  type NewJournalChooserOption,
+} from "@/components/journals/chooser/NewJournalChooser";
 import { IconBadge } from "@/components/ui/icon-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +25,13 @@ type DashboardQuickCaptureProps = {
   onCreated: () => Promise<void>;
 };
 
+type SubmitIntent = "save" | "journal";
+
+type SavedJournalContext = {
+  eventId: ApiId;
+  contactId: ApiId | null;
+};
+
 function localDateTimeValue(date = new Date()) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
@@ -34,7 +45,11 @@ export function DashboardQuickCapture({
   const [contactId, setContactId] = useState<ApiId | null>(null);
   const [contactLabel, setContactLabel] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitIntent, setSubmitIntent] = useState<SubmitIntent | null>(null);
+  const [journalContext, setJournalContext] =
+    useState<SavedJournalContext | null>(null);
+  const [chooserOpen, setChooserOpen] = useState(false);
+  const submitting = submitIntent != null;
   const [error, setError] = useState<string | null>(null);
 
   function selectContact(contact: ContactListItem | null) {
@@ -42,29 +57,61 @@ export function DashboardQuickCapture({
     setPickerOpen(false);
   }
 
-  async function saveMoment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedTitle = title.trim();
-
-    if (!trimmedTitle || submitting) {
+  function clearSavedJournalContext() {
+    if (!journalContext) {
       return;
     }
 
-    setSubmitting(true);
+    setJournalContext(null);
+    setChooserOpen(false);
+  }
+
+  async function createMoment(intent: SubmitIntent) {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle || !eventTimestamp || submitting) {
+      return;
+    }
+
+    const savedContactId = contactId;
+    setSubmitIntent(intent);
     setError(null);
 
     try {
-      await eventsApi.create({
+      const created = await eventsApi.create({
         title: trimmedTitle,
         event_timestamp: new Date(eventTimestamp).toISOString(),
-        participants: contactId == null ? [] : [contactId],
+        participants: savedContactId == null ? [] : [savedContactId],
       });
+      setSubmitIntent(null);
+
       setTitle("");
       setEventTimestamp(localDateTimeValue());
       setContactId(null);
       setContactLabel(null);
-      await onCreated();
-      toast.success("Moment saved.");
+
+      if (intent === "journal") {
+        setJournalContext({
+          eventId: created.id,
+          contactId: savedContactId,
+        });
+        setChooserOpen(true);
+      } else {
+        setJournalContext(null);
+        setChooserOpen(false);
+      }
+
+      toast.success(
+        intent === "journal"
+          ? "Moment saved. Choose a journal."
+          : "Moment saved.",
+      );
+
+      try {
+        await onCreated();
+      } catch {
+        toast.error("Moment saved, but the dashboard could not refresh.");
+      }
     } catch (caughtError) {
       const message =
         caughtError instanceof Error
@@ -72,8 +119,28 @@ export function DashboardQuickCapture({
           : "Unable to save this moment.";
       setError(message);
     } finally {
-      setSubmitting(false);
+      setSubmitIntent(null);
     }
+  }
+
+  function saveMoment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void createMoment("save");
+  }
+
+  function getJournalOptionHref(option: NewJournalChooserOption) {
+    if (!journalContext) {
+      return option.href;
+    }
+
+    const context = new URLSearchParams({
+      event: String(journalContext.eventId),
+    });
+    if (journalContext.contactId != null) {
+      context.set("contact", String(journalContext.contactId));
+    }
+
+    return `${option.href}?${context.toString()}`;
   }
 
   return (
@@ -90,7 +157,10 @@ export function DashboardQuickCapture({
           <span className="sr-only">What happened?</span>
           <Input
             value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            onChange={(event) => {
+              clearSavedJournalContext();
+              setTitle(event.target.value);
+            }}
             placeholder="What happened?"
             aria-describedby={error ? "dashboard-capture-error" : undefined}
             className="h-11 bg-background"
@@ -110,12 +180,16 @@ export function DashboardQuickCapture({
               <span className="truncate">{contactLabel ?? "With whom?"}</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))]">
+          <PopoverContent
+            align="start"
+            className="w-[min(22rem,calc(100vw-2rem))]"
+          >
             <p className="font-medium">With whom?</p>
             <ContactPicker
               value={contactId ?? undefined}
               onChange={(value) => {
-                setContactId(Array.isArray(value) ? value[0] ?? null : value);
+                clearSavedJournalContext();
+                setContactId(Array.isArray(value) ? (value[0] ?? null) : value);
                 if (value == null) {
                   setContactLabel(null);
                 }
@@ -134,24 +208,69 @@ export function DashboardQuickCapture({
           <Input
             type="datetime-local"
             value={eventTimestamp}
-            onChange={(event) => setEventTimestamp(event.target.value)}
+            onChange={(event) => {
+              clearSavedJournalContext();
+              setEventTimestamp(event.target.value);
+            }}
             className="h-11 bg-background pl-9"
             disabled={submitting}
           />
         </label>
 
-        <Button
-          type="submit"
-          size="lg"
-          className="h-11 w-full lg:w-auto"
-          disabled={!title.trim() || !eventTimestamp || submitting}
-        >
-          {submitting ? "Saving..." : "Save moment"}
-        </Button>
+        <div className="flex flex-wrap gap-2 lg:flex-nowrap">
+          <Button
+            type="submit"
+            size="lg"
+            className="h-11 flex-1 whitespace-nowrap lg:flex-none"
+            disabled={!title.trim() || !eventTimestamp || submitting}
+          >
+            {submitIntent === "save" ? "Saving..." : "Save moment"}
+          </Button>
+          <NewJournalChooser
+            open={chooserOpen}
+            onOpenChange={(nextOpen) => {
+              if (journalContext) {
+                setChooserOpen(nextOpen);
+              }
+            }}
+            getOptionHref={getJournalOptionHref}
+            onOptionSelect={() => setChooserOpen(false)}
+            trigger={
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                className="h-11 flex-1 whitespace-nowrap lg:flex-none"
+                disabled={
+                  submitting ||
+                  (!journalContext && (!title.trim() || !eventTimestamp))
+                }
+                onClick={(event) => {
+                  if (journalContext) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  void createMoment("journal");
+                }}
+              >
+                {submitIntent === "journal"
+                  ? "Saving..."
+                  : journalContext
+                    ? "Choose journal"
+                    : "Save & journal"}
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {error && (
-        <p id="dashboard-capture-error" role="alert" className="mt-3 text-sm text-destructive">
+        <p
+          id="dashboard-capture-error"
+          role="alert"
+          className="mt-3 text-sm text-destructive"
+        >
           {error}
         </p>
       )}

@@ -8,10 +8,18 @@ import { EventsForm } from "@/components/events/EventForm";
 import type { CreateEventRequest, UpdateEventRequest } from "@/types/events";
 import { eventsApi } from "@/lib/api/eventsApi";
 import type { ContextCategory } from "@/types/lookups";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { lookupsApi } from "@/lib/api/lookups";
 
 export default function NewEventPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-background" />}>
+      <NewEventPageContent />
+    </Suspense>
+  );
+}
+
+function NewEventPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialContactId = searchParams.get("contact");

@@ -1,156 +1,154 @@
+import type { AxiosRequestConfig } from "axios";
+
 import api from "@/lib/api/client";
 import type { ApiId } from "@/types/api";
 import type {
-  Log,
-  Reflection,
-  Exercise,
+  CompleteJournalRequest,
   CreateLogRequest,
-  UpdateLogRequest,
   CreateReflectionRequest,
+  JournalFeedParams,
+  JournalListResponse,
+  JournalLookupOption,
+  Log,
+  LogFormat,
+  LogPatternResponse,
+  Reflection,
+  ReflectionLens,
+  UpdateLogRequest,
   UpdateReflectionRequest,
-  CreateExerciseRequest,
-  UpdateExerciseRequest,
-  LogListResponse,
-  ReflectionListResponse,
-  ExerciseListResponse,
-  CombinedJournalFeedResponse,
 } from "@/types/journals";
 
-export type JournalFeedParams = {
-  page?: number;
-  page_size?: number;
-  kind?: string;
-  event?: ApiId;
-  title?: string;
-  created_after?: string;
-  created_before?: string;
+export type JournalLookupKind =
+  | "episode-categories"
+  | "episode-characteristics"
+  | "episode-context-tags"
+  | "social-energy-factors"
+  | "emotion-states"
+  | "interaction-dynamics";
+
+export type CreateJournalLookupRequest = {
+  name: string;
+  icon_reference?: string;
+  color?: string;
 };
-
-export type LogListParams = {
-  page?: number;
-  page_size?: number;
-  title?: string;
-  mood?: ApiId;
-  entry_tag?: ApiId;
-  event?: ApiId;
-};
-
-export type ReflectionListParams = {
-  page?: number;
-  page_size?: number;
-  title?: string;
-  clarity_check?: string;
-};
-
-export type ExerciseListParams = {
-  page?: number;
-  page_size?: number;
-  title?: string;
-  subtype?: string;
-};
-
-type MaybePaginated<TItem> = TItem[] | { results: TItem[] };
-
-export type EventListParams = {
-    page?: number;
-    page_size?: number;
-    title?: string;
-    context_category?: ApiId;
-}
-
-function normalizeList<TItem>(data: MaybePaginated<TItem>): TItem[] {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  return Array.isArray(data.results) ? data.results : [];
-}
 
 export const journalApi = {
   async listFeed(
-    params?: JournalFeedParams
-  ): Promise<CombinedJournalFeedResponse> {
-    const res = await api.get<CombinedJournalFeedResponse>("/api/journals/", {
+    params: JournalFeedParams = {},
+    config: Pick<AxiosRequestConfig, "signal"> = {},
+  ): Promise<JournalListResponse> {
+    const response = await api.get<JournalListResponse>("/api/journals/", {
+      ...config,
       params,
     });
-    return res.data;
-  },
-
-  async listLogs(params?: LogListParams): Promise<LogListResponse> {
-    const res = await api.get<LogListResponse>("/api/journals/logs/", {
-      params,
-    });
-    return res.data;
+    return response.data;
   },
 
   async getLog(id: ApiId): Promise<Log> {
-    const res = await api.get<Log>(`/api/journals/logs/${id}/`);
-    return res.data;
+    const response = await api.get<Log>(`/api/journals/logs/${id}/`);
+    return response.data;
   },
 
-  async createLog(data: CreateLogRequest): Promise<Log> {
-    const res = await api.post<Log>("/api/journals/logs/", data);
-    return res.data;
+  async createLog<F extends LogFormat>(
+    data: CreateLogRequest<F>,
+  ): Promise<Log<F>> {
+    const response = await api.post<Log<F>>("/api/journals/logs/", data);
+    return response.data;
   },
 
-  async updateLog(id: ApiId, data: UpdateLogRequest): Promise<Log> {
-    const res = await api.patch<Log>(`/api/journals/logs/${id}/`, data);
-    return res.data;
+  async updateLog<F extends LogFormat>(
+    id: ApiId,
+    data: UpdateLogRequest<F>,
+  ): Promise<Log<F>> {
+    const response = await api.patch<Log<F>>(`/api/journals/logs/${id}/`, data);
+    return response.data;
+  },
+
+  async completeLog(id: ApiId, data: CompleteJournalRequest): Promise<Log> {
+    const response = await api.post<Log>(
+      `/api/journals/logs/${id}/complete/`,
+      data,
+    );
+    return response.data;
   },
 
   async removeLog(id: ApiId): Promise<void> {
     await api.delete(`/api/journals/logs/${id}/`);
   },
 
-  async listReflections(params?: ReflectionListParams): Promise<ReflectionListResponse> {
-    const res = await api.get<ReflectionListResponse>("/api/journals/reflections/", {
-      params,
-    });
-    return res.data;
-  },
-
   async getReflection(id: ApiId): Promise<Reflection> {
-    const res = await api.get<Reflection>(`/api/journals/reflections/${id}/`);
-    return res.data;
+    const response = await api.get<Reflection>(
+      `/api/journals/reflections/${id}/`,
+    );
+    return response.data;
   },
 
-  async createReflection(data: CreateReflectionRequest): Promise<Reflection> {
-    const res = await api.post<Reflection>("/api/journals/reflections/", data);
-    return res.data;
+  async createReflection<L extends ReflectionLens>(
+    data: CreateReflectionRequest<L>,
+  ): Promise<Reflection<L>> {
+    const response = await api.post<Reflection<L>>(
+      "/api/journals/reflections/",
+      data,
+    );
+    return response.data;
   },
 
-  async updateReflection(id: ApiId, data: UpdateReflectionRequest): Promise<Reflection> {
-    const res = await api.patch<Reflection>(`/api/journals/reflections/${id}/`, data);
-    return res.data;
+  async updateReflection<L extends ReflectionLens>(
+    id: ApiId,
+    data: UpdateReflectionRequest<L>,
+  ): Promise<Reflection<L>> {
+    const response = await api.patch<Reflection<L>>(
+      `/api/journals/reflections/${id}/`,
+      data,
+    );
+    return response.data;
+  },
+
+  async completeReflection(
+    id: ApiId,
+    data: CompleteJournalRequest,
+  ): Promise<Reflection> {
+    const response = await api.post<Reflection>(
+      `/api/journals/reflections/${id}/complete/`,
+      data,
+    );
+    return response.data;
   },
 
   async removeReflection(id: ApiId): Promise<void> {
     await api.delete(`/api/journals/reflections/${id}/`);
   },
 
-  async listExercises(params?: ExerciseListParams): Promise<ExerciseListResponse> {
-    const res = await api.get<ExerciseListResponse>("/api/journals/exercises/", {
-      params,
-    });
-    return res.data;
+  async listLookups(
+    kind: JournalLookupKind,
+    config: Pick<AxiosRequestConfig, "signal"> = {},
+  ): Promise<JournalLookupOption[]> {
+    const response = await api.get<JournalLookupOption[]>(
+      `/api/journals/lookups/${kind}/`,
+      config,
+    );
+    return response.data;
   },
 
-  async getExercise(id: ApiId): Promise<Exercise> {
-    const res = await api.get<Exercise>(`/api/journals/exercises/${id}/`);
-    return res.data;
+  async createLookup(
+    kind: Exclude<JournalLookupKind, "episode-categories">,
+    data: CreateJournalLookupRequest,
+  ): Promise<JournalLookupOption> {
+    const response = await api.post<JournalLookupOption>(
+      `/api/journals/lookups/${kind}/`,
+      data,
+    );
+    return response.data;
   },
 
-  async createExercise(data: CreateExerciseRequest): Promise<Exercise> {
-    const res = await api.post<Exercise>("/api/journals/exercises/", data);
-    return res.data;
-  },
-
-  async updateExercise(id: ApiId, data: UpdateExerciseRequest): Promise<Exercise> {
-    const res = await api.patch<Exercise>(`/api/journals/exercises/${id}/`, data);
-    return res.data;
-  },
-
-  async removeExercise(id: ApiId): Promise<void> {
-    await api.delete(`/api/journals/exercises/${id}/`);
+  async getLogPatterns(params?: {
+    format?: LogFormat;
+    days?: number;
+  }): Promise<LogPatternResponse> {
+    const response = await api.get<LogPatternResponse>(
+      "/api/journals/log-patterns/",
+      { params },
+    );
+    return response.data;
   },
 };

@@ -1,103 +1,104 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  journalApi,
-  type JournalFeedParams,
-} from "@/lib/api/journalApi";
+
+import { journalApi } from "@/lib/api/journalApi";
+import type { ApiId } from "@/types/api";
 import type { ApiError } from "@/types/auth";
 import type {
-  CombinedJournalFeedItem,
-  ExerciseListItem,
-  LogListItem,
-  ReflectionListItem,
+  JournalFeedParams,
+  JournalListResponse,
+  Log,
+  LogPatternResponse,
+  Reflection,
 } from "@/types/journals";
-import type { PaginatedResponse } from "@/types/api";
 
-export type LogListParams = {
-  page?: number;
-  page_size?: number;
-  title?: string;
-  mood?: string;
-  entry_tag?: string;
-};
-
-export type ReflectionListParams = {
-    page?: number;
-    page_size?: number;
-    title?: string;
-    mood?: string;
-    entry_tag?: string;
-};
-
-export type ExerciseListParams = {
-    page?: number;
-    page_size?: number;
-    title?: string;
-    mood?: string;
-    entry_tag?: string;
-};
-
-type LogListResponse = PaginatedResponse<LogListItem>;
-type ReflectionListResponse = PaginatedResponse<ReflectionListItem>;
-type ExerciseListResponse = PaginatedResponse<ExerciseListItem>;
-type JournalFeedResponse = PaginatedResponse<CombinedJournalFeedItem>;
+function stableParams(params: JournalFeedParams) {
+  return {
+    page: params.page,
+    page_size: params.page_size,
+    family: params.family,
+    status: params.status,
+    format: params.format,
+    search: params.search?.trim() || undefined,
+    contact: params.contact,
+    event: params.event,
+    occurred_after: params.occurred_after,
+    occurred_before: params.occurred_before,
+    ordering: params.ordering,
+  } satisfies JournalFeedParams;
+}
 
 export function useJournalFeed(params: JournalFeedParams = {}) {
-  const [data, setData] = useState<JournalFeedResponse | null>(null);
+  const {
+    contact,
+    event,
+    family,
+    format,
+    occurred_after,
+    occurred_before,
+    ordering,
+    page,
+    page_size,
+    search,
+    status,
+  } = params;
+  const requestParams = useMemo(
+    () =>
+      stableParams({
+        contact,
+        event,
+        family,
+        format,
+        occurred_after,
+        occurred_before,
+        ordering,
+        page,
+        page_size,
+        search,
+        status,
+      }),
+    [
+      contact,
+      event,
+      family,
+      format,
+      occurred_after,
+      occurred_before,
+      ordering,
+      page,
+      page_size,
+      search,
+      status,
+    ],
+  );
+  const [data, setData] = useState<JournalListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const [requestVersion, setRequestVersion] = useState(0);
 
-  const requestParams = useMemo(
-    () => ({
-      page: params.page,
-      page_size: params.page_size,
-      title: params.title?.trim() || undefined,
-      event: params.event,
-      kind: params.kind,
-      created_after: params.created_after,
-      created_before: params.created_before,
-    }),
-    [
-      params.page,
-      params.page_size,
-      params.title,
-      params.event,
-      params.kind,
-      params.created_after,
-      params.created_before,
-    ]
-  );
-
-  const fetchFeed = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await journalApi.listFeed(requestParams);
-      setData(response);
-    } catch (err) {
-      setError(err as ApiError);
-    } finally {
-      setLoading(false);
-    }
-  }, [requestParams]);
+  const refetch = useCallback(() => {
+    setRequestVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
+    const controller = new AbortController();
     let isActive = true;
 
-    async function loadFeed() {
+    async function load() {
       setLoading(true);
       setError(null);
 
       try {
-        const response = await journalApi.listFeed(requestParams);
+        const response = await journalApi.listFeed(requestParams, {
+          signal: controller.signal,
+        });
         if (isActive) {
           setData(response);
         }
-      } catch (err) {
-        if (isActive) {
-          setError(err as ApiError);
+      } catch (caught) {
+        if (isActive && !controller.signal.aborted) {
+          setError(caught as ApiError);
         }
       } finally {
         if (isActive) {
@@ -106,225 +107,176 @@ export function useJournalFeed(params: JournalFeedParams = {}) {
       }
     }
 
-    void loadFeed();
+    void load();
 
     return () => {
       isActive = false;
+      controller.abort();
     };
-  }, [requestParams]);
+  }, [requestParams, requestVersion]);
 
   return {
     data,
     entries: data?.results ?? [],
     loading,
     error,
-    refetch: fetchFeed,
+    refetch,
   };
 }
 
-export function useLogs(params: LogListParams = {}) {
-  const [data, setData] = useState<LogListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ApiError | null>(null);
+type JournalDetailState<TEntry> = {
+  request: {
+    target: { id: ApiId | null };
+    version: number;
+  };
+  entry: TEntry | null;
+  loading: boolean;
+  error: ApiError | null;
+};
 
-  const requestParams = useMemo(
-    () => ({
-      page: params.page,
-      page_size: params.page_size,
-      title: params.title?.trim() || undefined,
-      mood: params.mood || undefined,
-      entry_tag: params.entry_tag || undefined,
-    }),
-    [params.title, params.mood, params.entry_tag, params.page, params.page_size]
+function useJournalDetail<TEntry>(
+  id: ApiId | null | undefined,
+  loader: (id: ApiId) => Promise<TEntry>,
+) {
+  const requestId = id ?? null;
+  const requestTarget = useMemo(() => ({ id: requestId }), [requestId]);
+  const [requestVersion, setRequestVersion] = useState(0);
+  const request = useMemo(
+    () => ({ target: requestTarget, version: requestVersion }),
+    [requestTarget, requestVersion],
   );
-
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await journalApi.listLogs(requestParams);
-      setData(response);
-    } catch (err) {
-      setError(err as ApiError);
-    } finally {
-      setLoading(false);
-    }
-  }, [requestParams]);
+  const [state, setState] = useState<JournalDetailState<TEntry>>({
+    request,
+    entry: null,
+    loading: requestId != null,
+    error: null,
+  });
+  const refetch = useCallback(() => {
+    setRequestVersion((version) => version + 1);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
 
-    async function loadLogs() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await journalApi.listLogs(requestParams);
-        if (isActive) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isActive) {
-          setError(err as ApiError);
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
+    if (requestId == null) {
+      return;
     }
 
-    void loadLogs();
+    void loader(requestId)
+      .then((entry) => {
+        if (isActive) {
+          setState({
+            request,
+            entry,
+            loading: false,
+            error: null,
+          });
+        }
+      })
+      .catch((caught) => {
+        if (isActive) {
+          setState({
+            request,
+            entry: null,
+            loading: false,
+            error: caught as ApiError,
+          });
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [loader, request, requestId]);
+
+  const isCurrentRequest = state.request === request;
+  const visibleState = isCurrentRequest
+    ? state
+    : {
+        entry: state.request.target === requestTarget ? state.entry : null,
+        loading: requestId != null,
+        error: null,
+      };
+
+  return {
+    entry: visibleState.entry,
+    loading: visibleState.loading,
+    error: visibleState.error,
+    refetch,
+  };
+}
+
+export function useLog(id: ApiId | null | undefined) {
+  return useJournalDetail<Log>(id, journalApi.getLog);
+}
+
+export function useReflection(id: ApiId | null | undefined) {
+  return useJournalDetail<Reflection>(id, journalApi.getReflection);
+}
+
+export function useLogPatterns(
+  params: {
+    format?: Parameters<typeof journalApi.getLogPatterns>[0] extends infer T
+      ? T extends { format?: infer F }
+        ? F
+        : never
+      : never;
+    days?: number;
+  } = {},
+) {
+  const { days, format } = params;
+  const requestParams = useMemo(() => ({ days, format }), [days, format]);
+  const [state, setState] = useState<{
+    requestParams: typeof requestParams;
+    data: LogPatternResponse | null;
+    loading: boolean;
+    error: ApiError | null;
+  }>({
+    requestParams,
+    data: null,
+    loading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    let isActive = true;
+
+    void journalApi
+      .getLogPatterns(requestParams)
+      .then((response) => {
+        if (isActive) {
+          setState({
+            requestParams,
+            data: response,
+            loading: false,
+            error: null,
+          });
+        }
+      })
+      .catch((caught) => {
+        if (isActive) {
+          setState((current) => ({
+            requestParams,
+            data: current.data,
+            loading: false,
+            error: caught as ApiError,
+          }));
+        }
+      });
 
     return () => {
       isActive = false;
     };
   }, [requestParams]);
 
-  return {
-    data,
-    logs: data?.results ?? [],
-    loading,
-    error,
-    refetch: fetchLogs,
-  };
-}
-
-export function useRefs(params: ReflectionListParams = {}) {
-  const [data, setData] = useState<ReflectionListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ApiError | null>(null);
-
-  const requestParams = useMemo(
-    () => ({
-      page: params.page,
-      page_size: params.page_size,
-      title: params.title?.trim() || undefined,
-      mood: params.mood || undefined,
-      entry_tag: params.entry_tag || undefined,
-    }),
-    [params.title, params.mood, params.entry_tag, params.page, params.page_size]
-  );
-
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await journalApi.listReflections(requestParams);
-      setData(response);
-    } catch (err) {
-      setError(err as ApiError);
-    } finally {
-      setLoading(false);
-    }
-  }, [requestParams]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadRefs() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await journalApi.listReflections(requestParams);
-        if (isActive) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isActive) {
-          setError(err as ApiError);
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadRefs();
-
-    return () => {
-      isActive = false;
-    };
-  }, [requestParams]);
+  const visibleState =
+    state.requestParams === requestParams
+      ? state
+      : { ...state, loading: true, error: null };
 
   return {
-    data,
-    reflections: data?.results ?? [],
-    loading,
-    error,
-    refetch: fetchLogs,
-  };
-}
-
-export function useExercises(params: ExerciseListParams = {}) {
-  const [data, setData] = useState<ExerciseListResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<ApiError | null>(null);
-
-  const requestParams = useMemo(
-    () => ({
-      page: params.page,
-      page_size: params.page_size,
-      title: params.title?.trim() || undefined,
-      mood: params.mood || undefined,
-      entry_tag: params.entry_tag || undefined,
-    }),
-    [params.title, params.mood, params.entry_tag, params.page, params.page_size]
-  );
-
-  const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await journalApi.listExercises(requestParams);
-      setData(response);
-    } catch (err) {
-      setError(err as ApiError);
-    } finally {
-      setLoading(false);
-    }
-  }, [requestParams]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    async function loadExercises() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await journalApi.listExercises(requestParams);
-        if (isActive) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isActive) {
-          setError(err as ApiError);
-        }
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadExercises();
-
-    return () => {
-      isActive = false;
-    };
-  }, [requestParams]);
-
-  return {
-    data,
-    exercises: data?.results ?? [],
-    loading,
-    error,
-    refetch: fetchLogs,
+    data: visibleState.data,
+    loading: visibleState.loading,
+    error: visibleState.error,
   };
 }

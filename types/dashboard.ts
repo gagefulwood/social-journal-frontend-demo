@@ -19,7 +19,6 @@ export type DashboardDecayContact = {
 export type DashboardEntryKindCounts = {
   log: number;
   reflection: number;
-  exercise: number;
 };
 
 export type DashboardActivityStats = {
@@ -32,7 +31,12 @@ export type DashboardActivityStats = {
 
 export type DashboardEvent = Pick<
   EventListItem,
-  "id" | "title" | "event_timestamp" | "tier" | "participant_count" | "journaled"
+  | "id"
+  | "title"
+  | "event_timestamp"
+  | "tier"
+  | "participant_count"
+  | "journaled"
 > & {
   context_category: ContextCategory | null;
   journaled: boolean;

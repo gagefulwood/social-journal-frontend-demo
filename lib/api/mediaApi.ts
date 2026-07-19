@@ -4,6 +4,7 @@ import type {
   CreateMediaAssetRequest,
   MediaAsset,
   MediaAssetListResponse,
+  UpdateMediaAssetRequest,
 } from "@/types/media";
 
 export type MediaAssetListParams = {
@@ -37,6 +38,11 @@ export const mediaApi = {
     }
 
     const res = await api.post<MediaAsset>("/api/media/", formData);
+    return res.data;
+  },
+
+  async update(id: ApiId, data: UpdateMediaAssetRequest): Promise<MediaAsset> {
+    const res = await api.patch<MediaAsset>(`/api/media/${id}/`, data);
     return res.data;
   },
 

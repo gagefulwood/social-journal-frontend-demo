@@ -20,6 +20,20 @@ export function eventDate(event: Event | EventListItem) {
   }).format(date);
 }
 
+export function eventDateOnly(event: Event | EventListItem) {
+  const date = new Date(event.event_timestamp);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
 export function eventContextName(event: EventListItem) {
   return event.context_category?.name ?? null;
 }

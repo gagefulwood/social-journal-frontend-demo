@@ -1,142 +1,344 @@
-import type { ApiId, JsonObject, PaginatedResponse } from "@/types/api";
-import type { EntryTag, Mood } from "@/types/lookups";
+import type { ApiId, PaginatedResponse } from "@/types/api";
 
-export type EntryKind = "log" | "reflection" | "exercise";
+export type JournalFamily = "log" | "reflection";
+export type JournalStatus = "draft" | "completed";
+export type LogFormat = "episode" | "social_energy" | "sentiment";
+export type ReflectionLens = "interaction" | "moment" | "emotional" | "free";
+export type JournalFormat = LogFormat | ReflectionLens | "legacy";
 
-export type LogListItem = {
+export type JournalLookupOption = {
   id: ApiId;
-  kind: "log";
-  event: ApiId;
-  title: string;
-  mood: Mood | null;
-  tags: EntryTag[];
-  subtype: string;
-  created_timestamp: string;
-  updated_timestamp: string;
+  code: string;
+  name: string;
+  icon_reference: string;
+  color: string;
+  is_system_default: boolean;
 };
 
+export type JournalContactSummary = {
+  id: ApiId;
+  display_name: string;
+};
+
+export type JournalEventSummary = {
+  id: ApiId;
+  title: string;
+  start_timestamp: string;
+  end_timestamp: string | null;
+  location: string | null;
+};
+
+export type JournalCoverSummary = {
+  attachment_id: ApiId;
+  media_asset_id: ApiId;
+  media_type: string | null;
+  file_url: string;
+  alt_text: string;
+};
+
+export type JournalProgress = {
+  current_step: string;
+  completed_steps: number;
+  total_steps: number;
+  percent: number;
+};
+
+export type JournalListItem = {
+  id: ApiId;
+  family: JournalFamily;
+  format: JournalFormat;
+  status: JournalStatus;
+  title: string;
+  summary: string;
+  event: JournalEventSummary | null;
+  primary_contact: JournalContactSummary | null;
+  occurred_at: string | null;
+  current_step: string;
+  progress: JournalProgress;
+  revision: number;
+  created_timestamp: string;
+  updated_timestamp: string;
+  completed_at: string | null;
+  media_count: number;
+  cover: JournalCoverSummary | null;
+};
+
+export type JournalListResponse = PaginatedResponse<JournalListItem>;
+export type CombinedJournalFeedItem = JournalListItem;
+export type CombinedJournalFeedResponse = JournalListResponse;
+
+export type JournalAttachmentMedia = {
+  id: ApiId;
+  media_type: string | null;
+  file_url: string;
+  thumbnail_url: string | null;
+  original_filename: string;
+  duration_seconds: number | null;
+  content_type: string;
+  created_timestamp: string;
+  alt_text: string;
+  caption: string;
+};
+
+export type JournalAttachment = {
+  id: ApiId;
+  media_asset: JournalAttachmentMedia;
+  is_sensitive: boolean;
+  recorded_at: string | null;
+  display_order: number;
+  is_cover: boolean;
+};
+
+export type JournalAttachmentInput = {
+  id?: ApiId;
+  media_asset_id: ApiId;
+  is_sensitive?: boolean;
+  recorded_at?: string | null;
+  display_order: number;
+};
+
+export type CarryForwardFactDraft = {
+  id?: ApiId;
+  target_contact_id: ApiId;
+  category_id?: ApiId | null;
+  label?: string | null;
+  detail_value: string;
+  is_conversation_cue?: boolean;
+  published_fact_id?: ApiId | null;
+};
+
+export type CarryForwardObservationDraft = {
+  id?: ApiId;
+  target_contact_id: ApiId;
+  marker_id?: ApiId | null;
+  body: string;
+  event_id?: ApiId | null;
+  observation_type?:
+    | "notice"
+    | "conversation_cue"
+    | "appreciation"
+    | "change"
+    | null;
+  status?: "current" | "revisit_later" | "archived";
+  occurred_at?: string | null;
+  published_observation_id?: ApiId | null;
+};
+
+export type CarryForwardDrafts = {
+  facts: CarryForwardFactDraft[];
+  observations: CarryForwardObservationDraft[];
+};
+
+export type EpisodeDetail = {
+  category_id: ApiId | null;
+  ended_at: string | null;
+  is_ongoing: boolean;
+  characteristic_ids: ApiId[];
+  context_tag_ids: ApiId[];
+};
+
+export type SocialEnergyDetail = {
+  before_state: string;
+  battery_effect: string;
+  mood_shift: string;
+  behavioral_effect: string;
+  recovery_timing: string;
+  interaction_context: string;
+  group_size: number | null;
+  familiarity: string;
+  setting: string;
+  factor_ids: ApiId[];
+};
+
+export type SentimentDetail = {
+  before_state_id: ApiId | null;
+  after_state_id: ApiId | null;
+  before_connection: string;
+  after_connection: string;
+  dynamic_ids: ApiId[];
+  initiated_by: string;
+  overall_exchange: string;
+};
+
+export type InteractionReflectionDetail = {
+  topic_or_activity: string;
+  user_actions: string;
+  contact_actions: string;
+  contact_response: string;
+  user_response: string;
+  feelings_now: string;
+  important_to_understand: string;
+  additional_writing: string;
+};
+
+export type MomentReflectionDetail = {
+  focus_moment: string;
+  what_happened: string;
+  noticed_around: string;
+  response: string;
+  stood_out: string;
+  meaning_now: string;
+  remember: string;
+  additional_writing: string;
+};
+
+export type EmotionalManifestationKind = "thought" | "body" | "behavior";
+
+export type EmotionalManifestation = {
+  id?: ApiId;
+  kind: EmotionalManifestationKind;
+  text: string;
+  display_order: number;
+};
+
+export type EmotionalReflectionDetail = {
+  emotion_ids: ApiId[];
+  situation: string;
+  manifestations: EmotionalManifestation[];
+  connected_factors: string;
+  communicating: string;
+  understanding_now: string;
+  additional_writing: string;
+};
+
+export type FreeReflectionDetail = {
+  body: string;
+};
+
+export type LogDetailByFormat = {
+  episode: EpisodeDetail;
+  social_energy: SocialEnergyDetail;
+  sentiment: SentimentDetail;
+};
+
+export type ReflectionDetailByLens = {
+  interaction: InteractionReflectionDetail;
+  moment: MomentReflectionDetail;
+  emotional: EmotionalReflectionDetail;
+  free: FreeReflectionDetail;
+};
+
+type JournalDetailBase = JournalListItem & {
+  contacts: JournalContactSummary[];
+  contact_ids: ApiId[];
+};
+
+export type Log<F extends LogFormat = LogFormat> = JournalDetailBase & {
+  family: "log";
+  format: F;
+  detail: LogDetailByFormat[F];
+};
+
+export type Reflection<L extends ReflectionLens = ReflectionLens> =
+  JournalDetailBase & {
+    family: "reflection";
+    format: L;
+    detail: ReflectionDetailByLens[L];
+    attachments: JournalAttachment[];
+    cover_media_asset_id: ApiId | null;
+    cover_attachment_id: ApiId | null;
+    carry_forward: CarryForwardDrafts;
+  };
+
+export type JournalEntry = Log | Reflection;
+
+export type CommonJournalWrite = {
+  title?: string;
+  event_id?: ApiId | null;
+  primary_contact_id?: ApiId | null;
+  occurred_at?: string | null;
+  current_step?: string;
+  expected_revision?: number;
+};
+
+export type CreateLogRequest<F extends LogFormat = LogFormat> =
+  CommonJournalWrite & {
+    format: F;
+    detail: LogDetailByFormat[F];
+  };
+
+export type UpdateLogRequest<F extends LogFormat = LogFormat> = Partial<
+  Omit<CreateLogRequest<F>, "format">
+> & {
+  expected_revision: number;
+};
+
+export type CreateReflectionRequest<L extends ReflectionLens = ReflectionLens> =
+  CommonJournalWrite & {
+    format: L;
+    contact_ids?: ApiId[];
+    detail: ReflectionDetailByLens[L];
+    attachments?: JournalAttachmentInput[];
+    cover_media_asset_id?: ApiId | null;
+    carry_forward?: CarryForwardDrafts;
+  };
+
+export type UpdateReflectionRequest<L extends ReflectionLens = ReflectionLens> =
+  Partial<Omit<CreateReflectionRequest<L>, "format">> & {
+    expected_revision: number;
+  };
+
+export type CompleteJournalRequest = {
+  expected_revision: number;
+};
+
+export type JournalFeedParams = {
+  page?: number;
+  page_size?: number;
+  family?: JournalFamily;
+  status?: JournalStatus;
+  format?: JournalFormat;
+  search?: string;
+  contact?: ApiId;
+  event?: ApiId;
+  occurred_after?: string;
+  occurred_before?: string;
+  ordering?:
+    | "updated_timestamp"
+    | "-updated_timestamp"
+    | "occurred_at"
+    | "-occurred_at";
+};
+
+export type LogPatternResponse = {
+  window: {
+    days: number;
+    from: string;
+    to: string;
+  };
+  total: number;
+  by_format: Record<string, number>;
+  episode: {
+    count: number;
+    total_duration_minutes: number;
+    characteristics: Array<{
+      id: ApiId;
+      code: string;
+      name: string;
+      count: number;
+    }>;
+  };
+  social_energy: {
+    count: number;
+    effects: Array<{
+      battery_effect: string;
+      mood_shift: string;
+      behavioral_effect: string;
+      count: number;
+    }>;
+  };
+  sentiment: {
+    count: number;
+    shifts: Array<{
+      before_state: string;
+      after_state: string;
+      overall_exchange: string;
+      count: number;
+    }>;
+  };
+};
+
+export type LogListItem = JournalListItem & { family: "log" };
+export type ReflectionListItem = JournalListItem & { family: "reflection" };
 export type LogListResponse = PaginatedResponse<LogListItem>;
-
-export type Log = LogListItem & {
-  body: string;
-  data: JsonObject;
-};
-
-export type ReflectionListItem = {
-  id: ApiId;
-  kind: "reflection";
-  event: ApiId;
-  subtype: string;
-  clarity_check: string;
-  created_timestamp: string;
-  updated_timestamp: string;
-};
-
 export type ReflectionListResponse = PaginatedResponse<ReflectionListItem>;
-
-export type Reflection = ReflectionListItem & {
-  data: JsonObject;
-};
-
-export type ExerciseStep = {
-  id: ApiId;
-  display_order: number;
-  prompt: string;
-  response: string;
-};
-
-export type ExerciseListItem = {
-  id: ApiId;
-  kind: "exercise";
-  event: ApiId;
-  subtype: string;
-  pre_measurement: number;
-  post_measurement: number;
-  measurement_delta: number;
-  created_timestamp: string;
-  updated_timestamp: string;
-};
-
-export type ExerciseListResponse = PaginatedResponse<ExerciseListItem>;
-
-export type Exercise = ExerciseListItem & {
-  steps: ExerciseStep[];
-};
-
-export type Entry = Log | Reflection | Exercise;
-
-export type EntryListItem =
-  | LogListItem
-  | ReflectionListItem
-  | ExerciseListItem;
-
-export type CombinedLogSummary = {
-  mood: ApiId | null;
-  subtype: string;
-  tag_count: number;
-};
-
-export type CombinedReflectionSummary = {
-  subtype: string;
-  clarity_check: string;
-};
-
-export type CombinedExerciseSummary = {
-  subtype: string;
-  measurement_delta: number;
-};
-
-export type CombinedJournalSummary =
-  | CombinedLogSummary
-  | CombinedReflectionSummary
-  | CombinedExerciseSummary;
-
-export type CombinedJournalFeedItem = {
-  id: ApiId;
-  kind: EntryKind;
-  event: ApiId;
-  label: string;
-  created_timestamp: string;
-  updated_timestamp: string;
-  summary: CombinedJournalSummary;
-};
-
-export type CombinedJournalFeedResponse =
-  PaginatedResponse<CombinedJournalFeedItem>;
-
-export type CreateLogRequest = {
-  event: ApiId;
-  title: string;
-  body: string;
-  mood_id?: ApiId | null;
-  tag_ids?: ApiId[];
-  subtype?: string;
-  data?: JsonObject;
-};
-
-export type UpdateLogRequest = Partial<CreateLogRequest>;
-
-export type CreateReflectionRequest = {
-  event: ApiId;
-  subtype?: string;
-  clarity_check: string;
-  data?: JsonObject;
-};
-
-export type UpdateReflectionRequest = Partial<CreateReflectionRequest>;
-
-export type CreateExerciseStepRequest = {
-  display_order: number;
-  prompt: string;
-  response: string;
-};
-
-export type CreateExerciseRequest = {
-  event: ApiId;
-  subtype?: string;
-  pre_measurement: number;
-  post_measurement: number;
-  steps?: CreateExerciseStepRequest[];
-};
-
-export type UpdateExerciseRequest = Partial<CreateExerciseRequest>;

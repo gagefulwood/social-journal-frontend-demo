@@ -4,7 +4,6 @@ import type {
   CreateEventRequest,
   Event,
   EventImpact,
-  EventExerciseSummary,
   EventJournalsSummary,
   EventListResponse,
   EventLogSummary,
@@ -88,11 +87,6 @@ export const eventsApi = {
   async getReflectionSummaries(id: ApiId): Promise<EventReflectionSummary[]> {
     const event = await this.get(id);
     return event.journals.reflections;
-  },
-
-  async getExerciseSummaries(id: ApiId): Promise<EventExerciseSummary[]> {
-    const event = await this.get(id);
-    return event.journals.exercises;
   },
 
   async getJournalsSummary(id: ApiId): Promise<EventJournalsSummary> {

@@ -1,40 +1,22 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { LogForm } from "@/components/journals/LogForm";
-import { journalApi } from "@/lib/api/journalApi";
-import type { CreateLogRequest, UpdateLogRequest } from "@/types/journals";
+type NewJournalPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default function NewLogPage() {
-  const router = useRouter();
+export default async function NewJournalPage({
+  searchParams,
+}: NewJournalPageProps) {
+  const current = await searchParams;
+  const params = new URLSearchParams({ new: "1" });
 
-  return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="font-sans text-3xl font-semibold leading-tight">
-            New Log
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Add episode type, moods felt, and details.
-          </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link href="/journals">Cancel</Link>
-        </Button>
-      </div>
+  for (const key of ["event", "contact"] as const) {
+    const value = current[key];
+    const firstValue = Array.isArray(value) ? value[0] : value;
+    if (firstValue) {
+      params.set(key, firstValue);
+    }
+  }
 
-      <LogForm
-        submitLabel="Create New Log"
-        onSubmit={async (data: CreateLogRequest | UpdateLogRequest) => {
-          const log = await journalApi.createLog(data as CreateLogRequest);
-          toast.success("Log created.");
-          router.push(`/journals`);
-        }}
-      />
-    </main>
-  );
+  redirect(`/journals?${params.toString()}`);
 }

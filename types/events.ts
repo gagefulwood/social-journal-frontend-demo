@@ -1,10 +1,12 @@
 import type { ApiId, PaginatedResponse } from "@/types/api";
 import type { ContactListItem } from "@/types/contacts";
 import type {
-  ContextCategory,
-  InteractionMode,
-  Mood,
-} from "@/types/lookups";
+  JournalContactSummary,
+  JournalStatus,
+  LogFormat,
+  ReflectionLens,
+} from "@/types/journals";
+import type { ContextCategory, InteractionMode, Mood } from "@/types/lookups";
 
 export type EventTier = "routine" | "milestone";
 export type EventImpact = "negative" | "neutral" | "positive" | "";
@@ -16,29 +18,24 @@ export type EventParticipant = {
 
 export type EventLogSummary = {
   id: ApiId;
-  kind: "log";
+  family: "log";
+  format: LogFormat | "legacy";
+  status: JournalStatus;
   title: string;
-  mood: Mood | null;
+  occurred_at: string | null;
+  primary_contact: JournalContactSummary | null;
   created_timestamp: string;
   updated_timestamp: string;
 };
 
 export type EventReflectionSummary = {
   id: ApiId;
-  kind: "reflection";
+  family: "reflection";
+  format: ReflectionLens | "legacy";
+  status: JournalStatus;
   title: string;
-  subtype: string;
-  clarity_check: string;
-  created_timestamp: string;
-  updated_timestamp: string;
-};
-
-export type EventExerciseSummary = {
-  id: ApiId;
-  kind: "exercise";
-  title: string;
-  subtype: string;
-  measurement_delta: number;
+  occurred_at: string | null;
+  primary_contact: JournalContactSummary | null;
   created_timestamp: string;
   updated_timestamp: string;
 };
@@ -46,7 +43,8 @@ export type EventExerciseSummary = {
 export type EventJournalsSummary = {
   logs: EventLogSummary[];
   reflections: EventReflectionSummary[];
-  exercises: EventExerciseSummary[];
+  log_count: number;
+  reflection_count: number;
 };
 
 export type EventListItem = {

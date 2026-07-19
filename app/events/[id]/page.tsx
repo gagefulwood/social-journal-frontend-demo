@@ -13,7 +13,6 @@ import {
   Link2,
   MapPin,
   Minus,
-  NotebookTabs,
   Pencil,
   Star,
   Smile,
@@ -26,6 +25,7 @@ import {
 import { toast } from "sonner";
 import { EventIconTile } from "@/components/presentation/EventIconTile";
 import { EventSemanticChip } from "@/components/presentation/EventSemanticChip";
+import { RelatedMomentSignal } from "@/components/events/RelatedMomentSignal";
 import { JournalStateIndicator } from "@/components/presentation/JournalStateIndicator";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +42,12 @@ import {
 import { eventsApi } from "@/lib/api/eventsApi";
 import { useEvent, useRelatedEvents } from "@/hooks/useEvent";
 import { useLookups } from "@/hooks/useLookups";
-import { contactInitials, contactName } from "@/components/contacts/contact-utils";
+import {
+  contactInitials,
+  contactName,
+} from "@/components/contacts/contact-utils";
+import { EventJournalsBand } from "@/components/events/EventJournalsBand";
+import { moodPolarityToneClass } from "@/lib/presentation/moodPolarityPresentation";
 import { getEventPresentation } from "@/lib/presentation/eventPresentation";
 import { getJournalStatePresentation } from "@/lib/presentation/journalStatePresentation";
 import { cn } from "@/lib/utils";
@@ -106,113 +111,108 @@ export default function EventDetailPage() {
           </div>
 
           <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
-              <Button asChild variant="outline">
-                <Link
-                  href={`/events/${params.id}/edit`}
-                  aria-label="Edit event. Event timestamp remains read-only after creation."
-                >
-                  <Pencil className="size-4" />
-                  Edit
-                </Link>
-              </Button>
+            <Button asChild variant="outline">
+              <Link
+                href={`/events/${params.id}/edit`}
+                aria-label="Edit event. Event timestamp remains read-only after creation."
+              >
+                <Pencil className="size-4" />
+                Edit
+              </Link>
+            </Button>
 
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" disabled={!event || isDeleting}>
+                  <Trash2 className="size-4" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete event?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This deletes the event and its participant links. Attached
+                    Journals are kept but will no longer reference this event.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
                     variant="destructive"
-                    disabled={!event || isDeleting}
+                    disabled={isDeleting}
+                    onClick={() => void confirmDelete()}
                   >
-                    <Trash2 className="size-4" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete event?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This deletes the event and cascades to its participants
-                      and attached journal entries. This action cannot be
-                      undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeleting}>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      disabled={isDeleting}
-                      onClick={() => void confirmDelete()}
-                    >
-                      {isDeleting ? "Deleting..." : "Delete"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </header>
 
-          <section className="mx-auto w-full max-w-[1350px] py-2 sm:py-3">
-            {loading && (
-              <div className="rounded-lg border border-border bg-card p-8">
-                <p className="text-sm text-muted-foreground">
-                  Loading event...
-                </p>
-              </div>
-            )}
+        <section className="mx-auto w-full max-w-[1350px] py-2 sm:py-3">
+          {loading && (
+            <div className="rounded-lg border border-border bg-card p-8">
+              <p className="text-sm text-muted-foreground">Loading event...</p>
+            </div>
+          )}
 
-            {error && (
-              <div className="rounded-lg border border-border bg-card p-8">
-                <p className="font-medium">Unable to load event</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {error.message}
-                </p>
-                <Button
-                  className="mt-4"
-                  variant="outline"
-                  onClick={() => void refetch()}
-                >
-                  Retry
-                </Button>
-              </div>
-            )}
+          {error && (
+            <div className="rounded-lg border border-border bg-card p-8">
+              <p className="font-medium">Unable to load event</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {error.message}
+              </p>
+              <Button
+                className="mt-4"
+                variant="outline"
+                onClick={() => void refetch()}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
 
-            {!loading && !error && !event && (
-              <div className="rounded-lg border border-border bg-card p-8">
-                Event not found.
-              </div>
-            )}
+          {!loading && !error && !event && (
+            <div className="rounded-lg border border-border bg-card p-8">
+              Event not found.
+            </div>
+          )}
 
-            {event && (
-              <div className="grid gap-2.5 lg:gap-3 xl:grid-cols-[minmax(0,1fr)_324px] xl:items-start">
-                <div className="min-w-0 space-y-2.5 lg:space-y-3">
-                  <EventAnchorHeader
-                    event={event}
-                    contextCategory={contextCategory}
-                  />
-                  <EventMetadataStrip event={event} />
-                  <EventMomentBand event={event} />
-                  <EventParticipantsBand event={event} />
-                  <EventJournalsPlaceholderBand />
-                </div>
-
-                <aside className="min-w-0 space-y-2.5 lg:space-y-3">
-                  <EventAtAGlanceRail event={event} />
-                  <EventQuickFactsRail
-                    event={event}
-                    contextCategoryName={contextCategory?.name ?? null}
-                  />
-                  <EventRelatedMomentsRail
-                    events={relatedEvents}
-                    loading={relatedLoading}
-                    error={relatedError}
-                    canExpand={relatedEvents.length >= 2 && relatedLimit < 10}
-                    onViewAll={() => setRelatedLimit(10)}
-                  />
-                </aside>
+          {event && (
+            <div className="grid gap-2.5 lg:gap-3 xl:grid-cols-[minmax(0,1fr)_324px] xl:items-start">
+              <div className="min-w-0 space-y-2.5 lg:space-y-3">
+                <EventAnchorHeader
+                  event={event}
+                  contextCategory={contextCategory}
+                />
+                <EventMetadataStrip event={event} />
+                <EventMomentBand event={event} />
+                <EventParticipantsBand event={event} />
+                <EventJournalsBand event={event} />
               </div>
-            )}
-          </section>
+
+              <aside className="min-w-0 space-y-2.5 lg:space-y-3">
+                <EventAtAGlanceRail event={event} />
+                <EventQuickFactsRail
+                  event={event}
+                  contextCategoryName={contextCategory?.name ?? null}
+                />
+                <EventRelatedMomentsRail
+                  events={relatedEvents}
+                  loading={relatedLoading}
+                  error={relatedError}
+                  canExpand={relatedEvents.length >= 2 && relatedLimit < 10}
+                  onViewAll={() => setRelatedLimit(10)}
+                />
+              </aside>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
@@ -430,43 +430,6 @@ function RelatedMomentRow({ event }: { event: EventRelatedItem }) {
   );
 }
 
-function RelatedMomentSignal({ event }: { event: EventRelatedItem }) {
-  if (event.mood) {
-    const className = moodToneClass(event.mood);
-
-    return (
-      <span
-        className={cn(
-          "hidden items-center gap-1.5 text-sm font-medium sm:inline-flex",
-          className,
-        )}
-      >
-        <Smile className="size-4" />
-        {event.mood.name}
-      </span>
-    );
-  }
-
-  if (event.impact) {
-    const impact = impactMetadata(event.impact);
-    const Icon = impact.icon;
-
-    return (
-      <span
-        className={cn(
-          "hidden items-center gap-1.5 text-sm font-medium sm:inline-flex",
-          impact.className,
-        )}
-      >
-        <Icon className="size-4" />
-        {impact.label}
-      </span>
-    );
-  }
-
-  return null;
-}
-
 function EventMetadataStrip({ event }: { event: Event }) {
   const metadataItems = buildMetadataItems(event);
 
@@ -508,33 +471,12 @@ function EventMetadataStrip({ event }: { event: Event }) {
   );
 }
 
-function EventJournalsPlaceholderBand() {
-  return (
-    <section className="rounded-lg border border-border bg-card p-3 shadow-xs sm:p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent text-primary-strong">
-          <NotebookTabs className="size-4" />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-semibold text-foreground">
-            Attached Journals
-          </h2>
-          <p className="mt-1.5 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Journals are in development. Attached journal previews, links,
-            creation, and editing are not available in this view yet.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function EventParticipantsBand({ event }: { event: Event }) {
   const [participantStartIndex, setParticipantStartIndex] = useState(0);
   const count = event.participants.length;
   const visibleParticipantLimit = 4;
-  const safeStartIndex = participantStartIndex >= count ? 0 : participantStartIndex;
+  const safeStartIndex =
+    participantStartIndex >= count ? 0 : participantStartIndex;
   const visibleParticipants = event.participants.slice(
     safeStartIndex,
     safeStartIndex + visibleParticipantLimit,
@@ -641,9 +583,7 @@ function EventMomentBand({ event }: { event: Event }) {
         </div>
 
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-foreground">
-            Moment
-          </h2>
+          <h2 className="text-base font-semibold text-foreground">Moment</h2>
           <p
             className={cn(
               "mt-1.5 max-w-5xl text-sm leading-6",
@@ -949,37 +889,7 @@ function buildMetadataItems(event: Event): MetadataItem[] {
 }
 
 function moodToneClass(mood: Mood) {
-  const normalizedName = mood.name.trim().toLowerCase();
-
-  if (normalizedName.includes("happy")) {
-    return "text-success";
-  }
-
-  if (normalizedName.includes("content")) {
-    return "text-success";
-  }
-
-  if (normalizedName.includes("anxious")) {
-    return "text-mood-anxious";
-  }
-
-  if (normalizedName.includes("sad")) {
-    return "text-mood-sad";
-  }
-
-  if (normalizedName.includes("angry")) {
-    return "text-mood-angry";
-  }
-
-  if (mood.polarity > 0) {
-    return "text-success";
-  }
-
-  if (mood.polarity < 0) {
-    return "text-mood-sad";
-  }
-
-  return "text-mood-neutral";
+  return moodPolarityToneClass(mood.polarity);
 }
 
 function impactMetadata(impact: Exclude<EventImpact, "">) {
@@ -1006,11 +916,7 @@ function impactMetadata(impact: Exclude<EventImpact, "">) {
   };
 }
 
-function ParticipantAvatar({
-  participant,
-}: {
-  participant: EventParticipant;
-}) {
+function ParticipantAvatar({ participant }: { participant: EventParticipant }) {
   const name = contactName(participant.contact);
 
   return (
@@ -1085,7 +991,9 @@ function formatEventDateTimeRange(
   const endTime =
     endDate && !Number.isNaN(endDate.getTime()) ? formatTime(endDate) : null;
 
-  return endTime ? `${dateLabel} · ${startTime} - ${endTime}` : `${dateLabel} · ${startTime}`;
+  return endTime
+    ? `${dateLabel} \u00b7 ${startTime} - ${endTime}`
+    : `${dateLabel} \u00b7 ${startTime}`;
 }
 
 function formatRelatedDateTime(eventTimestamp: string) {
@@ -1095,7 +1003,7 @@ function formatRelatedDateTime(eventTimestamp: string) {
     return "Date unavailable";
   }
 
-  return `${formatShortDate(date)} · ${formatTime(date)}`;
+  return `${formatShortDate(date)} \u00b7 ${formatTime(date)}`;
 }
 
 function formatTime(date: Date) {

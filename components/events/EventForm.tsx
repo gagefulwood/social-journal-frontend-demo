@@ -3,7 +3,6 @@
 import { z } from "zod";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@/types/auth";
 import { ContextCategory } from "@/types/lookups";
@@ -31,18 +30,7 @@ const eventFormSchema = z.object({
   tier: z.enum(["routine", "milestone"]),
   context_category: z.union([z.string(), z.number()]).nullable().optional(),
   participants: z.array(z.string()),
-  journal_type: z.string().optional(),
 });
-
-const journalTypes = [
-  { label: "Log", value: "reflection", route: "/journals/new" },
-  {
-    label: "Reflection",
-    value: "incident",
-    route: "/journals/reflections/new",
-  },
-  { label: "Exercise", value: "exercise", route: "/journals/exercises/new" },
-];
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
@@ -61,8 +49,6 @@ export function EventsForm({
   categories,
   onSubmit,
 }: EventFormProps) {
-  const router = useRouter();
-
   const [error, setError] = useState<ApiError | null>(null);
   const [contacts, setContacts] = useState<ContactListItem[]>([]);
 
@@ -76,7 +62,6 @@ export function EventsForm({
       context_category: initialData?.context_category ?? null,
       participants:
         initialData?.participants?.map((p) => String(p.contact.id)) ?? [],
-      journal_type: undefined,
     },
   });
   const selectedParticipants =
@@ -261,43 +246,6 @@ export function EventsForm({
               </DropdownMenu>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* holy crap this was hard to implement but i got it i think*/}
-      {/* ALSO README: NEED TO ADD CONNECT CURRENT JOURNALS FUNCTION */}
-      <div className="mt-10">
-        <p className="mb-3 text-xl font-medium">Journals</p>
-
-        <div className="relative flex h-20 items-center rounded-md border border-input bg-background px-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="ml-auto flex h-12 w-12 items-center justify-center rounded-full border bg-muted text-2xl transition hover:bg-accent"
-              >
-                +
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end">
-              {journalTypes.map((type) => (
-                <DropdownMenuItem
-                  key={type.value}
-                  onClick={() => {
-                    form.setValue("journal_type", type.value);
-
-                    const route = initialData?.id
-                      ? `${type.route}?event=${initialData.id}`
-                      : type.route;
-                    router.push(route);
-                  }}
-                >
-                  {type.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 

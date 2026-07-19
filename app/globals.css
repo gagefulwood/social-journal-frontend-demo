@@ -54,7 +54,11 @@
   --color-info: var(--info);
   --color-success-muted: var(--success-muted);
   --color-success-solid: var(--success-solid);
+  --color-success-ink: var(--success-ink);
   --color-success: var(--success);
+  --color-info-ink: var(--info-ink);
+  --color-warning-ink: var(--warning-ink);
+  --color-destructive-ink: var(--destructive-ink);
   --color-mood-angry: var(--mood-angry);
   --color-mood-sad: var(--mood-sad);
   --color-mood-anxious: var(--mood-anxious);
@@ -132,12 +136,15 @@
   --success: var(--sage);
   --success-solid: var(--sage);
   --success-muted: var(--sage-soft);
+  --success-ink: #276747;
   --info: var(--sky);
   --info-solid: var(--sky);
   --info-muted: var(--sky-soft);
+  --info-ink: #285f9f;
   --warning: var(--peach);
   --warning-solid: var(--peach);
   --warning-muted: var(--peach-soft);
+  --warning-ink: #8a4a16;
   --mood-happy: var(--peach);
   --mood-content: var(--sage);
   --mood-neutral: var(--text-muted);
@@ -156,6 +163,7 @@
   --marker-indigo-foreground: var(--sky);
   --destructive: var(--rose);
   --destructive-solid: var(--rose);
+  --destructive-ink: #8c3454;
   --destructive-foreground: var(--surface);
   --input: var(--border);
   --ring: var(--primary);

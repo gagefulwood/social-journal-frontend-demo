@@ -21,7 +21,6 @@ const emptyStats: DashboardActivityStats = {
   entries_by_kind_30d: {
     log: 0,
     reflection: 0,
-    exercise: 0,
   },
 };
 
@@ -62,16 +61,15 @@ function JournalMixCard({
   stats: DashboardActivityStats;
 } & WidgetStateProps) {
   const items = [
-    { label: "Logs", value: stats.entries_by_kind_30d.log, tone: "bg-warning-solid" },
+    {
+      label: "Logs",
+      value: stats.entries_by_kind_30d.log,
+      tone: "bg-warning-solid",
+    },
     {
       label: "Reflections",
       value: stats.entries_by_kind_30d.reflection,
       tone: "bg-info-solid",
-    },
-    {
-      label: "Exercises",
-      value: stats.entries_by_kind_30d.exercise,
-      tone: "bg-success-solid",
     },
   ];
   const max = Math.max(...items.map((item) => item.value), 1);
@@ -108,7 +106,9 @@ function JournalMixCard({
                 />
               )}
             </div>
-            <span className="text-right font-medium tabular-nums">{item.value}</span>
+            <span className="text-right font-medium tabular-nums">
+              {item.value}
+            </span>
           </div>
         ))}
       </div>
@@ -146,7 +146,8 @@ function CurrentStreakCard({
             </span>
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            {stats.events_30d} {stats.events_30d === 1 ? "moment" : "moments"} recorded in the past 30 days.
+            {stats.events_30d} {stats.events_30d === 1 ? "moment" : "moments"}{" "}
+            recorded in the past 30 days.
           </p>
         </div>
         <ActivityTrace days={days} />

@@ -1,12 +1,18 @@
 import type { ApiId } from "@/types/api";
 
-export type MoodPolarity = "positive" | "neutral" | "negative" | string;
+export type MoodPolarity =
+  | 1
+  | 0
+  | -1
+  | "positive"
+  | "neutral"
+  | "negative";
 
 export type Mood = {
   id: ApiId;
   name: string;
   emoji_icon: string;
-  polarity: MoodPolarity;
+  polarity?: MoodPolarity | null;
   is_system_default: boolean;
 };
 
