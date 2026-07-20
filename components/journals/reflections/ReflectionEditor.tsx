@@ -22,7 +22,10 @@ import { toast } from "sonner";
 import { ReflectionMediaField } from "@/components/journals/media/ReflectionMediaField";
 import { JournalIconTile } from "@/components/presentation/JournalIconTile";
 import { JournalSemanticChip } from "@/components/presentation/JournalSemanticChip";
-import { CarryForwardEditor } from "@/components/journals/reflections/CarryForwardEditor";
+import {
+  CarryForwardCountSummary,
+  CarryForwardEditor,
+} from "@/components/journals/reflections/CarryForwardEditor";
 import { isLegacyReflection } from "@/components/journals/reflections/LegacyReflectionDetailView";
 import {
   EmotionalReflectionFields,
@@ -46,6 +49,7 @@ import { JournalFormSection } from "@/components/journals/shared/JournalFormSect
 import { JournalFormSectionHeader } from "@/components/journals/shared/JournalFormSectionHeader";
 import { JournalOccurrencePicker } from "@/components/journals/shared/JournalOccurrencePicker";
 import { JournalRelatedContextSelector } from "@/components/journals/shared/JournalRelatedContextSelector";
+import { JournalChapterSelector } from "@/components/journals/shared/JournalChapterSelector";
 import {
   JournalStepProgress,
   type JournalStep,
@@ -217,6 +221,9 @@ function ReflectionEditorForm({
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryEventId = initialReflection ? null : searchParams.get("event");
+  const queryChapterId = initialReflection
+    ? null
+    : normalizeChapterQuery(searchParams.get("chapter"), queryEventId);
   const queryContactId = initialReflection ? null : searchParams.get("contact");
   const [draft, setDraft] = useState<ReflectionDraft>(() => {
     const next = initialReflection
@@ -225,6 +232,7 @@ function ReflectionEditorForm({
 
     if (!initialReflection) {
       next.eventId = queryEventId;
+      next.chapterId = queryChapterId;
       if (queryContactId != null) {
         next.primaryContactId = queryContactId;
         next.contactIds = [queryContactId];
@@ -249,10 +257,16 @@ function ReflectionEditorForm({
             return current;
           }
 
-          if (current.occurredAt) return current;
+          const chapterIsValid =
+            current.chapterId == null ||
+            event.chapters?.some(
+              (chapter) => String(chapter.id) === String(current.chapterId),
+            );
+          if (current.occurredAt && chapterIsValid) return current;
           return {
             ...current,
-            occurredAt: eventOccurredAt,
+            occurredAt: current.occurredAt || eventOccurredAt,
+            chapterId: chapterIsValid ? current.chapterId : null,
           };
         });
       })
@@ -317,9 +331,12 @@ function ReflectionEditorForm({
     [copy.stepLabels, currentStepIndex, initialReflection?.status, steps],
   );
 
-  function setStep(step: string) {
+  function setStep(
+    step: string,
+    options: { preserveValidation?: boolean } = {},
+  ) {
     setDraft((current) => ({ ...current, currentStep: step }));
-    setValidationErrors([]);
+    if (!options.preserveValidation) setValidationErrors([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -560,18 +577,21 @@ function ReflectionEditorForm({
             <JournalFormSection className="space-y-4">
               <JournalFormSectionHeader
                 icon={Sparkles}
+                iconSize="md"
                 title="Carry something forward"
                 description={
                   initialReflection?.status === "completed"
                     ? "Published carry-forward items are locked and remain connected to this reflection."
                     : "Optional facts and observations are published only when you complete the reflection."
                 }
+                action={<CarryForwardCountSummary value={draft.carryForward} />}
               />
               <CarryForwardEditor
                 value={draft.carryForward}
                 suggestedContactId={draft.primaryContactId}
                 suggestedEventId={draft.eventId}
                 readOnly={initialReflection?.status === "completed"}
+                showValidationErrors={validationErrors.length > 0}
                 onChange={(carryForward) =>
                   setDraft((current) => ({ ...current, carryForward }))
                 }
@@ -582,8 +602,12 @@ function ReflectionEditorForm({
           {currentStep === "review" ? (
             <ReflectionReview
               draft={draft}
+              carryForwardReadOnly={initialReflection?.status === "completed"}
               validationErrors={validationErrors}
               onStepChange={setStep}
+              onCarryForwardEdit={() =>
+                setStep("carry_forward", { preserveValidation: true })
+              }
             />
           ) : null}
 
@@ -786,7 +810,14 @@ function ReflectionContextFields({
         <JournalRelatedContextSelector
           eventValue={draft.eventId}
           onEventChange={(eventId) =>
-            onChange((current) => ({ ...current, eventId }))
+            onChange((current) => ({
+              ...current,
+              eventId,
+              chapterId:
+                String(eventId) === String(current.eventId)
+                  ? current.chapterId
+                  : null,
+            }))
           }
           eventLabel="Related moment"
           eventDescription="Optional"
@@ -802,6 +833,13 @@ function ReflectionContextFields({
               : "Optional"
           }
           collapseSelected
+        />
+        <JournalChapterSelector
+          eventId={draft.eventId}
+          chapterId={draft.chapterId}
+          onChapterChange={(chapterId) =>
+            onChange((current) => ({ ...current, chapterId }))
+          }
         />
         <JournalOccurrencePicker
           label="When did this occur?"
@@ -820,14 +858,25 @@ function ReflectionContextFields({
   );
 }
 
+function normalizeChapterQuery(
+  chapter: string | null,
+  event: string | null,
+): string | null {
+  return event && chapter && chapter !== "event" ? chapter : null;
+}
+
 function ReflectionReview({
   draft,
+  carryForwardReadOnly,
   validationErrors,
   onStepChange,
+  onCarryForwardEdit,
 }: {
   draft: ReflectionDraft;
+  carryForwardReadOnly: boolean;
   validationErrors: string[];
   onStepChange: (step: string) => void;
+  onCarryForwardEdit: () => void;
 }) {
   const rows = getReviewRows(draft);
   return (
@@ -868,6 +917,15 @@ function ReflectionReview({
             }
           >
             Edit reflection
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={onCarryForwardEdit}
+          >
+            <Sparkles className="size-4" aria-hidden="true" />
+            {carryForwardReadOnly ? "View carried items" : "Edit carried items"}
           </Button>
           <span className="self-center text-xs text-muted-foreground">
             {draft.attachments.length} media ·{" "}

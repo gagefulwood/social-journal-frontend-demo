@@ -41,6 +41,7 @@ export function JournalHub() {
   const page = parsePage(searchParams.get("page"));
   const searchParam = searchParams.get("search") ?? "";
   const parsedFormat = parseJournalFormat(searchParams.get("format"));
+  const chapter = searchParams.get("chapter") ?? undefined;
   const format = isFormatCompatibleWithView(parsedFormat, view)
     ? parsedFormat
     : undefined;
@@ -95,6 +96,7 @@ export function JournalHub() {
     search: searchParam || undefined,
     contact: filters.contact || undefined,
     event: filters.event || undefined,
+    chapter: filters.event ? chapter : undefined,
     occurred_after: filters.occurredAfter || undefined,
     occurred_before: filters.occurredBefore || undefined,
     ordering: view === "drafts" ? "-updated_timestamp" : "-occurred_at",
@@ -112,6 +114,7 @@ export function JournalHub() {
     filters.occurredAfter,
     filters.occurredBefore,
     filters.format,
+    chapter,
   ].filter(Boolean).length;
   const hasFilters = activeFilterCount > 0 || Boolean(searchParam);
   const chooserOpen = searchParams.get("new") === "1";
@@ -134,7 +137,10 @@ export function JournalHub() {
         : key === "occurredBefore"
           ? "occurred_before"
           : key;
-    replaceQuery({ [queryKey]: value ? String(value) : null });
+    replaceQuery({
+      [queryKey]: value ? String(value) : null,
+      ...(key === "event" ? { chapter: null } : {}),
+    });
   }
 
   function clearFilters() {
@@ -142,6 +148,7 @@ export function JournalHub() {
       search: null,
       contact: null,
       event: null,
+      chapter: null,
       occurred_after: null,
       occurred_before: null,
       format: null,
@@ -157,6 +164,7 @@ export function JournalHub() {
       const context = new URLSearchParams();
       if (filters.event) {
         context.set("event", filters.event);
+        if (chapter) context.set("chapter", chapter);
       }
       if (filters.contact) {
         context.set("contact", filters.contact);
@@ -164,7 +172,7 @@ export function JournalHub() {
       const query = context.toString();
       return `${option.href}${query ? `?${query}` : ""}`;
     },
-    [filters.contact, filters.event],
+    [chapter, filters.contact, filters.event],
   );
 
   async function discardDraft(draft: JournalListItem) {
@@ -240,11 +248,15 @@ export function JournalHub() {
               search={searchParam}
               filters={filters}
               activeFilterCount={activeFilterCount}
+              chapter={chapter}
               onSearchChange={(value) =>
                 replaceQuery({ search: value || null })
               }
               onFilterChange={changeFilter}
               onClearFilters={clearFilters}
+              onChapterChange={(value) =>
+                replaceQuery({ chapter: value || null })
+              }
             />
           </div>
           <JournalList

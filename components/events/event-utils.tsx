@@ -34,10 +34,7 @@ export function eventDateOnly(event: Event | EventListItem) {
   }).format(date);
 }
 
-export function eventContextName(event: EventListItem) {
-  return event.context_category?.name ?? null;
-}
-
-export function eventTierLabel(event: Event | EventListItem) {
-  return event.tier === "milestone" ? "Milestone" : "Routine";
+export function inclusiveTimestampBefore(value: Date) {
+  const previousMillisecond = new Date(value.getTime() - 1).toISOString();
+  return previousMillisecond.replace(/(\.\d{3})Z$/, "$1999Z");
 }

@@ -24,6 +24,7 @@ type EventLookupValue =
   | {
       id?: ApiId;
       name?: string | null;
+      is_system_default?: boolean | null;
     }
   | null;
 
@@ -52,6 +53,7 @@ export type NormalizedEventPresentationInput = {
   impact: EventImpact | null;
   context: {
     isRecorded: boolean;
+    isSystemDefault: boolean | null;
     name: string | null;
   };
   interactionMode: {
@@ -60,9 +62,7 @@ export type NormalizedEventPresentationInput = {
   };
 };
 
-export type EventVisualPresentation = SemanticPresentation<
-  DerivedEventKindKey | EventTierKey
->;
+export type EventVisualPresentation = SemanticPresentation<EventContextKey>;
 
 export type EventPresentation = {
   context: SemanticPresentation<EventContextKey>;
@@ -71,7 +71,7 @@ export type EventPresentation = {
   interactionMode: SemanticPresentation<InteractionModeKey>;
   derivedKind: SemanticPresentation<DerivedEventKindKey> | null;
   icon: EventVisualPresentation;
-  semanticChip: SemanticPresentation<EventContextKey | EventTierKey>;
+  semanticChip: SemanticPresentation<EventContextKey>;
 };
 
 type PresentationDefinition<Key extends string> = {
@@ -152,6 +152,7 @@ export function normalizeEventPresentationInput(
     impact: input.impact ?? null,
     context: {
       isRecorded: input.context_category != null || contextName != null,
+      isSystemDefault: lookupIsSystemDefault(input.context_category),
       name: contextName,
     },
     interactionMode: {
@@ -170,7 +171,6 @@ export function getEventPresentation(
   const impact = getEventImpactPresentation(normalized.impact);
   const interactionMode = getInteractionModePresentation(normalized);
   const derivedKind = getDerivedEventKindPresentation(normalized);
-  const icon = derivedKind ?? tier;
 
   return {
     context,
@@ -178,8 +178,8 @@ export function getEventPresentation(
     impact,
     interactionMode,
     derivedKind,
-    icon,
-    semanticChip: normalized.tier === "milestone" ? tier : context,
+    icon: context,
+    semanticChip: context,
   };
 }
 
@@ -199,9 +199,10 @@ function getEventContextPresentation(
   }
 
   const normalizedName = normalizeLookupName(input.context.name);
-  const builtIn = normalizedName
-    ? contextDefinitions[normalizedName as keyof typeof contextDefinitions]
-    : undefined;
+  const builtIn =
+    normalizedName && input.context.isSystemDefault !== false
+      ? contextDefinitions[normalizedName as keyof typeof contextDefinitions]
+      : undefined;
 
   if (builtIn) {
     return createPresentation(builtIn, "lookup", contextVariants);
@@ -480,6 +481,18 @@ function lookupName(value: EventLookupValue | undefined): string | null {
   }
 
   return normalizedOptionalText(value.name);
+}
+
+function lookupIsSystemDefault(
+  value: EventLookupValue | undefined,
+): boolean | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  return typeof value.is_system_default === "boolean"
+    ? value.is_system_default
+    : null;
 }
 
 function normalizedOptionalText(value: string | null | undefined) {

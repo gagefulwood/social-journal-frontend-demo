@@ -65,7 +65,7 @@ export function SidebarSJ({
     <TooltipProvider>
       <Sidebar
         collapsible="icon"
-        overlayOnExpand
+        overlayOnExpand={!pinned}
         className="z-40 group-data-[state=expanded]:shadow-lg"
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}

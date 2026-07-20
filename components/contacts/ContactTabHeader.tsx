@@ -42,7 +42,7 @@ export function ContactTabHeader({
         className="flex min-h-14 items-center"
       >
         <div className="flex w-full min-w-0 flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-center">
-          <div className="flex min-w-0 flex-1 basis-64 items-center gap-3 xl:min-w-64">
+          <div className="flex min-w-0 basis-auto items-center gap-3 xl:min-w-64 xl:flex-1 xl:basis-64">
             <IconBadge tone={iconTone} size="md">
               <Icon aria-hidden="true" />
             </IconBadge>

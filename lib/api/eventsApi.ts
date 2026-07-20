@@ -1,17 +1,20 @@
 import api from "@/lib/api/client";
 import type { ApiId } from "@/types/api";
 import type {
+  AttachEventMediaRequest,
+  CreateEventChapterRequest,
   CreateEventRequest,
   Event,
+  EventChapterDetail,
+  EventChapterHeader,
   EventImpact,
-  EventJournalsSummary,
   EventListResponse,
-  EventLogSummary,
-  EventParticipant,
+  EventMediaAttachment,
   EventRelatedItem,
-  EventReflectionSummary,
   EventTier,
   EventTimelineSummary,
+  UpdateEventChapterRequest,
+  UpdateEventMediaRequest,
   UpdateEventRequest,
 } from "@/types/events";
 
@@ -65,6 +68,130 @@ export const eventsApi = {
     return response.data;
   },
 
+  async listChapters(id: ApiId): Promise<EventChapterHeader[]> {
+    const response = await api.get<EventChapterHeader[]>(
+      `/api/events/${id}/chapters/`,
+    );
+    return response.data;
+  },
+
+  async getChapter(
+    eventId: ApiId,
+    chapterId: ApiId,
+  ): Promise<EventChapterDetail> {
+    const response = await api.get<EventChapterDetail>(
+      `/api/events/${eventId}/chapters/${chapterId}/`,
+    );
+    return response.data;
+  },
+
+  async createChapter(
+    eventId: ApiId,
+    data: CreateEventChapterRequest,
+  ): Promise<EventChapterDetail> {
+    const response = await api.post<EventChapterDetail>(
+      `/api/events/${eventId}/chapters/`,
+      data,
+    );
+    return response.data;
+  },
+
+  async updateChapter(
+    eventId: ApiId,
+    chapterId: ApiId,
+    data: UpdateEventChapterRequest,
+  ): Promise<EventChapterDetail> {
+    const response = await api.patch<EventChapterDetail>(
+      `/api/events/${eventId}/chapters/${chapterId}/`,
+      data,
+    );
+    return response.data;
+  },
+
+  async removeChapter(eventId: ApiId, chapterId: ApiId): Promise<void> {
+    await api.delete(`/api/events/${eventId}/chapters/${chapterId}/`);
+  },
+
+  async reorderChapters(
+    eventId: ApiId,
+    chapterIds: ApiId[],
+  ): Promise<EventChapterHeader[]> {
+    const response = await api.put<EventChapterHeader[]>(
+      `/api/events/${eventId}/chapters/reorder/`,
+      { chapter_ids: chapterIds },
+    );
+    return response.data;
+  },
+
+  async materializeLegacyChapter(
+    eventId: ApiId,
+    data: UpdateEventChapterRequest = {},
+  ): Promise<EventChapterDetail> {
+    const response = await api.post<EventChapterDetail>(
+      `/api/events/${eventId}/chapters/materialize-legacy/`,
+      data,
+    );
+    return response.data;
+  },
+
+  async listMedia(
+    eventId: ApiId,
+    chapterId?: ApiId | null,
+  ): Promise<EventMediaAttachment[]> {
+    const response = await api.get<EventMediaAttachment[]>(
+      `/api/events/${eventId}/media/`,
+      {
+        params:
+          chapterId === undefined
+            ? undefined
+            : { chapter_id: chapterId === null ? "event" : chapterId },
+      },
+    );
+    return response.data;
+  },
+
+  async attachMedia(
+    eventId: ApiId,
+    data: AttachEventMediaRequest,
+  ): Promise<EventMediaAttachment> {
+    const response = await api.post<EventMediaAttachment>(
+      `/api/events/${eventId}/media/`,
+      data,
+    );
+    return response.data;
+  },
+
+  async updateMedia(
+    eventId: ApiId,
+    attachmentId: ApiId,
+    data: UpdateEventMediaRequest,
+  ): Promise<EventMediaAttachment> {
+    const response = await api.patch<EventMediaAttachment>(
+      `/api/events/${eventId}/media/${attachmentId}/`,
+      data,
+    );
+    return response.data;
+  },
+
+  async removeMedia(eventId: ApiId, attachmentId: ApiId): Promise<void> {
+    await api.delete(`/api/events/${eventId}/media/${attachmentId}/`);
+  },
+
+  async reorderMedia(
+    eventId: ApiId,
+    attachmentIds: ApiId[],
+    chapterId?: ApiId | null,
+  ): Promise<EventMediaAttachment[]> {
+    const response = await api.put<EventMediaAttachment[]>(
+      `/api/events/${eventId}/media/reorder/`,
+      {
+        media_ids: attachmentIds,
+        chapter_id: chapterId ?? null,
+      },
+    );
+    return response.data;
+  },
+
   async create(data: CreateEventRequest): Promise<Event> {
     const response = await api.post<Event>("/api/events/", data);
     return response.data;
@@ -77,25 +204,5 @@ export const eventsApi = {
 
   async remove(id: ApiId): Promise<void> {
     await api.delete(`/api/events/${id}/`);
-  },
-
-  async getLogSummaries(id: ApiId): Promise<EventLogSummary[]> {
-    const event = await this.get(id);
-    return event.journals.logs;
-  },
-
-  async getReflectionSummaries(id: ApiId): Promise<EventReflectionSummary[]> {
-    const event = await this.get(id);
-    return event.journals.reflections;
-  },
-
-  async getJournalsSummary(id: ApiId): Promise<EventJournalsSummary> {
-    const event = await this.get(id);
-    return event.journals;
-  },
-
-  async getParticipants(id: ApiId): Promise<EventParticipant[]> {
-    const event = await this.get(id);
-    return event.participants;
   },
 };

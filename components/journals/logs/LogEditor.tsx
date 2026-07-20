@@ -29,6 +29,7 @@ import { JournalFormSection } from "@/components/journals/shared/JournalFormSect
 import { JournalFormSectionHeader } from "@/components/journals/shared/JournalFormSectionHeader";
 import { JournalOccurrencePicker } from "@/components/journals/shared/JournalOccurrencePicker";
 import { JournalRelatedContextSelector } from "@/components/journals/shared/JournalRelatedContextSelector";
+import { JournalChapterSelector } from "@/components/journals/shared/JournalChapterSelector";
 import { JournalTimeRangePicker } from "@/components/journals/shared/JournalTimeRangePicker";
 import {
   JournalWorkspaceLayout,
@@ -70,6 +71,7 @@ type LogDraft = {
   format: LogFormat;
   title: string;
   event_id: ApiId | null;
+  chapter_id: ApiId | null;
   primary_contact_id: ApiId | null;
   occurred_at: string | null;
   current_step: string;
@@ -171,11 +173,20 @@ export function LogEditor({
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryEventId = existingLog ? null : searchParams.get("event");
+  const queryChapterId = existingLog
+    ? null
+    : normalizeChapterQuery(searchParams.get("chapter"), queryEventId);
   const queryContactId = existingLog ? null : searchParams.get("contact");
   const copy = formatCopy[format];
   const presentation = getJournalLogFormatPresentation(format);
   const [draft, setDraft] = useState<LogDraft>(() =>
-    makeInitialDraft(format, existingLog, queryEventId, queryContactId),
+    makeInitialDraft(
+      format,
+      existingLog,
+      queryEventId,
+      queryChapterId,
+      queryContactId,
+    ),
   );
   const [completionError, setCompletionError] = useState<string[] | null>(null);
   const [completing, setCompleting] = useState(false);
@@ -199,13 +210,19 @@ export function LogEditor({
           }
 
           const occurredAt = current.occurred_at ?? event.event_timestamp;
-          if (occurredAt === current.occurred_at) {
+          const chapterIsValid =
+            current.chapter_id == null ||
+            event.chapters?.some(
+              (chapter) => String(chapter.id) === String(current.chapter_id),
+            );
+          if (occurredAt === current.occurred_at && chapterIsValid) {
             return current;
           }
 
           return {
             ...current,
             occurred_at: occurredAt,
+            chapter_id: chapterIsValid ? current.chapter_id : null,
           };
         });
       })
@@ -414,7 +431,17 @@ export function LogEditor({
               <JournalRelatedContextSelector
                 className="mt-4"
                 eventValue={draft.event_id}
-                onEventChange={(value) => setCommon("event_id", value)}
+                onEventChange={(value) => {
+                  setCompletionError(null);
+                  setDraft((current) => ({
+                    ...current,
+                    event_id: value,
+                    chapter_id:
+                      String(value) === String(current.event_id)
+                        ? current.chapter_id
+                        : null,
+                  }));
+                }}
                 eventLabel="Related moment"
                 eventDescription="Search five recent moments at a time."
                 contactValue={draft.primary_contact_id}
@@ -431,6 +458,13 @@ export function LogEditor({
                 }
                 contactDescription={
                   format === "sentiment" ? "Required to complete" : "Optional"
+                }
+              />
+              <JournalChapterSelector
+                eventId={draft.event_id}
+                chapterId={draft.chapter_id}
+                onChapterChange={(chapterId) =>
+                  setDraft((current) => ({ ...current, chapter_id: chapterId }))
                 }
               />
             </JournalFormSection>
@@ -1087,6 +1121,7 @@ function makeInitialDraft(
   format: LogFormat,
   existingLog: Log | null,
   queryEvent: string | null,
+  queryChapter: string | null,
   queryContact: string | null,
 ): LogDraft {
   if (existingLog && existingLog.format === format) {
@@ -1094,6 +1129,7 @@ function makeInitialDraft(
       format,
       title: existingLog.title,
       event_id: existingLog.event?.id ?? null,
+      chapter_id: existingLog.chapter?.id ?? null,
       primary_contact_id: existingLog.primary_contact?.id ?? null,
       occurred_at: existingLog.occurred_at,
       current_step: existingLog.current_step || "details",
@@ -1105,6 +1141,7 @@ function makeInitialDraft(
     format,
     title: "",
     event_id: queryEvent || null,
+    chapter_id: queryChapter,
     primary_contact_id: queryContact || null,
     occurred_at: queryEvent ? null : new Date().toISOString(),
     current_step: "details",
@@ -1214,10 +1251,18 @@ function commonWrite(draft: LogDraft) {
   return {
     title: draft.title,
     event_id: draft.event_id,
+    chapter_id: draft.chapter_id,
     primary_contact_id: draft.primary_contact_id,
     occurred_at: draft.occurred_at,
     current_step: draft.current_step,
   };
+}
+
+function normalizeChapterQuery(
+  chapter: string | null,
+  event: string | null,
+): string | null {
+  return event && chapter && chapter !== "event" ? chapter : null;
 }
 
 function isMeaningfulLogDraft(draft: LogDraft) {

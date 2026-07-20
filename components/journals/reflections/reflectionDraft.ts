@@ -33,6 +33,7 @@ export type ReflectionDraft<L extends ReflectionLens = ReflectionLens> = {
   lens: L;
   title: string;
   eventId: ApiId | null;
+  chapterId: ApiId | null;
   primaryContactId: ApiId | null;
   contactIds: ApiId[];
   occurredAt: string;
@@ -59,6 +60,7 @@ export function createEmptyReflectionDraft<L extends ReflectionLens>(
     lens,
     title: "",
     eventId: null,
+    chapterId: null,
     primaryContactId: null,
     contactIds: [],
     occurredAt: "",
@@ -77,6 +79,7 @@ export function reflectionToDraft<L extends ReflectionLens>(
     lens: reflection.format,
     title: reflection.title ?? "",
     eventId: reflection.event?.id ?? null,
+    chapterId: reflection.chapter?.id ?? null,
     primaryContactId: reflection.primary_contact?.id ?? null,
     contactIds: reflection.contacts.map((contact) => contact.id),
     occurredAt: toDateTimeInputValue(reflection.occurred_at),
@@ -116,6 +119,7 @@ export function toCreateReflectionRequest<L extends ReflectionLens>(
     format: draft.lens,
     title: cleanOptionalText(draft.title),
     event_id: draft.eventId,
+    chapter_id: draft.chapterId,
     primary_contact_id: draft.primaryContactId,
     contact_ids: draft.contactIds,
     occurred_at: toIsoDateTime(draft.occurredAt),
@@ -134,6 +138,7 @@ export function toUpdateReflectionRequest<L extends ReflectionLens>(
   return {
     title: cleanOptionalText(draft.title),
     event_id: draft.eventId,
+    chapter_id: draft.chapterId,
     primary_contact_id: draft.primaryContactId,
     contact_ids: draft.contactIds,
     occurred_at: toIsoDateTime(draft.occurredAt),

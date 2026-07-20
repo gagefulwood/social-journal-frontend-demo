@@ -4,6 +4,8 @@ import type {
   CreateMediaAssetRequest,
   MediaAsset,
   MediaAssetListResponse,
+  MediaCapabilities,
+  UploadMediaOptions,
   UpdateMediaAssetRequest,
 } from "@/types/media";
 
@@ -21,7 +23,22 @@ export const mediaApi = {
     return res.data;
   },
 
-  async upload(data: CreateMediaAssetRequest): Promise<MediaAsset> {
+  async retrieve(id: ApiId): Promise<MediaAsset> {
+    const response = await api.get<MediaAsset>(`/api/media/${id}/`);
+    return response.data;
+  },
+
+  async capabilities(): Promise<MediaCapabilities> {
+    const response = await api.get<MediaCapabilities>(
+      "/api/media/capabilities/",
+    );
+    return response.data;
+  },
+
+  async upload(
+    data: CreateMediaAssetRequest,
+    options: UploadMediaOptions = {},
+  ): Promise<MediaAsset> {
     const formData = new FormData();
     formData.append("file", data.file);
 
@@ -37,8 +54,43 @@ export const mediaApi = {
       formData.append("caption", data.caption);
     }
 
-    const res = await api.post<MediaAsset>("/api/media/", formData);
+    const res = await api.post<MediaAsset>("/api/media/", formData, {
+      signal: options.signal,
+      headers: options.idempotencyKey
+        ? { "Idempotency-Key": options.idempotencyKey }
+        : undefined,
+      onUploadProgress: (event) => {
+        if (!options.onProgress) return;
+        const total = event.total ?? data.file.size;
+        options.onProgress({
+          loaded: event.loaded,
+          total,
+          percent: total > 0 ? Math.min(100, (event.loaded / total) * 100) : 0,
+        });
+      },
+    });
     return res.data;
+  },
+
+  async cancelUpload(idempotencyKey: string): Promise<void> {
+    await api.delete("/api/media/uploads/cancel/", {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
+  },
+
+  cancelUploadOnPageExit(idempotencyKey: string): void {
+    if (typeof window === "undefined") return;
+    const endpoint = mediaEndpointUrl("/api/media/uploads/cancel/");
+    const body = new URLSearchParams({ idempotency_key: idempotencyKey });
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      if (navigator.sendBeacon(endpoint, body)) return;
+    }
+    void fetch(endpoint, {
+      method: "POST",
+      body,
+      credentials: "include",
+      keepalive: true,
+    }).catch(() => undefined);
   },
 
   async update(id: ApiId, data: UpdateMediaAssetRequest): Promise<MediaAsset> {
@@ -50,3 +102,13 @@ export const mediaApi = {
     await api.delete(`/api/media/${id}/`);
   },
 };
+
+function mediaEndpointUrl(path: string) {
+  const base = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (!base) return path;
+  try {
+    return new URL(path, base.endsWith("/") ? base : `${base}/`).toString();
+  } catch {
+    return path;
+  }
+}

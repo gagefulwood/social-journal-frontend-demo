@@ -7,6 +7,7 @@ import type {
   EducationLevel,
   EntryTag,
   FactCategory,
+  InteractionMode,
   MediaType,
   Mood,
   ObservationMarker,
@@ -28,6 +29,7 @@ type LookupStoreState = LookupData & {
   clear: () => void;
   getMoodById: (id: ApiId) => Mood | undefined;
   getContextCategoryById: (id: ApiId) => ContextCategory | undefined;
+  getInteractionModeById: (id: ApiId) => InteractionMode | undefined;
   getFactCategoryById: (id: ApiId) => FactCategory | undefined;
   getObservationMarkerById: (id: ApiId) => ObservationMarker | undefined;
   getEntryTagById: (id: ApiId) => EntryTag | undefined;
@@ -40,6 +42,7 @@ type LookupStoreState = LookupData & {
 const emptyLookupData: LookupData = {
   moods: [],
   contextCategories: [],
+  interactionModes: [],
   factCategories: [],
   observationMarkers: [],
   entryTags: [],
@@ -52,6 +55,7 @@ const emptyLookupData: LookupData = {
 const emptyLoadedState: LookupLoadedState = {
   moods: false,
   contextCategories: false,
+  interactionModes: false,
   factCategories: false,
   observationMarkers: false,
   entryTags: false,
@@ -64,6 +68,7 @@ const emptyLoadedState: LookupLoadedState = {
 const fullLoadedState: LookupLoadedState = {
   moods: true,
   contextCategories: true,
+  interactionModes: true,
   factCategories: true,
   observationMarkers: true,
   entryTags: true,
@@ -79,14 +84,14 @@ function idsMatch(left: ApiId, right: ApiId) {
 
 function findById<TItem extends { id: ApiId }>(
   items: TItem[],
-  id: ApiId
+  id: ApiId,
 ): TItem | undefined {
   return items.find((item) => idsMatch(item.id, id));
 }
 
 function findFactCategoryById(
   categories: FactCategory[],
-  id: ApiId
+  id: ApiId,
 ): FactCategory | undefined {
   for (const category of categories) {
     if (idsMatch(category.id, id)) {
@@ -169,6 +174,7 @@ export const useLookupStore = create<LookupStoreState>((set, get) => ({
 
   getMoodById: (id) => findById(get().moods, id),
   getContextCategoryById: (id) => findById(get().contextCategories, id),
+  getInteractionModeById: (id) => findById(get().interactionModes, id),
   getFactCategoryById: (id) => findFactCategoryById(get().factCategories, id),
   getObservationMarkerById: (id) => findById(get().observationMarkers, id),
   getEntryTagById: (id) => findById(get().entryTags, id),

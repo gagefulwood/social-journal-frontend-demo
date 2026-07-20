@@ -1,32 +1,22 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+type LegacyEventTimelinePageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export default function ReflectInProgress() {
-  return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-8 text-center">
-      <h1 className="mb-8 font-sans text-3xl font-semibold leading-tight">
-        Timeline View
-      </h1>
+export default async function LegacyEventTimelinePage({
+  searchParams,
+}: LegacyEventTimelinePageProps) {
+  const params = new URLSearchParams();
+  const current = await searchParams;
 
-      <p className="text-2xl text-muted-foreground mb-10">
-        This page is currently under construction. Please excuse our progress!
-      </p>
+  for (const [key, value] of Object.entries(current)) {
+    const firstValue = Array.isArray(value) ? value[0] : value;
+    if (firstValue) {
+      params.set(key, firstValue);
+    }
+  }
 
-      <div className="flex justify-center items-center mb-8">
-        <img
-          className="max-w-xs md:max-w-sm"
-          src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnIxdzYzZzZ5Z2Rwd3FubWY2bmg2b3pwMGdyZW53cGswbnd4YjV1ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/vR1dPIYzQmkRzLZk2w/giphy.gif"
-          alt="Penguin Progress"
-        />
-      </div>
-
-      <div className="flex justify-center">
-        <Button asChild variant="outline" className="px-8 py-6 text-lg">
-          <Link href="/events">Return to Events List</Link>
-        </Button>
-      </div>
-    </main>
-  );
+  params.set("view", "timeline");
+  redirect(`/events?${params.toString()}`);
 }

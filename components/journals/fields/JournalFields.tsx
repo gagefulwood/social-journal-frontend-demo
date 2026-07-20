@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { Check, ChevronDown, Loader2, Plus, X } from "lucide-react";
 
-import { contactName, idsMatch } from "@/components/contacts/contact-utils";
+import { idsMatch } from "@/components/contacts/contact-utils";
 import { Button } from "@/components/ui/button";
 import {
   JournalChoiceChip,
@@ -12,8 +12,6 @@ import {
 } from "@/components/journals/shared/JournalChoice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useDebounce } from "@/hooks/useDebounce";
-import { contactsApi } from "@/lib/api/contactsApi";
 import { journalApi, type JournalLookupKind } from "@/lib/api/journalApi";
 import {
   getLogFormOptionPresentation,
@@ -21,7 +19,6 @@ import {
 } from "@/lib/presentation/logFormOptionPresentation";
 import { cn } from "@/lib/utils";
 import type { ApiId } from "@/types/api";
-import type { ContactListItem } from "@/types/contacts";
 import type { JournalLookupOption } from "@/types/journals";
 
 export function JournalField({
@@ -29,23 +26,29 @@ export function JournalField({
   description,
   error,
   htmlFor,
+  descriptionId,
+  errorId,
   children,
 }: {
   label: string;
   description?: string;
   error?: string;
   htmlFor?: string;
+  descriptionId?: string;
+  errorId?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={htmlFor}>{label}</Label>
       {description ? (
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <p id={descriptionId} className="text-xs text-muted-foreground">
+          {description}
+        </p>
       ) : null}
       {children}
       {error ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p id={errorId} role="alert" className="text-sm text-destructive">
           {error}
         </p>
       ) : null}
@@ -119,164 +122,6 @@ export function JournalValuePicker({
         />
       </div>
     </JournalField>
-  );
-}
-
-export function JournalContactField({
-  value,
-  onChange,
-  multiple = false,
-}: {
-  value: ApiId | ApiId[] | null;
-  onChange: (value: ApiId | ApiId[] | null) => void;
-  multiple?: boolean;
-}) {
-  const ids = useMemo(
-    () => (Array.isArray(value) ? value : value == null ? [] : [value]),
-    [value],
-  );
-  const [search, setSearch] = useState("");
-  const [contacts, setContacts] = useState<ContactListItem[]>([]);
-  const [selected, setSelected] = useState<ContactListItem[]>([]);
-  const [loadedRequestKey, setLoadedRequestKey] = useState<string | null>(null);
-  const debouncedSearch = useDebounce(search, 250);
-  const requestKey = JSON.stringify([
-    debouncedSearch,
-    ids.map((id) => String(id)),
-  ]);
-  const loading = loadedRequestKey !== requestKey;
-
-  useEffect(() => {
-    let active = true;
-    void contactsApi
-      .list({ name: debouncedSearch || undefined, page_size: 10 })
-      .then((response) => {
-        if (!active) return;
-        setContacts(response.results);
-        setSelected((current) => {
-          const merged = [...current];
-          for (const contact of response.results) {
-            if (
-              ids.some((id) => idsMatch(id, contact.id)) &&
-              !merged.some((item) => idsMatch(item.id, contact.id))
-            ) {
-              merged.push(contact);
-            }
-          }
-          return merged.filter((item) =>
-            ids.some((id) => idsMatch(id, item.id)),
-          );
-        });
-      })
-      .finally(() => {
-        if (active) setLoadedRequestKey(requestKey);
-      });
-    return () => {
-      active = false;
-    };
-  }, [debouncedSearch, ids, requestKey]);
-
-  useEffect(() => {
-    const missing = ids.filter(
-      (id) => !selected.some((item) => idsMatch(item.id, id)),
-    );
-    if (!missing.length) return;
-
-    let active = true;
-    void Promise.all(missing.map((id) => contactsApi.get(id))).then(
-      (responses) => {
-        if (!active) return;
-        setSelected((current) => {
-          const merged = [...current];
-          for (const contact of responses) {
-            if (!merged.some((item) => idsMatch(item.id, contact.id))) {
-              merged.push(contact);
-            }
-          }
-          return merged;
-        });
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [ids, selected]);
-
-  function toggle(contact: ContactListItem) {
-    const hasContact = ids.some((id) => idsMatch(id, contact.id));
-    setSelected((current) =>
-      hasContact
-        ? current.filter((item) => !idsMatch(item.id, contact.id))
-        : [...current, contact],
-    );
-
-    if (!multiple) {
-      onChange(hasContact ? null : contact.id);
-      return;
-    }
-
-    const next = hasContact
-      ? ids.filter((id) => !idsMatch(id, contact.id))
-      : [...ids, contact.id];
-    onChange(next.length ? next : null);
-  }
-
-  return (
-    <div className="space-y-2">
-      {selected.length ? (
-        <div className="flex flex-wrap gap-2">
-          {selected.map((contact) => (
-            <span
-              key={contact.id}
-              className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-sm text-primary"
-            >
-              {contactName(contact)}
-              <button
-                type="button"
-                className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={`Remove ${contactName(contact)}`}
-                onClick={() => toggle(contact)}
-              >
-                <X className="size-3.5" />
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : null}
-      <Input
-        value={search}
-        aria-label="Search contacts"
-        placeholder="Search contacts"
-        onChange={(event) => setSearch(event.target.value)}
-      />
-      <div className="max-h-64 overflow-y-auto rounded-md border border-border">
-        {loading ? (
-          <p className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" /> Loading contacts...
-          </p>
-        ) : contacts.length ? (
-          contacts.map((contact) => {
-            const isSelected = ids.some((id) => idsMatch(id, contact.id));
-            return (
-              <button
-                key={contact.id}
-                type="button"
-                aria-pressed={isSelected}
-                className="flex w-full items-center justify-between border-b border-border/70 px-3 py-2 text-left text-sm last:border-0 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                onClick={() => toggle(contact)}
-              >
-                <span>{contactName(contact)}</span>
-                {isSelected ? <Check className="size-4" /> : null}
-              </button>
-            );
-          })
-        ) : (
-          <p className="px-3 py-3 text-sm text-muted-foreground">
-            No contacts match this search.
-          </p>
-        )}
-      </div>
-    </div>
   );
 }
 

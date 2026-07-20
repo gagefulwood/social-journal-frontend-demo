@@ -2,13 +2,8 @@
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  BookOpenText,
-  CalendarDays,
-  LayoutGrid,
-  NotebookTabs,
-  Sparkles,
-} from "lucide-react";
+import { CalendarDays, LayoutGrid, NotebookTabs, Sparkles } from "lucide-react";
+import { ContactJournalsPanel } from "@/components/contacts/ContactJournalsPanel";
 import { ContactContextWorkspace } from "@/components/contacts/ContactContextWorkspace";
 import { ContextProfileDetailsRail } from "@/components/contacts/ContextProfileDetailsRail";
 import { ProfileDetailsSheet } from "@/components/contacts/ProfileDetailsSheet";
@@ -392,15 +387,7 @@ export function ContactDetailPanel({
           </ContactDetailTabContent>
 
           <ContactDetailTabContent value="journals">
-            <section className="flex min-w-0 max-w-full flex-col rounded-lg border border-border bg-card p-8 text-center xl:h-full xl:min-h-0 xl:items-center xl:justify-center">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                <BookOpenText className="size-6" />
-              </div>
-              <h2 className="mt-4 text-lg font-semibold">Journals</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Journal entries will appear here once journals are rebuilt.
-              </p>
-            </section>
+            <ContactJournalsPanel contact={contact} />
           </ContactDetailTabContent>
 
           <ContactDetailTabContent value="timeline">

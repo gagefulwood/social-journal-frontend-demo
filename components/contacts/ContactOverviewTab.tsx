@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenText, CalendarClock, FileText, MessageSquareText } from "lucide-react";
+import { CalendarClock, FileText, MessageSquareText } from "lucide-react";
 import { Children, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { StatsPanel } from "@/components/contacts/StatsPanel";
@@ -25,7 +25,7 @@ export function ContactOverviewTab({
     .sort(
       (left, right) =>
         new Date(right.created_timestamp).getTime() -
-        new Date(left.created_timestamp).getTime()
+        new Date(left.created_timestamp).getTime(),
     )
     .slice(0, 3);
 
@@ -66,11 +66,6 @@ export function ContactOverviewTab({
         </PreviewCard>
       </div>
 
-      <PlaceholderWidget
-        title="Journals"
-        icon={<BookOpenText className="size-4" />}
-        copy="Journal entries will appear here once journals are rebuilt."
-      />
       <PlaceholderWidget
         title="Timeline"
         icon={<CalendarClock className="size-4" />}

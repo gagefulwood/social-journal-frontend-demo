@@ -4,6 +4,7 @@ import type {
   EducationLevel,
   EntryTag,
   FactCategory,
+  InteractionMode,
   MediaType,
   Mood,
   ObservationMarker,
@@ -14,6 +15,7 @@ import type {
 export type LookupData = {
   moods: Mood[];
   contextCategories: ContextCategory[];
+  interactionModes: InteractionMode[];
   factCategories: FactCategory[];
   observationMarkers: ObservationMarker[];
   entryTags: EntryTag[];
@@ -31,21 +33,26 @@ export const lookupsApi = {
 
   async listContextCategories(): Promise<ContextCategory[]> {
     const res = await api.get<ContextCategory[]>(
-      "/api/lookups/context-categories/"
+      "/api/lookups/context-categories/",
+    );
+    return res.data;
+  },
+
+  async listInteractionModes(): Promise<InteractionMode[]> {
+    const res = await api.get<InteractionMode[]>(
+      "/api/lookups/interaction-modes/",
     );
     return res.data;
   },
 
   async listFactCategories(): Promise<FactCategory[]> {
-    const res = await api.get<FactCategory[]>(
-      "/api/lookups/fact-categories/"
-    );
+    const res = await api.get<FactCategory[]>("/api/lookups/fact-categories/");
     return res.data;
   },
 
   async listObservationMarkers(): Promise<ObservationMarker[]> {
     const res = await api.get<ObservationMarker[]>(
-      "/api/lookups/observation-markers/"
+      "/api/lookups/observation-markers/",
     );
     return res.data;
   },
@@ -67,7 +74,7 @@ export const lookupsApi = {
 
   async listEducationLevels(): Promise<EducationLevel[]> {
     const res = await api.get<EducationLevel[]>(
-      "/api/lookups/education-levels/"
+      "/api/lookups/education-levels/",
     );
     return res.data;
   },
@@ -81,6 +88,7 @@ export const lookupsApi = {
     const [
       moods,
       contextCategories,
+      interactionModes,
       factCategories,
       observationMarkers,
       entryTags,
@@ -91,6 +99,7 @@ export const lookupsApi = {
     ] = await Promise.all([
       this.listMoods(),
       this.listContextCategories(),
+      this.listInteractionModes(),
       this.listFactCategories(),
       this.listObservationMarkers(),
       this.listEntryTags(),
@@ -103,6 +112,7 @@ export const lookupsApi = {
     return {
       moods,
       contextCategories,
+      interactionModes,
       factCategories,
       observationMarkers,
       entryTags,

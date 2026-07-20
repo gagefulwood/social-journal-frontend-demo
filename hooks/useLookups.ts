@@ -11,8 +11,11 @@ export function useLookups(options: UseLookupsOptions = {}) {
   const { autoLoad = true } = options;
   const moods = useLookupStore((state) => state.moods);
   const contextCategories = useLookupStore((state) => state.contextCategories);
+  const interactionModes = useLookupStore((state) => state.interactionModes);
   const factCategories = useLookupStore((state) => state.factCategories);
-  const observationMarkers = useLookupStore((state) => state.observationMarkers);
+  const observationMarkers = useLookupStore(
+    (state) => state.observationMarkers,
+  );
   const entryTags = useLookupStore((state) => state.entryTags);
   const occupations = useLookupStore((state) => state.occupations);
   const relations = useLookupStore((state) => state.relations);
@@ -27,32 +30,35 @@ export function useLookups(options: UseLookupsOptions = {}) {
   const clear = useLookupStore((state) => state.clear);
   const getMoodById = useLookupStore((state) => state.getMoodById);
   const getContextCategoryById = useLookupStore(
-    (state) => state.getContextCategoryById
+    (state) => state.getContextCategoryById,
+  );
+  const getInteractionModeById = useLookupStore(
+    (state) => state.getInteractionModeById,
   );
   const getFactCategoryById = useLookupStore(
-    (state) => state.getFactCategoryById
+    (state) => state.getFactCategoryById,
   );
   const getObservationMarkerById = useLookupStore(
-    (state) => state.getObservationMarkerById
+    (state) => state.getObservationMarkerById,
   );
   const getEntryTagById = useLookupStore((state) => state.getEntryTagById);
   const getOccupationById = useLookupStore((state) => state.getOccupationById);
   const getRelationById = useLookupStore((state) => state.getRelationById);
   const getEducationLevelById = useLookupStore(
-    (state) => state.getEducationLevelById
+    (state) => state.getEducationLevelById,
   );
   const getMediaTypeById = useLookupStore((state) => state.getMediaTypeById);
 
-
   useEffect(() => {
-    if (autoLoad && !isHydrated && !isLoading) {
+    if (autoLoad && !isHydrated && !isLoading && !error) {
       void hydrate();
     }
-  }, [autoLoad, hydrate, isHydrated, isLoading]);
+  }, [autoLoad, error, hydrate, isHydrated, isLoading]);
 
   return {
     moods,
     contextCategories,
+    interactionModes,
     factCategories,
     observationMarkers,
     entryTags,
@@ -69,6 +75,7 @@ export function useLookups(options: UseLookupsOptions = {}) {
     clear,
     getMoodById,
     getContextCategoryById,
+    getInteractionModeById,
     getFactCategoryById,
     getObservationMarkerById,
     getEntryTagById,

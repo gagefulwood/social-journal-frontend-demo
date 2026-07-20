@@ -7,6 +7,7 @@ import type {
   ReflectionLens,
 } from "@/types/journals";
 import type { ContextCategory, InteractionMode, Mood } from "@/types/lookups";
+import type { MediaAssetListItem, NormalizedMediaCrop } from "@/types/media";
 
 export type EventTier = "routine" | "milestone";
 export type EventImpact = "negative" | "neutral" | "positive" | "";
@@ -22,6 +23,8 @@ export type EventLogSummary = {
   format: LogFormat | "legacy";
   status: JournalStatus;
   title: string;
+  summary?: string;
+  excerpt?: string;
   occurred_at: string | null;
   primary_contact: JournalContactSummary | null;
   created_timestamp: string;
@@ -34,6 +37,8 @@ export type EventReflectionSummary = {
   format: ReflectionLens | "legacy";
   status: JournalStatus;
   title: string;
+  summary?: string;
+  excerpt?: string;
   occurred_at: string | null;
   primary_contact: JournalContactSummary | null;
   created_timestamp: string;
@@ -46,6 +51,68 @@ export type EventJournalsSummary = {
   log_count: number;
   reflection_count: number;
 };
+
+export type EventMediaAttachment = {
+  id: ApiId;
+  event_id?: ApiId;
+  media_asset?: MediaAssetListItem;
+  chapter_id?: ApiId | null;
+  display_order: number;
+  recorded_at?: string | null;
+  alt_text?: string;
+  caption?: string;
+  decorative?: boolean;
+  is_cover?: boolean;
+  focal_x?: number | null;
+  focal_y?: number | null;
+  crops?: NormalizedMediaCrop[];
+  created_timestamp?: string;
+  updated_timestamp?: string;
+};
+
+export type EventMediaSummary = {
+  total_count: number;
+  image_count: number;
+  video_count: number;
+  audio_count: number;
+  cover?: EventMediaAttachment | null;
+  previews?: EventMediaAttachment[];
+};
+
+export type EventChapterHeader = {
+  id: ApiId | null;
+  is_projection?: boolean;
+  title: string;
+  position: number;
+  start_timestamp?: string | null;
+  end_timestamp?: string | null;
+  location_label?: string | null;
+  effective_location_label?: string | null;
+  effective_start_timestamp?: string | null;
+  effective_end_timestamp?: string | null;
+  inherits_event_participants?: boolean;
+  participant_count?: number;
+  participant_preview?: ContactListItem[];
+  media_count?: number;
+  thumbnail?: EventMediaAttachment | null;
+};
+
+export type EventChapterDetail = EventChapterHeader & {
+  note?: string;
+  description?: string;
+  effective_participants?: ContactListItem[];
+  media?: EventMediaAttachment[];
+  journals?: EventJournalsSummary;
+  created_timestamp?: string;
+  updated_timestamp?: string;
+};
+
+export type LegacyChapterProjection = EventChapterDetail & {
+  id: null;
+  is_projection: true;
+};
+
+export type EventChapterMode = "projected" | "persisted";
 
 export type EventListItem = {
   id: ApiId;
@@ -86,12 +153,20 @@ export type Event = {
   tier: EventTier;
   impact: EventImpact;
   context_category: ApiId | null;
+  context_category_summary?: ContextCategory | null;
   interaction_mode: InteractionMode | null;
   mood: Mood | null;
   participants: EventParticipant[];
   journaled: boolean;
   journals: EventJournalsSummary;
+  chapter_mode?: EventChapterMode;
+  chapters?: EventChapterHeader[];
+  legacy_chapter?: LegacyChapterProjection | null;
+  media?: EventMediaAttachment[];
+  media_summary?: EventMediaSummary;
 };
+
+export type EventDetailDTO = Event;
 
 export type EventListResponse = PaginatedResponse<EventListItem>;
 
@@ -124,3 +199,32 @@ export type UpdateEventRequest = Partial<
 > & {
   event_timestamp?: never;
 };
+
+export type CreateEventChapterRequest = {
+  title: string;
+  start_timestamp?: string | null;
+  end_timestamp?: string | null;
+  location_label?: string;
+  note?: string;
+  inherits_event_participants?: boolean;
+  participant_ids?: ApiId[];
+};
+
+export type UpdateEventChapterRequest = Partial<CreateEventChapterRequest>;
+
+export type AttachEventMediaRequest = {
+  media_asset_id: ApiId;
+  chapter_id?: ApiId | null;
+  recorded_at?: string | null;
+  alt_text?: string;
+  caption?: string;
+  decorative?: boolean;
+  is_cover?: boolean;
+  focal_x?: number;
+  focal_y?: number;
+  crops?: NormalizedMediaCrop[];
+};
+
+export type UpdateEventMediaRequest = Partial<
+  Omit<AttachEventMediaRequest, "media_asset_id" | "chapter_id">
+>;

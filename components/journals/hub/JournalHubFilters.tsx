@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, Search } from "lucide-react";
+import { BookOpen, Filter, Search } from "lucide-react";
 
 import { contactName } from "@/components/contacts/contact-utils";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useContacts } from "@/hooks/useContacts";
-import { useEvents } from "@/hooks/useEvent";
+import { useEvent, useEvents } from "@/hooks/useEvent";
 import type { JournalFormat } from "@/types/journals";
 
 import {
@@ -35,12 +35,14 @@ type JournalHubFiltersProps = {
   search: string;
   filters: JournalHubFilterValues;
   activeFilterCount: number;
+  chapter?: string;
   onSearchChange: (value: string) => void;
   onFilterChange: <Key extends keyof JournalHubFilterValues>(
     key: Key,
     value: JournalHubFilterValues[Key],
   ) => void;
   onClearFilters: () => void;
+  onChapterChange: (chapter: string) => void;
 };
 
 export function JournalHubFilters({
@@ -48,14 +50,29 @@ export function JournalHubFilters({
   search,
   filters,
   activeFilterCount,
+  chapter,
   onSearchChange,
   onFilterChange,
   onClearFilters,
+  onChapterChange,
 }: JournalHubFiltersProps) {
   const { contacts, loading: contactsLoading } = useContacts({
     page_size: 100,
   });
   const { events, loading: eventsLoading } = useEvents({ page_size: 100 });
+  const { event: selectedEvent, loading: selectedEventLoading } = useEvent(
+    filters.event || null,
+  );
+  const selectedChapter = selectedEvent?.chapters?.find(
+    (candidate) =>
+      candidate.id != null && String(candidate.id) === String(chapter),
+  );
+  const scopeLabel =
+    chapter === "event"
+      ? "Event perspective"
+      : chapter
+        ? `Chapter · ${selectedChapter?.title ?? "Selected chapter"}`
+        : null;
   const formatOptions = JOURNAL_FORMAT_OPTIONS.filter((option) => {
     if (view === "logs") {
       return option.family === "log";
@@ -84,6 +101,13 @@ export function JournalHubFilters({
           onChange={(event) => onSearchChange(event.target.value)}
         />
       </label>
+
+      {scopeLabel && (
+        <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary sm:max-w-64">
+          <BookOpen className="size-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{scopeLabel}</span>
+        </span>
+      )}
 
       <Popover>
         <PopoverTrigger asChild>
@@ -128,6 +152,35 @@ export function JournalHubFilters({
                   )}
               </select>
             </FilterField>
+
+            {filters.event && (
+              <FilterField label="Event scope">
+                <select
+                  value={chapter ?? ""}
+                  disabled={selectedEventLoading}
+                  className={selectClassName}
+                  onChange={(event) => onChapterChange(event.target.value)}
+                >
+                  <option value="">All Event perspectives</option>
+                  <option value="event">Event perspective only</option>
+                  {(selectedEvent?.chapters ?? []).flatMap((candidate) =>
+                    candidate.id == null
+                      ? []
+                      : [
+                          <option
+                            key={String(candidate.id)}
+                            value={String(candidate.id)}
+                          >
+                            Chapter: {candidate.title || "Untitled chapter"}
+                          </option>,
+                        ],
+                  )}
+                  {chapter && chapter !== "event" && !selectedChapter && (
+                    <option value={chapter}>Selected chapter</option>
+                  )}
+                </select>
+              </FilterField>
+            )}
 
             <FilterField label="Event">
               <select

@@ -2,6 +2,7 @@ import type { ApiId, PaginatedResponse } from "@/types/api";
 
 export type JournalFamily = "log" | "reflection";
 export type JournalStatus = "draft" | "completed";
+export type JournalRelationSource = "direct" | "event" | "both";
 export type LogFormat = "episode" | "social_energy" | "sentiment";
 export type ReflectionLens = "interaction" | "moment" | "emotional" | "free";
 export type JournalFormat = LogFormat | ReflectionLens | "legacy";
@@ -28,6 +29,12 @@ export type JournalEventSummary = {
   location: string | null;
 };
 
+export type JournalChapterSummary = {
+  id: ApiId;
+  title: string;
+  position: number;
+};
+
 export type JournalCoverSummary = {
   attachment_id: ApiId;
   media_asset_id: ApiId;
@@ -51,6 +58,7 @@ export type JournalListItem = {
   title: string;
   summary: string;
   event: JournalEventSummary | null;
+  chapter?: JournalChapterSummary | null;
   primary_contact: JournalContactSummary | null;
   occurred_at: string | null;
   current_step: string;
@@ -61,6 +69,7 @@ export type JournalListItem = {
   completed_at: string | null;
   media_count: number;
   cover: JournalCoverSummary | null;
+  relation_source: JournalRelationSource | null;
 };
 
 export type JournalListResponse = PaginatedResponse<JournalListItem>;
@@ -218,9 +227,22 @@ export type ReflectionDetailByLens = {
   free: FreeReflectionDetail;
 };
 
-type JournalDetailBase = JournalListItem & {
-  contacts: JournalContactSummary[];
-  contact_ids: ApiId[];
+type JournalDetailBase = {
+  id: ApiId;
+  family: JournalFamily;
+  format: JournalFormat;
+  status: JournalStatus;
+  title: string;
+  event: JournalEventSummary | null;
+  chapter: JournalChapterSummary | null;
+  primary_contact: JournalContactSummary | null;
+  occurred_at: string | null;
+  current_step: string;
+  progress: JournalProgress;
+  revision: number;
+  created_timestamp: string;
+  updated_timestamp: string;
+  completed_at: string | null;
 };
 
 export type Log<F extends LogFormat = LogFormat> = JournalDetailBase & {
@@ -234,8 +256,8 @@ export type Reflection<L extends ReflectionLens = ReflectionLens> =
     family: "reflection";
     format: L;
     detail: ReflectionDetailByLens[L];
+    contacts: JournalContactSummary[];
     attachments: JournalAttachment[];
-    cover_media_asset_id: ApiId | null;
     cover_attachment_id: ApiId | null;
     carry_forward: CarryForwardDrafts;
   };
@@ -245,6 +267,7 @@ export type JournalEntry = Log | Reflection;
 export type CommonJournalWrite = {
   title?: string;
   event_id?: ApiId | null;
+  chapter_id?: ApiId | null;
   primary_contact_id?: ApiId | null;
   occurred_at?: string | null;
   current_step?: string;
@@ -290,7 +313,9 @@ export type JournalFeedParams = {
   format?: JournalFormat;
   search?: string;
   contact?: ApiId;
+  related_contact?: ApiId;
   event?: ApiId;
+  chapter?: ApiId | "event";
   occurred_after?: string;
   occurred_before?: string;
   ordering?:

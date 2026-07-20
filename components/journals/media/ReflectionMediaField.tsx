@@ -48,7 +48,7 @@ export function ReflectionMediaField({
         ...value,
         ...uploaded.map((asset, index) => ({
           mediaAssetId: asset.id,
-          fileUrl: asset.url || asset.file || null,
+          fileUrl: asset.content_url || asset.url || null,
           thumbnailUrl: null,
           originalFilename: asset.original_filename,
           contentType: asset.content_type,

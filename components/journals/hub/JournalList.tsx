@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import {
+  BookOpen,
   CalendarDays,
+  ChevronRight,
   MoreHorizontal,
   Paperclip,
   Pencil,
@@ -26,6 +28,8 @@ import {
   getJournalClassificationPresentation,
   getJournalStatusPresentation,
 } from "@/lib/presentation/journalPresentation";
+import { cn } from "@/lib/utils";
+import type { ApiId } from "@/types/api";
 import type { ApiError } from "@/types/auth";
 import type { JournalListItem } from "@/types/journals";
 
@@ -170,7 +174,20 @@ export function JournalList({
   );
 }
 
-function JournalListRow({ entry }: { entry: JournalListItem }) {
+export type JournalListRowProps = {
+  entry: JournalListItem;
+  variant?: "standard" | "compact";
+  contactContext?: {
+    id: ApiId;
+    displayName: string;
+  };
+};
+
+export function JournalListRow({
+  entry,
+  variant = "standard",
+  contactContext,
+}: JournalListRowProps) {
   const { familyPresentation, formatPresentation, primaryPresentation } =
     getJournalClassificationPresentation(entry.family, entry.format);
   const statusPresentation = getJournalStatusPresentation(entry.status);
@@ -181,13 +198,36 @@ function JournalListRow({ entry }: { entry: JournalListItem }) {
   const date =
     entry.occurred_at ?? entry.completed_at ?? entry.updated_timestamp;
   const progress = clampPercent(entry.progress.percent);
+  const compact = variant === "compact";
+  const hasDirectContactRelation = Boolean(
+    contactContext &&
+    (entry.relation_source === "direct" || entry.relation_source === "both"),
+  );
 
   return (
-    <article className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start">
-      <JournalIconTile presentation={primaryPresentation} />
+    <article
+      data-journal-id={String(entry.id)}
+      data-journal-family={entry.family}
+      data-relation-source={entry.relation_source ?? undefined}
+      className={cn(
+        "grid min-w-0 gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start",
+        compact
+          ? "grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5 px-3 py-3"
+          : "px-4 py-4",
+      )}
+    >
+      <JournalIconTile
+        presentation={primaryPresentation}
+        size={compact ? "compact" : "standard"}
+      />
 
       <div className="min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div
+          className={cn(
+            "flex min-w-0 flex-wrap items-center",
+            compact ? "gap-1.5" : "gap-2",
+          )}
+        >
           <JournalSemanticChip
             presentation={familyPresentation}
             size="compact"
@@ -208,7 +248,12 @@ function JournalListRow({ entry }: { entry: JournalListItem }) {
           )}
         </div>
 
-        <h3 className="mt-2 max-w-3xl font-semibold leading-5">
+        <h3
+          className={cn(
+            "max-w-3xl font-semibold leading-5",
+            compact ? "mt-1.5 text-sm" : "mt-2",
+          )}
+        >
           <Link
             href={href}
             className="line-clamp-2 rounded-sm outline-none hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -217,15 +262,32 @@ function JournalListRow({ entry }: { entry: JournalListItem }) {
           </Link>
         </h3>
 
-        {entry.summary && (
+        {!compact && entry.summary && (
           <p className="mt-1 line-clamp-2 max-w-3xl text-sm leading-5 text-muted-foreground">
             {entry.summary}
           </p>
         )}
 
-        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <div
+          className={cn(
+            "flex min-w-0 flex-wrap items-center gap-y-1 text-xs text-muted-foreground",
+            compact ? "mt-1.5 gap-x-3" : "mt-2 gap-x-4",
+          )}
+        >
           <span>{formatJournalDate(date)}</span>
-          {entry.primary_contact && (
+          {hasDirectContactRelation && contactContext ? (
+            <Link
+              href={`/contacts/${contactContext.id}`}
+              title={contactContext.displayName}
+              className="inline-flex max-w-48 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <UsersRound className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">
+                {entry.family === "log" ? "With" : "About"}{" "}
+                {contactContext.displayName}
+              </span>
+            </Link>
+          ) : !contactContext && entry.primary_contact ? (
             <Link
               href={`/contacts/${entry.primary_contact.id}`}
               title={entry.primary_contact.display_name}
@@ -236,18 +298,43 @@ function JournalListRow({ entry }: { entry: JournalListItem }) {
                 {entry.primary_contact.display_name}
               </span>
             </Link>
-          )}
+          ) : null}
           {entry.event && (
             <Link
               href={`/events/${entry.event.id}`}
               title={entry.event.title}
-              className="inline-flex max-w-56 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+              className={cn(
+                "inline-flex max-w-56 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50",
+                compact &&
+                  "rounded-full border border-info/20 bg-info-muted px-2 py-0.5 text-info",
+              )}
             >
               <CalendarDays className="size-3.5 shrink-0" aria-hidden="true" />
-              <span className="truncate">{entry.event.title}</span>
+              <span className="truncate">
+                {compact ? "Event · " : ""}
+                {entry.event.title}
+              </span>
             </Link>
           )}
-          {entry.media_count > 0 && (
+          {entry.event &&
+            (entry.chapter ? (
+              <Link
+                href={`/events/${entry.event.id}?chapter=${entry.chapter.id}`}
+                title={entry.chapter.title}
+                className="inline-flex max-w-56 items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <BookOpen className="size-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">
+                  Chapter · {entry.chapter.title}
+                </span>
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                <BookOpen className="size-3.5" aria-hidden="true" />
+                Event perspective
+              </span>
+            ))}
+          {entry.media_count > 0 && (!compact || !entry.cover) && (
             <span className="inline-flex items-center gap-1">
               <Paperclip className="size-3.5" aria-hidden="true" />
               {entry.media_count} {entry.media_count === 1 ? "file" : "files"}
@@ -277,47 +364,83 @@ function JournalListRow({ entry }: { entry: JournalListItem }) {
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 sm:justify-end">
-        <div className="text-right text-xs text-muted-foreground">
-          {entry.status === "draft" ? (
-            <p>Updated {formatJournalDate(entry.updated_timestamp, true)}</p>
-          ) : wasEditedAfterCompletion(entry) ? (
-            <p>Edited {formatJournalDate(entry.updated_timestamp, true)}</p>
-          ) : (
-            <p>Completed {formatJournalDate(entry.completed_at, true)}</p>
-          )}
-        </div>
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3 sm:justify-end",
+          compact && entry.cover && "flex-col gap-1.5",
+        )}
+      >
+        {compact && entry.cover ? (
+          // Cover summaries are restricted by the API to non-sensitive images.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={journalCoverUrl(entry.cover.file_url)}
+            alt={entry.cover.alt_text || "Journal cover"}
+            className="size-12 rounded-md border border-border bg-muted object-cover sm:size-14"
+          />
+        ) : null}
+        {!compact && (
+          <div className="text-right text-xs text-muted-foreground">
+            {entry.status === "draft" ? (
+              <p>Updated {formatJournalDate(entry.updated_timestamp, true)}</p>
+            ) : wasEditedAfterCompletion(entry) ? (
+              <p>Edited {formatJournalDate(entry.updated_timestamp, true)}</p>
+            ) : (
+              <p>Completed {formatJournalDate(entry.completed_at, true)}</p>
+            )}
+          </div>
+        )}
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Actions for ${entry.title || primaryPresentation.label}`}
+        {compact ? (
+          <Button asChild type="button" variant="ghost" size="icon-sm">
+            <Link
+              href={href}
+              aria-label={`${entry.status === "draft" ? "Continue" : "Open"} ${entry.title || primaryPresentation.label}`}
             >
-              <MoreHorizontal aria-hidden="true" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={href}>
-                {entry.status === "draft" ? "Continue" : "View"}
-              </Link>
-            </DropdownMenuItem>
-            {entry.status === "completed" && entry.format !== "legacy" && (
+              <ChevronRight aria-hidden="true" />
+            </Link>
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Actions for ${entry.title || primaryPresentation.label}`}
+              >
+                <MoreHorizontal aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link href={getJournalEditHref(entry)}>
-                  <Pencil aria-hidden="true" />
-                  Edit
+                <Link href={href}>
+                  {entry.status === "draft" ? "Continue" : "View"}
                 </Link>
               </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {entry.status === "completed" && entry.format !== "legacy" && (
+                <DropdownMenuItem asChild>
+                  <Link href={getJournalEditHref(entry)}>
+                    <Pencil aria-hidden="true" />
+                    Edit
+                  </Link>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </article>
   );
+}
+
+function journalCoverUrl(url: string) {
+  if (!url || /^https?:\/\//.test(url)) {
+    return url;
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  return apiUrl && url.startsWith("/") ? `${apiUrl}${url}` : url;
 }
 
 function JournalListSkeleton() {

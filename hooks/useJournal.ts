@@ -22,7 +22,9 @@ function stableParams(params: JournalFeedParams) {
     format: params.format,
     search: params.search?.trim() || undefined,
     contact: params.contact,
+    related_contact: params.related_contact,
     event: params.event,
+    chapter: params.chapter,
     occurred_after: params.occurred_after,
     occurred_before: params.occurred_before,
     ordering: params.ordering,
@@ -32,7 +34,9 @@ function stableParams(params: JournalFeedParams) {
 export function useJournalFeed(params: JournalFeedParams = {}) {
   const {
     contact,
+    related_contact,
     event,
+    chapter,
     family,
     format,
     occurred_after,
@@ -47,7 +51,9 @@ export function useJournalFeed(params: JournalFeedParams = {}) {
     () =>
       stableParams({
         contact,
+        related_contact,
         event,
+        chapter,
         family,
         format,
         occurred_after,
@@ -60,7 +66,9 @@ export function useJournalFeed(params: JournalFeedParams = {}) {
       }),
     [
       contact,
+      related_contact,
       event,
+      chapter,
       family,
       format,
       occurred_after,

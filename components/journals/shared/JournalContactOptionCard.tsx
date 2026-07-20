@@ -1,5 +1,6 @@
 "use client";
 
+import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { Check, ChevronRight } from "lucide-react";
 
 import {
@@ -9,36 +10,61 @@ import {
 import { cn } from "@/lib/utils";
 import type { ContactListItem } from "@/types/contacts";
 
-type JournalContactOptionCardProps = {
+type JournalContactOptionCardProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   contact: ContactListItem;
   selected: boolean;
   onToggle: () => void;
+  selectedAction?: "clear" | "change" | "none";
+  disabled?: boolean;
 };
 
-export function JournalContactOptionCard({
-  contact,
-  selected,
-  onToggle,
-}: JournalContactOptionCardProps) {
+export const JournalContactOptionCard = forwardRef<
+  HTMLButtonElement,
+  JournalContactOptionCardProps
+>(function JournalContactOptionCard(
+  {
+    contact,
+    selected,
+    onToggle,
+    selectedAction = "clear",
+    disabled = false,
+    className,
+    onClick,
+    ...buttonProps
+  },
+  ref,
+) {
   const name = contactName(contact) || "Unnamed contact";
 
   return (
     <button
+      ref={ref}
+      {...buttonProps}
       type="button"
-      aria-pressed={selected}
+      aria-pressed={selectedAction === "change" ? undefined : selected}
       aria-label={
         selected
-          ? `${name}, selected. Clear related contact`
+          ? selectedAction === "none"
+            ? `${name}, selected contact`
+            : selectedAction === "change"
+              ? `${name}, selected. Change contact`
+              : `${name}, selected. Clear related contact`
           : `Select related contact ${name}`
       }
+      disabled={disabled}
       className={cn(
         "group flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-left shadow-xs transition-colors outline-none",
         "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
         selected
           ? "border-primary/70 bg-primary/5 text-foreground ring-1 ring-primary/15"
           : "border-border/80 bg-card text-foreground hover:border-primary/30 hover:bg-muted/25",
+        disabled && "cursor-default opacity-100",
+        className,
       )}
-      onClick={onToggle}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) onToggle();
+      }}
     >
       <JournalContactAvatar contact={contact} name={name} />
       <span className="min-w-0 flex-1">
@@ -67,13 +93,21 @@ export function JournalContactOptionCard({
       <span
         aria-hidden="true"
         className={cn(
-          "inline-flex size-7 shrink-0 items-center justify-center rounded-full transition-colors",
+          "inline-flex shrink-0 items-center justify-center rounded-full transition-colors",
+          selected && selectedAction === "change"
+            ? "min-h-7 gap-1 px-2"
+            : "size-7",
           selected
             ? "bg-primary text-primary-foreground"
             : "text-muted-foreground group-hover:text-primary",
         )}
       >
-        {selected ? (
+        {selected && selectedAction === "change" ? (
+          <>
+            <Check className="size-3.5" strokeWidth={2.5} />
+            <span className="text-[11px] font-semibold">Change</span>
+          </>
+        ) : selected ? (
           <Check className="size-4" strokeWidth={2.5} />
         ) : (
           <ChevronRight className="size-4" />
@@ -81,7 +115,7 @@ export function JournalContactOptionCard({
       </span>
     </button>
   );
-}
+});
 
 function JournalContactAvatar({
   contact,

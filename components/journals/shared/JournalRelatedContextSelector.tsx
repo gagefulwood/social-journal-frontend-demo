@@ -2,11 +2,13 @@
 
 import { useEffect, useEffectEvent, useId, useMemo, useState } from "react";
 import {
+  ChevronRight,
   CircleAlert,
   Loader2,
   PencilLine,
   Plus,
   Search,
+  UserRoundPlus,
   UserRoundX,
   X,
 } from "lucide-react";
@@ -21,6 +23,14 @@ import { JournalSelectedContextSummary } from "@/components/journals/shared/Jour
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useDebounce } from "@/hooks/useDebounce";
 import { contactsApi } from "@/lib/api/contactsApi";
 import { eventsApi } from "@/lib/api/eventsApi";
@@ -380,23 +390,32 @@ function JournalRelatedEventSelector({
   );
 }
 
-function JournalRelatedContactSelector({
-  value,
-  onChange,
-  multiple,
-  label,
-  description,
-  collapseSelected,
-}: {
+export type JournalRelatedContactSelectorProps = {
   value: ApiId | ApiId[] | null;
   onChange: (value: ApiId | ApiId[] | null) => void;
-  multiple: boolean;
-  label: string;
+  multiple?: boolean;
+  label?: string;
   description?: string;
-  collapseSelected: boolean;
-}) {
+  collapseSelected?: boolean;
+  presentation?: "inline" | "popover";
+  error?: string;
+  disabled?: boolean;
+};
+
+export function JournalRelatedContactSelector({
+  value,
+  onChange,
+  multiple = false,
+  label = "Related contact",
+  description,
+  collapseSelected = false,
+  presentation = "inline",
+  error,
+  disabled = false,
+}: JournalRelatedContactSelectorProps) {
   const inputId = useId();
   const descriptionId = useId();
+  const errorId = useId();
   const ids = useMemo(
     () => (Array.isArray(value) ? value : value == null ? [] : [value]),
     [value],
@@ -419,6 +438,7 @@ function JournalRelatedContactSelector({
   >({});
   const [addingSelection, setAddingSelection] = useState(false);
   const [expandedSelection, setExpandedSelection] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const requestKey = JSON.stringify([debouncedSearch, page, retryKey]);
   const loading = loadedRequestKey !== requestKey;
   const status = loading
@@ -517,6 +537,7 @@ function JournalRelatedContactSelector({
     if (!multiple) {
       onChange(hasContact ? null : contact.id);
       if (!hasContact && collapseSelected) setAddingSelection(false);
+      if (!hasContact && presentation === "popover") setPickerOpen(false);
       return;
     }
 
@@ -550,6 +571,241 @@ function JournalRelatedContactSelector({
     collapseSelected && ids.length > 0 && !addingSelection;
   const visibleSelectedIds = expandedSelection ? ids : ids.slice(0, 3);
   const hiddenSelectedCount = Math.max(0, ids.length - 3);
+  const describedBy =
+    [description ? descriptionId : null, error ? errorId : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  const discovery = (
+    <div className="min-w-0 space-y-2">
+      <div className="relative">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          id={inputId}
+          value={search}
+          aria-label={`Search ${label.toLowerCase()}`}
+          aria-invalid={Boolean(error)}
+          aria-describedby={describedBy}
+          className="h-10 bg-card pl-9"
+          placeholder="Search contacts"
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setPage(1);
+          }}
+        />
+      </div>
+
+      <div
+        role="region"
+        aria-label={`${label} results`}
+        aria-busy={status === "loading" || isSearching}
+        className="space-y-1.5"
+      >
+        {ids.map((id) => {
+          if (selectedIdsInResults.has(String(id))) return null;
+          const selected = selectedById[String(id)];
+          if (selected) {
+            return (
+              <JournalContactOptionCard
+                key={`selected-${id}`}
+                contact={selected}
+                selected
+                onToggle={() => toggle(selected)}
+              />
+            );
+          }
+          if (unavailableById[String(id)]) {
+            return (
+              <UnavailableContextCard
+                key={`unavailable-${id}`}
+                kind="contact"
+                onClear={() => clearUnavailable(id)}
+              />
+            );
+          }
+          return (
+            <SelectedPreviewLoading
+              key={`loading-${id}`}
+              label="Loading selected contact…"
+            />
+          );
+        })}
+
+        {status === "loading" || isSearching ? (
+          <SearchLoadingState
+            label={isSearching ? "Searching contacts…" : "Loading contacts…"}
+          />
+        ) : status === "error" ? (
+          <SearchErrorState
+            label="Contacts could not be loaded."
+            onRetry={() => setRetryKey((current) => current + 1)}
+          />
+        ) : visibleResults.length ? (
+          <div role="list" className="space-y-1.5">
+            {visibleResults.map((contact) => (
+              <div role="listitem" key={contact.id}>
+                <JournalContactOptionCard
+                  contact={contact}
+                  selected={ids.some((id) => idsMatch(id, contact.id))}
+                  onToggle={() => toggle(contact)}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <SearchEmptyState
+            label={
+              ids.length
+                ? "No other contacts match this search."
+                : "No contacts match this search."
+            }
+          />
+        )}
+      </div>
+
+      <SearchFooter
+        count={currentResponse?.count ?? 0}
+        page={page}
+        hasPrevious={Boolean(currentResponse?.previous)}
+        hasNext={Boolean(currentResponse?.next)}
+        loading={status === "loading" || isSearching}
+        noun="contact"
+        onPrevious={() => setPage((current) => Math.max(1, current - 1))}
+        onNext={() => setPage((current) => current + 1)}
+      />
+    </div>
+  );
+
+  if (presentation === "popover") {
+    const selectedId = ids[0];
+    const selectedContact =
+      selectedId == null ? null : (selectedById[String(selectedId)] ?? null);
+    const selectedUnavailable =
+      selectedId != null && unavailableById[String(selectedId)];
+
+    return (
+      <div className="min-w-0 space-y-1.5">
+        <div className="space-y-1">
+          <Label>{label}</Label>
+          {description ? (
+            <p id={descriptionId} className="text-xs text-muted-foreground">
+              {description}
+            </p>
+          ) : null}
+        </div>
+        <Popover
+          open={disabled ? false : pickerOpen}
+          onOpenChange={(nextOpen) => {
+            if (!disabled) setPickerOpen(nextOpen);
+          }}
+        >
+          <PopoverTrigger asChild>
+            {selectedContact ? (
+              <JournalContactOptionCard
+                contact={selectedContact}
+                selected
+                selectedAction={disabled ? "none" : "change"}
+                disabled={disabled}
+                onToggle={() => undefined}
+              />
+            ) : selectedUnavailable ? (
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={`${label}: Contact unavailable${error ? `. Error: ${error}` : ""}`}
+                aria-describedby={describedBy}
+                className={cn(
+                  "flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg border border-primary/35 bg-primary/5 px-3 py-2.5 text-left shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                  error && "border-destructive/55 bg-destructive/5",
+                )}
+              >
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <UserRoundX className="size-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">
+                    Contact unavailable
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Choose another saved contact.
+                  </span>
+                </span>
+                <ChevronRight
+                  className="size-4 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+              </button>
+            ) : selectedId != null ? (
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={`${label}: Loading selected contact`}
+                aria-describedby={describedBy}
+                className="flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-left shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <Loader2
+                  className="size-5 shrink-0 animate-spin text-primary"
+                  aria-hidden="true"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Loading selected contact…
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={`${label}: Choose a contact${error ? `. Error: ${error}` : ""}`}
+                aria-describedby={describedBy}
+                className={cn(
+                  "group flex min-h-16 w-full min-w-0 items-center gap-3 rounded-lg border border-dashed border-border bg-card px-3 py-2.5 text-left shadow-xs outline-none transition-colors hover:border-primary/35 hover:bg-primary/5 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                  error &&
+                    "border-destructive/55 bg-destructive/5 hover:border-destructive/70 hover:bg-destructive/5",
+                )}
+              >
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-accent text-primary">
+                  <UserRoundPlus className="size-5" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">
+                    Choose a contact
+                  </span>
+                  <span className="block text-xs leading-4 text-muted-foreground">
+                    A saved contact is required to publish this item.
+                  </span>
+                </span>
+                <ChevronRight
+                  className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+                  aria-hidden="true"
+                />
+              </button>
+            )}
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            aria-label="Choose a contact"
+            className="max-h-[min(34rem,var(--radix-popover-content-available-height))] w-[min(30rem,calc(100vw-2rem))] overflow-y-auto p-3"
+          >
+            <PopoverHeader>
+              <PopoverTitle>Choose a contact</PopoverTitle>
+              <PopoverDescription>
+                Search saved contacts. Five results are shown at a time.
+              </PopoverDescription>
+            </PopoverHeader>
+            {discovery}
+          </PopoverContent>
+        </Popover>
+        {error ? (
+          <p id={errorId} role="alert" className="text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0 space-y-2">
@@ -628,104 +884,7 @@ function JournalRelatedContactSelector({
         </JournalSelectedContextSummary>
       ) : (
         <>
-          <div className="relative">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              id={inputId}
-              value={search}
-              aria-describedby={description ? descriptionId : undefined}
-              className="h-10 bg-card pl-9"
-              placeholder="Search contacts"
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-          </div>
-
-          <div
-            role="region"
-            aria-label={`${label} results`}
-            aria-busy={status === "loading" || isSearching}
-            className="space-y-1.5"
-          >
-            {ids.map((id) => {
-              if (selectedIdsInResults.has(String(id))) return null;
-              const selected = selectedById[String(id)];
-              if (selected) {
-                return (
-                  <JournalContactOptionCard
-                    key={`selected-${id}`}
-                    contact={selected}
-                    selected
-                    onToggle={() => toggle(selected)}
-                  />
-                );
-              }
-              if (unavailableById[String(id)]) {
-                return (
-                  <UnavailableContextCard
-                    key={`unavailable-${id}`}
-                    kind="contact"
-                    onClear={() => clearUnavailable(id)}
-                  />
-                );
-              }
-              return (
-                <SelectedPreviewLoading
-                  key={`loading-${id}`}
-                  label="Loading selected contact…"
-                />
-              );
-            })}
-
-            {status === "loading" || isSearching ? (
-              <SearchLoadingState
-                label={
-                  isSearching ? "Searching contacts…" : "Loading contacts…"
-                }
-              />
-            ) : status === "error" ? (
-              <SearchErrorState
-                label="Contacts could not be loaded."
-                onRetry={() => setRetryKey((current) => current + 1)}
-              />
-            ) : visibleResults.length ? (
-              <div role="list" className="space-y-1.5">
-                {visibleResults.map((contact) => (
-                  <div role="listitem" key={contact.id}>
-                    <JournalContactOptionCard
-                      contact={contact}
-                      selected={ids.some((id) => idsMatch(id, contact.id))}
-                      onToggle={() => toggle(contact)}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <SearchEmptyState
-                label={
-                  ids.length
-                    ? "No other contacts match this search."
-                    : "No contacts match this search."
-                }
-              />
-            )}
-          </div>
-
-          <SearchFooter
-            count={currentResponse?.count ?? 0}
-            page={page}
-            hasPrevious={Boolean(currentResponse?.previous)}
-            hasNext={Boolean(currentResponse?.next)}
-            loading={status === "loading" || isSearching}
-            noun="contact"
-            onPrevious={() => setPage((current) => Math.max(1, current - 1))}
-            onNext={() => setPage((current) => current + 1)}
-          />
+          {discovery}
           {collapseSelected && ids.length > 0 ? (
             <Button
               type="button"
