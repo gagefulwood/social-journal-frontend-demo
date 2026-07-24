@@ -16,6 +16,11 @@ export type JournalLookupOption = {
   is_system_default: boolean;
 };
 
+export type JournalLookupSummary = Pick<
+  JournalLookupOption,
+  "id" | "code" | "name"
+>;
+
 export type JournalContactSummary = {
   id: ApiId;
   display_name: string;
@@ -75,6 +80,31 @@ export type JournalListItem = {
 export type JournalListResponse = PaginatedResponse<JournalListItem>;
 export type CombinedJournalFeedItem = JournalListItem;
 export type CombinedJournalFeedResponse = JournalListResponse;
+
+export type JournalHubSummary = {
+  draft_count: number;
+  drafts: JournalListItem[];
+};
+
+export type ContactJournalSummary = {
+  completed_count: number;
+  log_count: number;
+  reflection_count: number;
+  draft_count: number;
+  latest_completed: JournalListItem | null;
+  drafts: JournalListItem[];
+};
+
+export type JournalFilterOptions = {
+  contacts: Array<{
+    id: ApiId;
+    display_name: string;
+  }>;
+  events: Array<{
+    id: ApiId;
+    title: string;
+  }>;
+};
 
 export type JournalAttachmentMedia = {
   id: ApiId;
@@ -144,6 +174,9 @@ export type EpisodeDetail = {
   is_ongoing: boolean;
   characteristic_ids: ApiId[];
   context_tag_ids: ApiId[];
+  category_summary?: JournalLookupSummary | null;
+  characteristic_summaries?: JournalLookupSummary[];
+  context_tag_summaries?: JournalLookupSummary[];
 };
 
 export type SocialEnergyDetail = {
@@ -157,6 +190,7 @@ export type SocialEnergyDetail = {
   familiarity: string;
   setting: string;
   factor_ids: ApiId[];
+  factor_summaries?: JournalLookupSummary[];
 };
 
 export type SentimentDetail = {
@@ -167,6 +201,9 @@ export type SentimentDetail = {
   dynamic_ids: ApiId[];
   initiated_by: string;
   overall_exchange: string;
+  before_state_summary?: JournalLookupSummary | null;
+  after_state_summary?: JournalLookupSummary | null;
+  dynamic_summaries?: JournalLookupSummary[];
 };
 
 export type InteractionReflectionDetail = {
@@ -208,6 +245,7 @@ export type EmotionalReflectionDetail = {
   communicating: string;
   understanding_now: string;
   additional_writing: string;
+  emotion_summaries?: JournalLookupSummary[];
 };
 
 export type FreeReflectionDetail = {

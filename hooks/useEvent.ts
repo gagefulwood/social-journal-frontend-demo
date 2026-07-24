@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { eventsApi, type EventListParams } from "@/lib/api/eventsApi";
+import { subscribePrivateQueryInvalidation } from "@/lib/api/privateQueryCache";
 import type { ApiError } from "@/types/auth";
 import type { ApiId } from "@/types/api";
 import type {
@@ -255,6 +256,14 @@ export function useEvent(id: ApiId | null | undefined) {
       isActive = false;
     };
   }, [eventId]);
+
+  useEffect(
+    () =>
+      subscribePrivateQueryInvalidation(["event-journal-summary"], () => {
+        void fetchEvent();
+      }),
+    [fetchEvent],
+  );
 
   return {
     event,

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -37,7 +36,7 @@ import {
 } from "@/components/journals/shared/JournalWorkspaceLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { journalApi } from "@/lib/api/journalApi";
+import { useReflection } from "@/hooks/useJournal";
 import {
   getJournalClassificationPresentation,
   getJournalStatusPresentation,
@@ -57,40 +56,18 @@ export function ReflectionDetailView({
 }: {
   reflectionId: ApiId;
 }) {
-  const [reflection, setReflection] = useState<
-    Reflection | LegacyReflection | null
-  >(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useReflection(reflectionId);
+  const reflection = query.entry as Reflection | LegacyReflection | null;
 
-  useEffect(() => {
-    let active = true;
-    void journalApi
-      .getReflection(reflectionId)
-      .then((result) => {
-        if (active)
-          setReflection(result as unknown as Reflection | LegacyReflection);
-      })
-      .catch(() => {
-        if (active) setError("This reflection could not be loaded.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [reflectionId]);
-
-  if (loading) return <ReflectionDetailSkeleton />;
-  if (error || !reflection) {
+  if (query.loading) return <ReflectionDetailSkeleton />;
+  if (query.error || !reflection) {
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
         <JournalFormSection className="p-6 text-center">
           <CircleAlert className="mx-auto size-6 text-destructive" />
           <h1 className="mt-3 text-xl font-semibold">Reflection unavailable</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {error ?? "This reflection was not found."}
+            {query.error?.message ?? "This reflection was not found."}
           </p>
           <Button asChild variant="outline" className="mt-4">
             <Link href="/journals">Back to journals</Link>
@@ -108,50 +85,17 @@ export function ReflectionDetailView({
 }
 
 function CompletedReflection({ reflection }: { reflection: Reflection }) {
-  const [emotionNames, setEmotionNames] = useState(
-    reflection.format === "emotional" &&
-      (reflection.detail as EmotionalReflectionDetail).emotion_ids.length
-      ? "Loading selected feelings..."
-      : "",
-  );
-
-  useEffect(() => {
-    if (reflection.format !== "emotional") {
-      return;
-    }
-
-    const emotionIds = (reflection.detail as EmotionalReflectionDetail)
-      .emotion_ids;
-    if (!emotionIds.length) {
-      return;
-    }
-
-    const controller = new AbortController();
-    void journalApi
-      .listLookups("emotion-states", { signal: controller.signal })
-      .then((options) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        const namesById = new Map(
-          options.map((option) => [String(option.id), option.name]),
-        );
-        const names = emotionIds
-          .map((id) => namesById.get(String(id)))
-          .filter((name): name is string => Boolean(name));
-        setEmotionNames(
-          names.length ? names.join(", ") : "Selected feelings unavailable.",
-        );
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setEmotionNames("Selected feelings unavailable.");
-        }
-      });
-
-    return () => controller.abort();
-  }, [reflection]);
+  const emotionalDetail =
+    reflection.format === "emotional"
+      ? (reflection.detail as EmotionalReflectionDetail)
+      : null;
+  const emotionNames =
+    emotionalDetail?.emotion_summaries
+      ?.map((emotion) => emotion.name)
+      .join(", ") ||
+    (emotionalDetail?.emotion_ids.length
+      ? "Selected feelings unavailable."
+      : "");
 
   const { familyPresentation, formatPresentation, primaryPresentation } =
     getJournalClassificationPresentation("reflection", reflection.format);

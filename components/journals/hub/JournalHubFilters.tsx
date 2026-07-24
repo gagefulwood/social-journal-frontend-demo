@@ -1,8 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { BookOpen, Filter, Search } from "lucide-react";
 
-import { contactName } from "@/components/contacts/contact-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,8 +13,8 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useContacts } from "@/hooks/useContacts";
-import { useEvent, useEvents } from "@/hooks/useEvent";
+import { useEvent } from "@/hooks/useEvent";
+import { useJournalFilterOptions } from "@/hooks/useJournal";
 import type { JournalFormat } from "@/types/journals";
 
 import {
@@ -56,10 +56,14 @@ export function JournalHubFilters({
   onClearFilters,
   onChapterChange,
 }: JournalHubFiltersProps) {
-  const { contacts, loading: contactsLoading } = useContacts({
-    page_size: 100,
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterOptions = useJournalFilterOptions({
+    enabled: filtersOpen,
   });
-  const { events, loading: eventsLoading } = useEvents({ page_size: 100 });
+  const contacts = filterOptions.data?.contacts ?? [];
+  const events = filterOptions.data?.events ?? [];
+  const contactsLoading = filterOptions.loading;
+  const eventsLoading = filterOptions.loading;
   const { event: selectedEvent, loading: selectedEventLoading } = useEvent(
     filters.event || null,
   );
@@ -109,7 +113,7 @@ export function JournalHubFilters({
         </span>
       )}
 
-      <Popover>
+      <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
         <PopoverTrigger asChild>
           <Button type="button" variant="outline" className="sm:shrink-0">
             <Filter aria-hidden="true" />
@@ -139,7 +143,7 @@ export function JournalHubFilters({
                 <option value="">All contacts</option>
                 {contacts.map((contact) => (
                   <option key={contact.id} value={String(contact.id)}>
-                    {contactName(contact)}
+                    {contact.display_name}
                   </option>
                 ))}
                 {filters.contact &&

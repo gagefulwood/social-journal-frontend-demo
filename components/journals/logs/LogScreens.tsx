@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -39,7 +39,7 @@ import { JournalStatusIndicator } from "@/components/presentation/JournalStatusI
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { useLog, useLogPatterns } from "@/hooks/useJournal";
-import { journalApi, type JournalLookupKind } from "@/lib/api/journalApi";
+import { journalApi } from "@/lib/api/journalApi";
 import {
   getJournalClassificationPresentation,
   getJournalStatusPresentation,
@@ -48,9 +48,7 @@ import {
 import type { ApiId } from "@/types/api";
 import type {
   EpisodeDetail,
-  JournalLookupOption,
   Log,
-  LogFormat,
   SentimentDetail,
   SocialEnergyDetail,
 } from "@/types/journals";
@@ -199,11 +197,7 @@ function LogDetail({
   const { familyPresentation, formatPresentation, primaryPresentation } =
     getJournalClassificationPresentation("log", log.format);
   const statusPresentation = getJournalStatusPresentation(log.status);
-  const lookupKinds = useMemo(
-    () => (String(log.format) === "legacy" ? [] : lookupKindsFor(log.format)),
-    [log.format],
-  );
-  const lookupNames = useLookupNames(lookupKinds);
+  const lookupNames = lookupNamesFor(log);
   const patternParams = useMemo(
     () => ({
       format: String(log.format) === "legacy" ? undefined : log.format,
@@ -643,39 +637,29 @@ function JournalScreenState({
   );
 }
 
-function useLookupNames(kinds: JournalLookupKind[]) {
-  const [names, setNames] = useState(new Map<string, string>());
+function lookupNamesFor(log: Log) {
+  const names = new Map<string, string>();
+  if (String(log.format) === "legacy") return names;
 
-  useEffect(() => {
-    let active = true;
-    void Promise.all(kinds.map((kind) => journalApi.listLookups(kind))).then(
-      (groups) => {
-        if (!active) return;
-        const next = new Map<string, string>();
-        groups.flat().forEach((option: JournalLookupOption) => {
-          next.set(String(option.id), option.name);
-        });
-        setNames(next);
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [kinds]);
+  const summaries =
+    log.format === "episode"
+      ? [
+          (log.detail as EpisodeDetail).category_summary,
+          ...((log.detail as EpisodeDetail).characteristic_summaries ?? []),
+          ...((log.detail as EpisodeDetail).context_tag_summaries ?? []),
+        ]
+      : log.format === "social_energy"
+        ? [...((log.detail as SocialEnergyDetail).factor_summaries ?? [])]
+        : [
+            (log.detail as SentimentDetail).before_state_summary,
+            (log.detail as SentimentDetail).after_state_summary,
+            ...((log.detail as SentimentDetail).dynamic_summaries ?? []),
+          ];
 
+  summaries.forEach((summary) => {
+    if (summary) names.set(String(summary.id), summary.name);
+  });
   return names;
-}
-
-function lookupKindsFor(format: LogFormat): JournalLookupKind[] {
-  if (format === "episode") {
-    return [
-      "episode-categories",
-      "episode-characteristics",
-      "episode-context-tags",
-    ];
-  }
-  if (format === "social_energy") return ["social-energy-factors"];
-  return ["emotion-states", "interaction-dynamics"];
 }
 
 function lookupLabel(names: Map<string, string>, id: ApiId | null) {

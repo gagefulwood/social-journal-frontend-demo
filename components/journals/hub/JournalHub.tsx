@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -16,12 +16,12 @@ import { LogPatternRail } from "@/components/journals/hub/LogPatternRail";
 import { Button } from "@/components/ui/button";
 import { SurfaceCard } from "@/components/ui/surface-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useJournalFeed } from "@/hooks/useJournal";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useJournalFeed, useJournalHubSummary } from "@/hooks/useJournal";
 import { journalApi } from "@/lib/api/journalApi";
 import type { JournalListItem } from "@/types/journals";
 
 import {
-  JOURNAL_DRAFT_PREVIEW_SIZE,
   JOURNAL_HUB_PAGE_SIZE,
   familyForHubView,
   isFormatCompatibleWithView,
@@ -40,6 +40,9 @@ export function JournalHub() {
   const view = parseHubView(searchParams.get("view"));
   const page = parsePage(searchParams.get("page"));
   const searchParam = searchParams.get("search") ?? "";
+  const pendingSearchRef = useRef<string | null>(null);
+  const [searchValue, setSearchValue] = useState(searchParam);
+  const debouncedSearch = useDebounce(searchValue, 300);
   const parsedFormat = parseJournalFormat(searchParams.get("format"));
   const chapter = searchParams.get("chapter") ?? undefined;
   const format = isFormatCompatibleWithView(parsedFormat, view)
@@ -86,6 +89,22 @@ export function JournalHub() {
     }
   }, [parsedFormat, replaceQuery, view]);
 
+  useEffect(() => {
+    if (pendingSearchRef.current === searchParam) {
+      pendingSearchRef.current = null;
+      return;
+    }
+    if (pendingSearchRef.current !== null) return;
+    setSearchValue(searchParam);
+  }, [searchParam]);
+
+  useEffect(() => {
+    if (debouncedSearch !== searchParam) {
+      pendingSearchRef.current = debouncedSearch;
+      replaceQuery({ search: debouncedSearch || null });
+    }
+  }, [debouncedSearch, replaceQuery, searchParam]);
+
   const family = familyForHubView(view);
   const mainFeed = useJournalFeed({
     page,
@@ -101,12 +120,11 @@ export function JournalHub() {
     occurred_before: filters.occurredBefore || undefined,
     ordering: view === "drafts" ? "-updated_timestamp" : "-occurred_at",
   });
-  const draftFeed = useJournalFeed({
-    page: 1,
-    page_size: JOURNAL_DRAFT_PREVIEW_SIZE,
-    status: "draft",
-    ordering: "-updated_timestamp",
-  });
+  const draftSummary = useJournalHubSummary(view !== "drafts");
+  const draftCount =
+    view === "drafts"
+      ? (mainFeed.data?.count ?? 0)
+      : (draftSummary.data?.draft_count ?? 0);
 
   const activeFilterCount = [
     filters.contact,
@@ -183,8 +201,6 @@ export function JournalHub() {
     }
 
     toast.success("Draft discarded.");
-    draftFeed.refetch();
-    mainFeed.refetch();
   }
 
   return (
@@ -219,9 +235,9 @@ export function JournalHub() {
           <TabsTrigger value="reflections">Reflections</TabsTrigger>
           <TabsTrigger value="drafts" className="gap-1.5">
             Drafts
-            {!draftFeed.loading && draftFeed.data && (
+            {!(view === "drafts" ? mainFeed.loading : draftSummary.loading) && (
               <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] leading-none text-accent-foreground">
-                {draftFeed.data.count}
+                {draftCount}
               </span>
             )}
           </TabsTrigger>
@@ -230,11 +246,11 @@ export function JournalHub() {
 
       {view !== "drafts" && (
         <JournalDraftPanel
-          drafts={draftFeed.entries}
-          totalCount={draftFeed.data?.count ?? 0}
-          loading={draftFeed.loading}
-          error={draftFeed.error}
-          onRetry={draftFeed.refetch}
+          drafts={draftSummary.data?.drafts ?? []}
+          totalCount={draftSummary.data?.draft_count ?? 0}
+          loading={draftSummary.loading}
+          error={draftSummary.error}
+          onRetry={draftSummary.refetch}
           onDiscard={discardDraft}
           onViewAll={() => changeView("drafts")}
         />
@@ -245,13 +261,11 @@ export function JournalHub() {
           <div className="border-b border-border/70 p-4">
             <JournalHubFilters
               view={view}
-              search={searchParam}
+              search={searchValue}
               filters={filters}
               activeFilterCount={activeFilterCount}
               chapter={chapter}
-              onSearchChange={(value) =>
-                replaceQuery({ search: value || null })
-              }
+              onSearchChange={setSearchValue}
               onFilterChange={changeFilter}
               onClearFilters={clearFilters}
               onChapterChange={(value) =>

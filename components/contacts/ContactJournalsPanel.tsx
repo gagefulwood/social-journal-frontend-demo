@@ -46,15 +46,17 @@ import {
 } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useContactEvents } from "@/hooks/useContactEvents";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useJournalFeed } from "@/hooks/useJournal";
+import {
+  useContactJournalSummary,
+  useJournalFeed,
+  useJournalFilterOptions,
+} from "@/hooks/useJournal";
 import { getJournalClassificationPresentation } from "@/lib/presentation/journalPresentation";
 import type { Contact } from "@/types/contacts";
 import type { JournalFormat, JournalListItem } from "@/types/journals";
 
 const CONTACT_JOURNAL_PAGE_SIZE = 5;
-const CONTACT_DRAFT_PREVIEW_SIZE = 2;
 
 type ContactJournalFilters = {
   event: string;
@@ -76,6 +78,7 @@ export function ContactJournalsPanel({ contact }: { contact: Contact }) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<ContactJournalFilters>(initialFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [chooserOpen, setChooserOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 300);
   const family = familyForHubView(view);
@@ -96,56 +99,19 @@ export function ContactJournalsPanel({ contact }: { contact: Contact }) {
     occurred_before: filters.occurredBefore || undefined,
     ordering: view === "drafts" ? "-updated_timestamp" : "-occurred_at",
   });
-  const completedInventory = useJournalFeed({
-    page: 1,
-    page_size: 1,
-    related_contact: contact.id,
-    status: "completed",
-    ordering: "-occurred_at",
-  });
-  const logInventory = useJournalFeed({
-    page: 1,
-    page_size: 1,
-    related_contact: contact.id,
-    family: "log",
-    status: "completed",
-    ordering: "-occurred_at",
-  });
-  const reflectionInventory = useJournalFeed({
-    page: 1,
-    page_size: 1,
-    related_contact: contact.id,
-    family: "reflection",
-    status: "completed",
-    ordering: "-occurred_at",
-  });
-  const draftInventory = useJournalFeed({
-    page: 1,
-    page_size: CONTACT_DRAFT_PREVIEW_SIZE,
-    related_contact: contact.id,
-    status: "draft",
-    ordering: "-updated_timestamp",
-  });
-  const contactEvents = useContactEvents(contact.id, {
-    page_size: 100,
-    ordering: "-event_timestamp",
+  const journalSummary = useContactJournalSummary(contact.id);
+  const filterOptions = useJournalFilterOptions({
+    enabled: filtersOpen,
+    relatedContact: contact.id,
   });
 
-  const completedCount = completedInventory.data?.count ?? 0;
-  const logCount = logInventory.data?.count ?? 0;
-  const reflectionCount = reflectionInventory.data?.count ?? 0;
-  const draftCount = draftInventory.data?.count ?? 0;
-  const countsLoading =
-    completedInventory.loading ||
-    logInventory.loading ||
-    reflectionInventory.loading ||
-    draftInventory.loading;
-  const inventoryError =
-    completedInventory.error ||
-    logInventory.error ||
-    reflectionInventory.error ||
-    draftInventory.error;
-  const lastCompleted = completedInventory.entries[0];
+  const completedCount = journalSummary.data?.completed_count ?? 0;
+  const logCount = journalSummary.data?.log_count ?? 0;
+  const reflectionCount = journalSummary.data?.reflection_count ?? 0;
+  const draftCount = journalSummary.data?.draft_count ?? 0;
+  const countsLoading = journalSummary.loading;
+  const inventoryError = journalSummary.error;
+  const lastCompleted = journalSummary.data?.latest_completed;
   const lastCompletedDate = lastCompleted
     ? (lastCompleted.occurred_at ?? lastCompleted.completed_at)
     : null;
@@ -196,13 +162,6 @@ export function ContactJournalsPanel({ contact }: { contact: Contact }) {
   function chooserHref(option: NewJournalChooserOption) {
     const context = new URLSearchParams({ contact: String(contact.id) });
     return `${option.href}?${context.toString()}`;
-  }
-
-  function retryInventory() {
-    completedInventory.refetch();
-    logInventory.refetch();
-    reflectionInventory.refetch();
-    draftInventory.refetch();
   }
 
   return (
@@ -276,10 +235,12 @@ export function ContactJournalsPanel({ contact }: { contact: Contact }) {
               <ContactJournalFilterPopover
                 view={view}
                 filters={filters}
+                open={filtersOpen}
                 activeFilterCount={activeFilterCount}
                 formatOptions={formatOptions}
-                events={contactEvents.events}
-                eventsLoading={contactEvents.loading}
+                events={filterOptions.data?.events ?? []}
+                eventsLoading={filterOptions.loading}
+                onOpenChange={setFiltersOpen}
                 onChange={changeFilter}
                 onClear={clearFilters}
               />
@@ -343,11 +304,11 @@ export function ContactJournalsPanel({ contact }: { contact: Contact }) {
       >
         <aside aria-label="Contact Journal helpers">
           <ContinueWritingCard
-            drafts={draftInventory.entries}
+            drafts={journalSummary.data?.drafts ?? []}
             totalCount={draftCount}
-            loading={draftInventory.loading}
-            error={draftInventory.error}
-            onRetry={draftInventory.refetch}
+            loading={journalSummary.loading}
+            error={journalSummary.error}
+            onRetry={journalSummary.refetch}
             onViewAll={() => changeView("drafts")}
           />
           <JournalSnapshotCard
@@ -357,7 +318,7 @@ export function ContactJournalsPanel({ contact }: { contact: Contact }) {
             lastCompletedDate={lastCompletedDate}
             loading={countsLoading}
             error={inventoryError}
-            onRetry={retryInventory}
+            onRetry={journalSummary.refetch}
           />
         </aside>
       </ContactHelperStack>
@@ -591,19 +552,23 @@ function ContactJournalFeedSkeleton() {
 function ContactJournalFilterPopover({
   view,
   filters,
+  open,
   activeFilterCount,
   formatOptions,
   events,
   eventsLoading,
+  onOpenChange,
   onChange,
   onClear,
 }: {
   view: JournalHubView;
   filters: ContactJournalFilters;
+  open: boolean;
   activeFilterCount: number;
   formatOptions: typeof JOURNAL_FORMAT_OPTIONS;
   events: Array<{ id: string | number; title: string }>;
   eventsLoading: boolean;
+  onOpenChange: (open: boolean) => void;
   onChange: <Key extends keyof ContactJournalFilters>(
     key: Key,
     value: ContactJournalFilters[Key],
@@ -611,7 +576,7 @@ function ContactJournalFilterPopover({
   onClear: () => void;
 }) {
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" className="sm:shrink-0">
           <Filter aria-hidden="true" />

@@ -12,6 +12,7 @@ import {
 } from "@/components/journals/shared/JournalChoice";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useJournalLookupOptions } from "@/hooks/useJournal";
 import { journalApi, type JournalLookupKind } from "@/lib/api/journalApi";
 import {
   getLogFormOptionPresentation,
@@ -158,13 +159,26 @@ export function LookupTagSelector({
     () => (Array.isArray(value) ? value : value == null ? [] : [value]),
     [value],
   );
-  const [options, setOptions] = useState<JournalLookupOption[]>([]);
+  const lookupQuery = useJournalLookupOptions(kind);
+  const [createdOptions, setCreatedOptions] = useState<
+    Partial<Record<JournalLookupKind, JournalLookupOption[]>>
+  >({});
+  const options = useMemo(() => {
+    const combined = [
+      ...(lookupQuery.data ?? []),
+      ...(createdOptions[kind] ?? []),
+    ];
+    return combined.filter(
+      (option, index) =>
+        combined.findIndex((candidate) => idsMatch(candidate.id, option.id)) ===
+        index,
+    );
+  }, [createdOptions, kind, lookupQuery.data]);
   const [customName, setCustomName] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
-  const [loadedKind, setLoadedKind] = useState<JournalLookupKind | null>(null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const loading = loadedKind !== kind;
+  const loading = lookupQuery.loading && lookupQuery.data == null;
   const collapseLimit = collapsibleAfter ?? Number.POSITIVE_INFINITY;
   const canCollapse =
     presentation === "chips" && options.length > collapseLimit;
@@ -186,17 +200,6 @@ export function LookupTagSelector({
   useEffect(() => {
     onSelectedOptionChange?.(selectedSingleOption);
   }, [onSelectedOptionChange, selectedSingleOption]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void journalApi
-      .listLookups(kind, { signal: controller.signal })
-      .then(setOptions)
-      .finally(() => {
-        if (!controller.signal.aborted) setLoadedKind(kind);
-      });
-    return () => controller.abort();
-  }, [kind]);
 
   function toggle(id: ApiId) {
     const isSelected = selectedIds.some((item) => idsMatch(item, id));
@@ -221,7 +224,10 @@ export function LookupTagSelector({
     setCreating(true);
     try {
       const option = await journalApi.createLookup(kind, { name });
-      setOptions((current) => [...current, option]);
+      setCreatedOptions((current) => ({
+        ...current,
+        [kind]: [...(current[kind] ?? []), option],
+      }));
       setCustomName("");
       setCustomOpen(false);
       if (multiple) {
