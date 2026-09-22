@@ -2,9 +2,6 @@
 
 Next.js App Router frontend for the private Social Journal relationship journal.
 
-See the canonical frontend [design system](DESIGN_SYSTEM.md) for shared visual,
-component, and composition guidance.
-
 ## Prerequisites
 
 - Node.js 20.9 or newer
@@ -50,3 +47,11 @@ performs the production compile and TypeScript check.
 - `npm run build` creates a production build.
 - `npm run start` serves an existing production build.
 - `npm run lint` runs ESLint.
+
+## License
+
+Copyright (c) 2026 Gage Fulwood. All rights reserved.
+
+This is proprietary software published for portfolio review, not an open-source
+project. See [LICENSE.txt](LICENSE.txt) for permissions and restrictions.
+Third-party materials retain their own licenses.
