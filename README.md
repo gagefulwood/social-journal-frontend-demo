@@ -1,4 +1,10 @@
-# Social Journal - Frontend
+# Social Journal - Frontend Demo
+
+Public portfolio demo source for Social Journal. This repository preserves the
+project's development history and provides a snapshot for review and local setup.
+It is proprietary software; all rights are reserved to Gage Fulwood.
+
+Backend demo: [social-journal-backend-demo](https://github.com/gagefulwood/social-journal-backend-demo).
 
 Next.js App Router frontend for the private Social Journal relationship journal.
 
